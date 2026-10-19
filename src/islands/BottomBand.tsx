@@ -296,7 +296,11 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
     JSON.stringify({
       limits: { work: props.prover.settings().budget },
       styles: {
-        svg: { ids: false, essential: proof()?.mode.startsWith("intuitionistic") ?? false },
+        svg: {
+          ids: false,
+          essential: proof()?.mode.startsWith("intuitionistic") ?? false,
+          net: props.prover.settings().net,
+        },
       },
     });
   const name = () => "linlog-proof";
@@ -572,6 +576,28 @@ function SettingsPanel(props: {
                   }}
                 >
                   {t === "system" ? "System" : t === "light" ? "Light" : "Dark"}
+                </button>
+              )}
+            </For>
+          </fieldset>
+        </fieldset>
+        <fieldset class="lbl">
+          <legend>Net drawing</legend>
+          <fieldset class="seg" aria-label="Net drawing">
+            <For each={["formulas", "compact"] as const}>
+              {(net) => (
+                <button
+                  type="button"
+                  class="seg-b"
+                  aria-pressed={props.prover.settings().net === net}
+                  data-tip={
+                    net === "formulas"
+                      ? "Every formula of the net written"
+                      : "The literals and the conclusions alone, for a wide net"
+                  }
+                  onClick={() => props.prover.setSettings({ net })}
+                >
+                  {net === "formulas" ? "Formulas" : "Compact"}
                 </button>
               )}
             </For>

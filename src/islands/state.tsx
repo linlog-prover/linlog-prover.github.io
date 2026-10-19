@@ -83,7 +83,12 @@ export interface Settings {
   budget: number;
   /** Whether the actions print their keys beside their names. */
   showKeys: boolean;
+  /** How a net is drawn, `styles.svg.net`: every formula written, or compact. */
+  net: NetDrawing;
 }
+
+/** linlog's two drawings of a net: every formula occurrence written, or only the literals and the conclusions. */
+export type NetDrawing = "formulas" | "compact";
 
 /** The tab's default work budget: linlog's tab default, about a second of search. */
 export const DEFAULT_BUDGET = 2 ** 26;
@@ -104,9 +109,10 @@ function loadSettings(): Settings {
       budget:
         typeof stored.budget === "number" && stored.budget > 0 ? stored.budget : DEFAULT_BUDGET,
       showKeys: stored.showKeys === true,
+      net: stored.net === "compact" ? "compact" : "formulas",
     };
   } catch {
-    return { budget: DEFAULT_BUDGET, showKeys: false };
+    return { budget: DEFAULT_BUDGET, showKeys: false, net: "formulas" };
   }
 }
 

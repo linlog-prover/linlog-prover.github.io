@@ -413,6 +413,32 @@ test("a finished intuitionistic proof's essential net is drawn", async ({ page }
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
 });
 
+test("Settings' net drawing writes every formula or draws the net compact, in the view and the export", async ({
+  page,
+}) => {
+  await proveCommuted(page);
+  await page.getByRole("tab", { name: "Net" }).click();
+  // With its formulas every occurrence is written; compact, each of the two links is a circle.
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  await expect(page.locator(".drawing svg circle")).toHaveCount(0);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Settings" }).getByRole("button", { name: "Formulas" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("button", { name: "Compact" })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".drawing svg circle")).toHaveCount(2);
+  await page.getByRole("button", { name: "Export" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: /^SVG/ }).click();
+  const svg = await readFile(await (await download).path(), "utf8");
+  expect(svg).toContain("proof net");
+  expect(svg.match(/<circle /g)?.length).toBe(2);
+});
+
 test("the essential net keeps its input side's colour in both themes", async ({ page }) => {
   await start(page, "A * B |- B * A");
   await page.getByRole("button", { name: "Intuitionistic" }).click();
@@ -430,6 +456,37 @@ test("the essential net keeps its input side's colour in both themes", async ({ 
     await expect(input).toHaveCSS("fill", colour);
     await expect(edge).toHaveCSS("stroke", colour);
   }
+});
+
+test("the net view fits the whole net, drawn afresh with each drawing", async ({ page }) => {
+  await start(page, "A * B * C * D * E * F |- F * E * D * C * B * A");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "Zoom in" }).click();
+  const inside = async () => {
+    const stage = await page.locator(".stage").boundingBox();
+    const net = await page.locator(".drawing svg").boundingBox();
+    if (!stage || !net) return false;
+    return (
+      net.x >= stage.x &&
+      net.y >= stage.y &&
+      net.x + net.width <= stage.x + stage.width &&
+      net.y + net.height <= stage.y + stage.height
+    );
+  };
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  await expect.poll(inside).toBe(true);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("button", { name: "Compact" })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".drawing svg circle").first()).toBeVisible();
+  await expect.poll(inside).toBe(true);
 });
 
 test("an action asked for while a search runs waits, and loses neither result", async ({

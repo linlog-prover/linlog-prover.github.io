@@ -25,7 +25,7 @@ import { failure, type Offered, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
 import { formulaText, rungs } from "../lib/words";
 import { Calculus } from "./Calculus";
-import type { Prover } from "./state";
+import type { NetDrawing, Prover } from "./state";
 import { ladderKey, type Ui } from "./ui";
 
 /** A formula's button over the drawing, in the drawing's own pixels. */
@@ -49,8 +49,8 @@ interface Camera {
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** The settings of the stage's drawing: the formulas large enough to click. */
-const drawSettings = (work: number, essential: boolean) =>
-  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30, essential } } });
+const drawSettings = (work: number, essential: boolean, net: NetDrawing) =>
+  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30, essential, net } } });
 
 export function Stage(props: { prover: Prover; ui: Ui }) {
   const prover = () => props.prover;
@@ -69,6 +69,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   /** A rule's digit typed while the popover was still asking linlog. */
   let typedEarly: number | undefined;
   let shownProof: string | undefined;
+  /** What the stage drew last: the tree, or the net in one of its drawings. */
+  let shownKind: string | undefined;
 
   const view = () => proof()?.view ?? null;
   const active = () => prover().activeGoal();
@@ -86,8 +88,15 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   // A new drawing whenever the session, the tab or the proof changes.
   createEffect(
     on(
-      () => [proof()?.session, proof()?.view, ui.tab, props.prover.store.active] as const,
-      async ([session, v, tab]) => {
+      () =>
+        [
+          proof()?.session,
+          proof()?.view,
+          ui.tab,
+          props.prover.store.active,
+          props.prover.settings().net,
+        ] as const,
+      async ([session, v, tab, , netDrawing]) => {
         const mine = ++sequence;
         if (!session || !v) {
           host.replaceChildren();
@@ -101,6 +110,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           const settings = drawSettings(
             props.prover.settings().budget,
             session.mode.startsWith("intuitionistic"),
+            netDrawing,
           );
           svg = net
             ? await props.prover.api.drawNet(session, settings)
@@ -118,8 +128,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           stage.contains(document.activeElement) || document.activeElement === document.body;
         host.innerHTML = svg;
         decorate(net);
-        const fresh = shownProof !== props.prover.store.active;
+        // A net is drawn larger than its derivation, and the compact net
+        // smaller than the one with its formulas: each is fitted afresh.
+        const kind = net ? `net-${netDrawing}` : "tree";
+        const fresh = shownProof !== props.prover.store.active || shownKind !== kind;
         shownProof = props.prover.store.active ?? undefined;
+        shownKind = kind;
         if (fresh) fitView();
         else bringIntoView();
         setDrawn((n) => n + 1);

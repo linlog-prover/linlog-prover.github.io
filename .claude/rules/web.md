@@ -80,6 +80,10 @@ the page reads.
   side, `#cc79a7` its dominator lines, `#d55e00` a witness's edges) and repainted with
   `--color-net-*` at 4.5:1 on the field: a change of linlog's defaults fails the
   essential net's colour test rather than turning them to ink.
+- The net is drawn as Settings' "Net drawing" says (`styles.svg.net`: `formulas`, every
+  occurrence written, or `compact`), in the view and the net's exports alike. The stage
+  fits the drawing afresh whenever what it draws changes (another proof, the tree or the
+  net, the net's drawing), since the net with its formulas is far larger than the tree.
 - The split chooser sits under the goal's row, never beside a formula of it (the
   formulas are what it is clicked on); on a stage under 640 px both popovers are a sheet
   at its bottom.
