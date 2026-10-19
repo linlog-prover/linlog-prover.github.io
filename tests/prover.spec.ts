@@ -123,7 +123,14 @@ test("the hint ladder climbs four rungs, and the last applies the step", async (
   await expect(page.locator(".dock .hint")).toContainText("Apply ⅋ to A⊥ ⅋ B⊥");
   await hint.click();
   await expect(page.locator(".dock .hint")).toContainText("Why was this the step to take?");
+  // The page applied ⅋: its formula is gone, its premise's are the goal, and it is a step.
   await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^A⊥ ⅋ B⊥/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Steps" }).click();
+  await expect(page.getByRole("dialog", { name: "Steps" }).getByRole("button")).toHaveText([
+    /^0/,
+    /^1⅋ on goal 1/,
+  ]);
 });
 
 test("the finished MLL proof's net is drawn, and the net tab says why it is greyed elsewhere", async ({
@@ -145,6 +152,7 @@ test("the finished MLL proof's net is drawn, and the net tab says why it is grey
 test("every export downloads, and the link is copied", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await proveCommuted(page);
+  const contents: [string, Buffer][] = [];
   const formats: [string, RegExp][] = [
     ["SVG", /\.svg$/],
     ["PNG", /\.png$/],
@@ -161,9 +169,23 @@ test("every export downloads, and the link is copied", async ({ page, context })
     await page.getByRole("menuitem", { name: new RegExp(`^${label}`) }).click();
     const file = await download;
     expect(file.suggestedFilename()).toMatch(name);
-    expect((await readFile(await file.path())).length).toBeGreaterThan(20);
+    const bytes = await readFile(await file.path());
+    expect(bytes.length).toBeGreaterThan(20);
+    contents.push([label, bytes]);
     await page.keyboard.press("Escape");
   }
+  // Each file is what its format says: the drawing, the documents, the certificate.
+  const text = (label: string) => contents.find(([l]) => l === label)?.[1].toString("utf8") ?? "";
+  const head = (label: string) =>
+    contents.find(([l]) => l === label)?.[1].subarray(0, 8) ?? Buffer.alloc(0);
+  expect(text("SVG")).toContain("<svg");
+  expect(head("PNG").subarray(1, 4).toString("latin1")).toBe("PNG");
+  expect(head("PDF").subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  expect(text("LaTeX")).toContain("\\begin{prooftree}");
+  expect(text("Typst")).toContain("prooftree(");
+  expect(text("Text")).toContain("⊢ ~A ⅋ ~B, B ⊗ A");
+  expect(JSON.parse(text("Session")).history.length).toBe(1);
+  expect(text("Rocq")).toMatch(/Lemma certificate[\s\S]*Qed\./);
   await page.getByRole("button", { name: "Export" }).click();
   await page.getByRole("menuitem", { name: /^Link/ }).click();
   await expect(page.getByRole("status").filter({ hasText: "Link copied" })).toBeVisible();
@@ -176,7 +198,8 @@ test("the certificate of non-derivability downloads for a refuted goal", async (
   await page.getByRole("button", { name: "Export" }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("menuitem", { name: /^Not derivable/ }).click();
-  expect(await (await download).path()).toBeTruthy();
+  const certificate = await readFile(await (await download).path(), "utf8");
+  expect(certificate).toMatch(/Lemma certificate : ~ ll[\s\S]*Qed\./);
 });
 
 test("the link in the fragment restores the proof, or says it could not", async ({
@@ -343,4 +366,20 @@ test("a finished intuitionistic proof's essential net is drawn", async ({ page }
   await page.getByRole("button", { name: "Close goal" }).click();
   await page.getByRole("tab", { name: "Net" }).click();
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+});
+
+test("an action asked for while a search runs waits, and loses neither result", async ({
+  page,
+}) => {
+  // A search of about half a second, which refutes the goal in the end.
+  await start(page, "!(A & B) * !(A & B) |- !A * !B * !A * !B * ?C");
+  await rule(page, /^\?\(A⊥ ⊕ B⊥\) ⅋ \?\(A⊥ ⊕ B⊥\)/, "⅋");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  // Undo while the search runs: it does nothing, rather than replaying a session the search replaces.
+  await page.keyboard.press("u");
+  await expect(page.locator(".dock .kw.bad")).toContainText("Unprovable");
+  await expect(page.getByRole("button", { name: /^\?\(A⊥ ⊕ B⊥\) ⅋/ })).toHaveCount(0);
+  // Once it ended, undo takes back the ⅋.
+  await page.locator("footer").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^\?\(A⊥ ⊕ B⊥\) ⅋ \?\(A⊥ ⊕ B⊥\)/ })).toBeVisible();
 });
