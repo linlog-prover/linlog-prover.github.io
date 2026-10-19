@@ -75,7 +75,7 @@ the page reads.
 - **The link** (`src/lib/link.ts`): `#v=1&m=<mode>&s=<sequent>&d=<session>` in the fragment,
   the session deflate-raw and base64url, dropped past 2000 characters (the export menu
   says so). A link whose session linlog refuses loads the sequent and the mode, with
-  "Proof not restored". The sequent is the field's text, as typed.
+  "Proof not restored". The sequent is the field's text with the ASCII connectives as their signs (`pretty`, which `words.test.ts` holds to read as the same sequent).
 - **Autosave** (`src/lib/shelf.ts`): every open proof under `linlog-proofs`; at a visit's
   start the last visit's go aside to `linlog-proofs-previous` for the restore bar, so work
   begun before the visitor answers overwrites nothing. Settings are `linlog-settings`,

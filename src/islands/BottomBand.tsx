@@ -24,6 +24,7 @@ import { createSignal, For, type JSX, Show } from "solid-js";
 import { failure, type Outcome, type SessionDoc } from "../lib/linlog";
 import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
+import { pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import { DEFAULT_BUDGET, type Prover } from "./state";
 import { applyTheme } from "./TopBand";
@@ -371,7 +372,7 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
   async function copyLink() {
     const p = proof();
     if (!p?.session) return;
-    const written = await writeLink(p.input, p.mode, JSON.stringify(p.session));
+    const written = await writeLink(pretty(p.input), p.mode, JSON.stringify(p.session));
     const url = `${location.origin}${location.pathname}${written.hash}`;
     try {
       await navigator.clipboard.writeText(url);

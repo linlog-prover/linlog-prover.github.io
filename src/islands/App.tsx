@@ -17,6 +17,7 @@ import { unwrap } from "solid-js/store";
 import { readLink, writeLink } from "../lib/link";
 import type { Mode } from "../lib/linlog";
 import { paths } from "../lib/steps";
+import { pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import { BottomBand } from "./BottomBand";
 import { Stage } from "./Stage";
@@ -96,7 +97,7 @@ export default function App() {
         clearTimeout(linking);
         if (!session || !mode || !input) return;
         linking = setTimeout(async () => {
-          const written = await writeLink(input, mode, JSON.stringify(unwrap(session)));
+          const written = await writeLink(pretty(input), mode, JSON.stringify(unwrap(session)));
           history.replaceState(null, "", written.hash);
           setLinkShort(!written.whole);
         }, 400);

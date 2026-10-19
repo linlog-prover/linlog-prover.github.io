@@ -66,6 +66,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   const [problem, setProblem] = createSignal<string | null>(null);
   const [glide, setGlide] = createSignal(false);
   let sequence = 0;
+  /** A rule's digit typed while the popover was still asking linlog. */
+  let typedEarly: number | undefined;
   let shownProof: string | undefined;
 
   const view = () => proof()?.view ?? null;
@@ -380,8 +382,16 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     props.prover.clearNote();
     setUi({ selected: { goal: hit.goal, position: hit.position }, offered: null });
     const offered = await props.prover.rules(hit.goal, hit.position);
-    if (ui.selected?.goal === hit.goal && ui.selected.position === hit.position)
-      setUi("offered", offered);
+    if (ui.selected?.goal !== hit.goal || ui.selected.position !== hit.position) return;
+    setUi("offered", offered);
+    // A digit typed before the rules arrived picks its rule now.
+    const early = typedEarly;
+    typedEarly = undefined;
+    const rule = early === undefined ? undefined : offered[early - 1];
+    if (rule) {
+      void choose(rule);
+      return;
+    }
     queueMicrotask(() => popover?.querySelector<HTMLButtonElement>("button.rule")?.focus());
   }
 
@@ -459,12 +469,14 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             )
             ?.focus();
         event.preventDefault();
-      } else if (ui.offered && /^[1-9]$/.test(event.key)) {
-        const rule = ui.offered[Number(event.key) - 1];
-        if (rule) {
-          event.preventDefault();
-          void choose(rule);
+      } else if (ui.selected && !ui.split && /^[1-9]$/.test(event.key)) {
+        event.preventDefault();
+        if (!ui.offered) {
+          typedEarly = Number(event.key);
+          return;
         }
+        const rule = ui.offered[Number(event.key) - 1];
+        if (rule) void choose(rule);
       } else if (
         ui.split &&
         event.key === "Enter" &&
