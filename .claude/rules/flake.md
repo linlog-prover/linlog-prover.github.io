@@ -40,3 +40,7 @@ never through `specialArgs`. The scheme is the author's learning sites'
   API `astro check` can use); `solid-js` stays on 1.x until the port to Solid 2.0;
   `@playwright/test` equals nixpkgs' `playwright-driver` (the `playwright-version` check
   fails, naming the fix, when a bump moves one).
+- **`lucide-solid` is checked when the build starts** (`src/integrations/lucide.ts`): the
+  version package.json pins, ISC, a `solid` export condition and a peer range of
+  `solid-js` the installed Solid meets. A bump of either package that breaks one fails
+  `astro build`, naming it.

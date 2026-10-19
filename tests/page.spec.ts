@@ -43,3 +43,21 @@ test("the policy is in force: inline code the build did not hash is refused", as
   expect(outcome.ran).toBe(false);
   expect(outcome.blocked).toEqual(expect.arrayContaining(["script-src-elem", "style-src-attr"]));
 });
+
+test("the pictograms are Lucide's, hidden from a screen reader, each action named", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const icons = page.locator(".band svg.lucide");
+  expect(await icons.count()).toBeGreaterThanOrEqual(14);
+  for (const icon of await icons.all()) {
+    await expect(icon).toHaveAttribute("aria-hidden", "true");
+    await expect(icon).toHaveAttribute("class", /lucide-[a-z0-9-]+/);
+  }
+  // An icon alone names its action, and shows its tip on focus as on hover.
+  for (const name of ["Undo", "Redo", "New proof"]) {
+    await expect(page.getByRole("button", { name, exact: true })).toBeAttached();
+  }
+  await page.getByRole("button", { name: "New proof" }).focus();
+  await expect(page.getByRole("tooltip")).toHaveText(/A new proof/);
+});

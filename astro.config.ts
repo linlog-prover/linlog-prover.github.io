@@ -16,6 +16,7 @@ import solidJs from "@astrojs/solid-js";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import { LICENCES, licences } from "./src/integrations/licences";
+import { lucide } from "./src/integrations/lucide";
 import { offline } from "./src/integrations/offline";
 import { PREPAINT } from "./src/lib/theme";
 
@@ -76,8 +77,9 @@ export default defineConfig({
   // licences writes what the site serves of its parts' licences
   // (src/integrations/licences.ts); offline, after it, the icons, the web app
   // manifest and the service worker that caches every file
-  // (src/integrations/offline.ts).
-  integrations: [solidJs(), licences(), offline()],
+  // (src/integrations/offline.ts). lucide checks the pictograms' package
+  // before anything is built (src/integrations/lucide.ts).
+  integrations: [lucide(), solidJs(), licences(), offline()],
   vite: {
     plugins: [tailwindcss()],
     resolve: {
