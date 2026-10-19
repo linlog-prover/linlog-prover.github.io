@@ -104,12 +104,23 @@ class Page(html.parser.HTMLParser):
 
 
 def directives(policy):
+    # A browser obeys the first copy of a directive and ignores the rest.
     out = {}
     for part in policy.split(";"):
         words = part.split()
         if words:
-            out[words[0].lower()] = words[1:]
+            out.setdefault(words[0].lower(), words[1:])
     return out
+
+
+def governing(found, kind):
+    # The directive a browser applies to <script> or <style> elements:
+    # the -elem one where there is one, else the general one, else
+    # default-src.
+    for name in (f"{kind}-src-elem", f"{kind}-src", "default-src"):
+        if name in found:
+            return name, found[name]
+    return None, None
 
 
 site = pathlib.Path(sys.argv[1])
@@ -138,10 +149,10 @@ for path in pages:
     found = directives(policy)
     if found.get("default-src") != ["'none'"]:
         problems.append(f"{name}: default-src is not 'none'")
-    for directive, inline in [("script-src", page.scripts), ("style-src", page.styles)]:
-        sources = found.get(directive)
+    for kind, inline in [("script", page.scripts), ("style", page.styles)]:
+        directive, sources = governing(found, kind)
         if sources is None:
-            problems.append(f"{name}: no {directive}")
+            problems.append(f"{name}: nothing governs {kind} elements")
             continue
         loose = LOOSE & set(sources)
         if loose:
@@ -156,7 +167,10 @@ for path in pages:
             problems.append(
                 f"{name}: inline code {directive} does not allow: {sorted(missing)}"
             )
-    if "'wasm-unsafe-eval'" not in found.get("script-src", []):
+    # Compiling WebAssembly is governed by script-src, never by its -elem form.
+    if "'wasm-unsafe-eval'" not in found.get(
+        "script-src", found.get("default-src", [])
+    ):
         problems.append(
             f"{name}: script-src lacks 'wasm-unsafe-eval', which linlog's module needs"
         )

@@ -7,8 +7,8 @@
 // path, and VERSION, a hash of their contents, so that a new deployment is
 // a new worker.
 //
-// Its scope is the whole origin, since a worker at /sw.js cannot be scoped
-// narrower than / and the page is at /; but linlog's documentation at
+// Its scope is the whole origin, since the page it serves is at / and a
+// scope is a path prefix; but linlog's documentation at
 // /linlog/ is another site on the same origin, and nothing of it passes
 // through here. The worker answers only requests for the site's own files
 // (FILES) and navigations to the prover's page; every other request,
@@ -16,7 +16,10 @@
 // where the browser can route by pattern (the Static Routing API) requests
 // under /linlog never reach the worker at all.
 //
-// The cache is written whole when the worker installs, and a new worker
+// The cache is written whole when the worker installs, every file fetched
+// past the browser's HTTP cache (Pages lets it keep a file ten minutes, and
+// a new worker would otherwise store the old page beside the new files),
+// and a new worker
 // waits until no page of the old one is open: a page and the files it asks
 // for later (the module, its worker, the fonts) always come from one
 // deployment.
@@ -40,7 +43,14 @@ self.addEventListener("install", (event) => {
         ])
         .catch(() => undefined)
     : Promise.resolve();
-  event.waitUntil(Promise.all([routed, caches.open(CACHE).then((cache) => cache.addAll(FILES))]));
+  event.waitUntil(
+    Promise.all([
+      routed,
+      caches
+        .open(CACHE)
+        .then((cache) => cache.addAll(FILES.map((path) => new Request(path, { cache: "reload" })))),
+    ]),
+  );
 });
 
 self.addEventListener("activate", (event) => {

@@ -4,8 +4,12 @@
 // A static server for the built site, as GitHub Pages serves it: the file at
 // the path, a directory's index.html, and 404.html (or a bare 404) for the
 // rest, with the media types the page needs (the module as
-// application/wasm, which streaming compilation requires). No header beyond
-// those, since Pages sets none the site could choose. Under /linlog/ it serves
+// application/wasm, which streaming compilation requires) and the ten
+// minutes Pages lets a browser keep any file (`cache-control:
+// max-age=600`), and an id for each response, as Pages's
+// `x-github-request-id`, by which a test tells a fetch from the network
+// from one the browser kept. No header beyond those, since Pages sets none
+// the site could choose. Under /linlog/ it serves
 // tests/linlog-docs/, a stand-in for linlog's own Pages site (the rustdoc),
 // which Pages serves on the same origin.
 // Usage: node tests/serve.ts DIR PORT
@@ -43,6 +47,8 @@ function file(path: string): string | undefined {
   return undefined;
 }
 
+let responses = 0;
+
 createServer((request, response) => {
   const url = new URL(request.url ?? "/", "http://localhost");
   const pathname = decodeURIComponent(url.pathname);
@@ -58,5 +64,7 @@ createServer((request, response) => {
     return;
   }
   response.setHeader("content-type", TYPES[extname(served)] ?? "application/octet-stream");
+  response.setHeader("cache-control", "max-age=600");
+  response.setHeader("x-github-request-id", String(++responses));
   createReadStream(served).pipe(response);
 }).listen(Number(port), "127.0.0.1");

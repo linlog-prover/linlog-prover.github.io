@@ -34,6 +34,25 @@ test("after one visit the page proves a sequent with no network", async ({ page,
   ).toBeVisible();
 });
 
+test("the service worker fetches what it caches past the HTTP cache", async ({ page }) => {
+  // Pages lets a browser keep a file ten minutes (tests/serve.ts does too): a
+  // worker that cached from the HTTP cache after a deployment would keep the
+  // old page beside the new files, which the new deployment no longer has.
+  // Each response has its own id, so the page the worker cached must not be
+  // the one the browser loaded and kept.
+  const loaded = await page.goto("/");
+  await controlled(page);
+  const cached = await page.evaluate(async () => {
+    for (const key of await caches.keys()) {
+      const page = await (await caches.open(key)).match("/");
+      if (page) return page.headers.get("x-github-request-id");
+    }
+    return null;
+  });
+  expect(cached).not.toBeNull();
+  expect(cached).not.toBe(loaded?.headers()["x-github-request-id"]);
+});
+
 test("the service worker leaves linlog's documentation at /linlog/ alone", async ({
   page,
   context,
@@ -52,9 +71,10 @@ test("the service worker leaves linlog's documentation at /linlog/ alone", async
   expect(docs?.status()).toBe(200);
   expect(docs?.fromServiceWorker()).toBe(false);
   await expect(page.getByRole("heading", { name: "linlog's documentation" })).toBeVisible();
-  // With no network the documentation is not served from anywhere, while the prover is.
+  // With no network an address of the documentation the browser has not
+  // kept is served from nowhere (no worker's fallback), while the prover is.
   await context.setOffline(true);
-  await expect(page.goto("/linlog/")).rejects.toThrow();
+  await expect(page.goto("/linlog/?unseen")).rejects.toThrow();
   const other = await context.newPage();
   const prover = await other.goto("/");
   expect(prover?.fromServiceWorker()).toBe(true);

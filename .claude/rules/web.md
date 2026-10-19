@@ -118,6 +118,8 @@ the page reads.
 - **What a `<meta>` policy cannot do**: `frame-ancestors`, `report-uri` and `sandbox` are
   ignored there, so the page can be framed; the worker that runs linlog's module gets no
   policy at all (a worker's comes from its own response's headers).
+- **The check reads a policy as a browser does**: the first copy of a directive wins, and
+  `script-src-elem`/`style-src-elem` govern the elements where present (`governing`).
 - **Checked twice**: the `csp` flake check (`modules/_checks/csp.py`) recomputes every
   inline script's and style's hash from the built HTML and fails on one the policy lacks,
   on a policy after any script or stylesheet, on a loose source or a missing
@@ -184,6 +186,12 @@ the page reads.
   the browser has it) sends those requests to the network before the worker wakes.
   Never cache by pattern, never add a fallback page for other navigations, never cache
   a path under `/linlog`.
+- **Every file is fetched past the HTTP cache when the worker installs** (`cache:
+  "reload"`): Pages lets a browser keep a file ten minutes, and a new worker installed
+  right after a deployment would otherwise cache the old page beside the new files
+  (the reviewer's probe: unstyled, unhydrated, until the next deployment).
+  `tests/serve.ts` sends Pages' `max-age=600` and a fresh `x-github-request-id` per
+  response, by which `tests/offline.spec.ts` tells the two apart.
 - **No `skipWaiting`**: a new worker waits until no page of the old one is open, so a page
   and the files it loads later (the module, its worker, Euler Math) come from one
   deployment; the old caches are deleted on activation, the `linlog-site-` ones only.
