@@ -428,6 +428,23 @@ kbd {
 .drawing svg g[stroke="#0072b2"] path {
   stroke: var(--color-net-par);
 }
+/* The colours that mean something in a net, which linlog writes as its
+   defaults: the essential net's input side, dominator lines and witness. */
+.drawing svg g[stroke="#009e73"],
+.drawing svg g[stroke="#009e73"] :is(path, circle) {
+  stroke: var(--color-net-input);
+}
+.drawing svg text[fill="#009e73"] {
+  fill: var(--color-net-input);
+}
+.drawing svg g[stroke="#cc79a7"],
+.drawing svg g[stroke="#cc79a7"] path {
+  stroke: var(--color-net-dominator);
+}
+.drawing svg g[stroke="#d55e00"],
+.drawing svg g[stroke="#d55e00"] :is(path, circle) {
+  stroke: var(--color-net-highlight);
+}
 .drawing svg g.search + text {
   fill: var(--color-faint);
   font-style: italic;

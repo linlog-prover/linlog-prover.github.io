@@ -413,6 +413,25 @@ test("a finished intuitionistic proof's essential net is drawn", async ({ page }
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
 });
 
+test("the essential net keeps its input side's colour in both themes", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await expect(page.locator(".pt-mark")).toContainText("ILL");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  const input = page.locator('.drawing svg text[fill="#009e73"]').first();
+  const edge = page.locator('.drawing svg g[stroke="#009e73"] path').first();
+  // The hypothesis A ⊗ B, its edges and its literals, is the input side: --color-net-input, never the ink.
+  for (const [colorScheme, colour] of [
+    ["light", "rgb(0, 118, 90)"],
+    ["dark", "rgb(63, 199, 156)"],
+  ] as const) {
+    await page.emulateMedia({ colorScheme });
+    await expect(input).toHaveCSS("fill", colour);
+    await expect(edge).toHaveCSS("stroke", colour);
+  }
+});
+
 test("an action asked for while a search runs waits, and loses neither result", async ({
   page,
 }) => {

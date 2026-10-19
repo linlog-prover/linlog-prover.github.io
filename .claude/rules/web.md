@@ -74,7 +74,12 @@ the page reads.
   element `#i<n>-<p>`'s box (`view.inferences[n]` is the goal `i<n>` draws). The drawing
   is asked with `styles.svg.font_size` 30, so a formula is a 24-pixel target at 100 %.
 - Colours come from CSS over the SVG's attributes (`.drawing svg text { fill: … }`), so a
-  theme change needs no redraw; the exports keep linlog's own colours.
+  theme change needs no redraw; the exports keep linlog's own colours. The colours that
+  mean something in a net are exempt from the ink, matched by the value linlog writes
+  for its default `Style` (`#0072b2` the `⅋` edges, `#009e73` the essential net's input
+  side, `#cc79a7` its dominator lines, `#d55e00` a witness's edges) and repainted with
+  `--color-net-*` at 4.5:1 on the field: a change of linlog's defaults fails the
+  essential net's colour test rather than turning them to ink.
 - The split chooser sits under the goal's row, never beside a formula of it (the
   formulas are what it is clicked on); on a stage under 640 px both popovers are a sheet
   at its bottom.

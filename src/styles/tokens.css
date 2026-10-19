@@ -54,6 +54,11 @@
   --color-learn-wash: light-dark(#f3e6f5, #2a1e3a);
   /* The net's ⅋ edges. */
   --color-net-par: light-dark(#0072b2, #6fb3ee);
+  /* The essential net's input side, its dominator lines and a witness's
+     edges: linlog's own hues (#009e73, #cc79a7, #d55e00), at 4.5:1 on the field. */
+  --color-net-input: light-dark(#00765a, #3fc79c);
+  --color-net-dominator: light-dark(#a8457f, #e59ac4);
+  --color-net-highlight: light-dark(#b04a00, #ff9447);
   /* The drawing's glow on the dark field; none by day. */
   --color-glow: light-dark(rgb(52 70 200 / 0), rgb(170 185 255 / 0.35));
   --color-shadow-near: light-dark(rgb(18 26 46 / 0.06), rgb(0 0 0 / 0.3));
