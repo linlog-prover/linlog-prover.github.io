@@ -1,0 +1,125 @@
+/* linlog © Fabian Lukas Grubmüller 2026
+   Licensed under the EUPL */
+
+/*
+ * The design tokens: colour roles, type, spacing, radii and motion, the
+ * visual reference's ("Instrument") token system. Nothing anywhere else names
+ * a raw colour or size; app.css and the island read these variables.
+ *
+ * `@theme static' makes each token both a CSS variable on :root and a
+ * Tailwind utility (`bg-panel', `text-dim', `font-math'), and emits every
+ * variable even where no utility uses it. Tailwind's own palette, fonts and
+ * type scale are switched off (`--color-*: initial', ...), so a utility can
+ * only name a token.
+ *
+ * Colour roles are `light-dark(<light>, <dark>)'. Which half applies follows
+ * `color-scheme' (below): the system's preference, unless <html data-theme>
+ * pins one. Contrast (WCAG): every text role is AA on the field and on a
+ * panel in both schemes; --line meets 3:1 for control borders (1.4.11);
+ * --edge and --dot are decorative.
+ */
+@theme static {
+  --color-*: initial;
+  /* The stage and the sequent field. */
+  --color-field: light-dark(#e9edf4, #0c1222);
+  /* The bands, clusters, popovers and menus. */
+  --color-panel: light-dark(#fbfcfe, #151c30);
+  --color-panel-2: light-dark(#f1f4fa, #1b2340);
+  /* Text and the drawing. */
+  --color-ink: light-dark(#121a2e, #e3e8f4);
+  /* Secondary text. */
+  --color-dim: light-dark(#46506c, #9ba5c2);
+  /* The search's rule labels, set apart from the student's. */
+  --color-faint: light-dark(#5a6482, #7d88a8);
+  /* Selection and the active goal. */
+  --color-accent: light-dark(#3446c8, #9aa8ff);
+  --color-accent-wash: light-dark(rgb(52 70 200 / 0.12), rgb(154 168 255 / 0.14));
+  /* A checked proof, and nothing else. */
+  --color-ok: light-dark(#127a47, #4ccb8a);
+  --color-ok-wash: light-dark(rgb(18 122 71 / 0.12), rgb(76 203 138 / 0.14));
+  /* Unknown, and a search running or given up. */
+  --color-warn: light-dark(#8f5600, #f0b43c);
+  --color-warn-wash: light-dark(rgb(143 86 0 / 0.12), rgb(240 180 60 / 0.14));
+  /* A refusal, and unprovable. */
+  --color-bad: light-dark(#bf2a2a, #ff7a73);
+  --color-bad-wash: light-dark(rgb(191 42 42 / 0.1), rgb(255 122 115 / 0.13));
+  /* Control borders, at 3:1. */
+  --color-line: light-dark(#7d86a0, #5e6a90);
+  /* Hairlines. */
+  --color-edge: light-dark(#b9c1d4, #2a3352);
+  /* The stage's dotted grid. */
+  --color-dot: light-dark(#a9b2c8, #2e3858);
+  /* The net's ⅋ edges. */
+  --color-net-par: light-dark(#0072b2, #6fb3ee);
+  /* The drawing's glow on the dark field; none by day. */
+  --color-glow: light-dark(rgb(52 70 200 / 0), rgb(170 185 255 / 0.35));
+  --color-shadow-near: light-dark(rgb(18 26 46 / 0.06), rgb(0 0 0 / 0.3));
+  --color-shadow-far: light-dark(rgb(18 26 46 / 0.25), rgb(0 0 0 / 0.8));
+  --color-scrim: light-dark(rgb(18 26 46 / 0.55), rgb(4 7 15 / 0.72));
+
+  --font-*: initial;
+  /* Every word of the interface. */
+  --font-text: "Figtree Variable", system-ui, sans-serif;
+  /* The sequent field alone, where ASCII input is typed. */
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  /* Every formula and rule name. */
+  --font-math: "Euler Math", "Neo Euler", serif;
+
+  --text-*: initial;
+  --text-label: 11px;
+  --text-small: 12.5px;
+  --text-body: 14px;
+  --text-panel: 15px;
+  --text-head: 18px;
+
+  /* Tailwind's spacing unit, and the scale's steps. */
+  --spacing: 4px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 24px;
+  --spacing-6: 32px;
+  /* The least target size (WCAG 2.2, 2.5.8). */
+  --spacing-target: 24px;
+
+  --radius-*: initial;
+  --radius-cluster: 6px;
+  --radius-key: 3px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Popovers, a label settling, the camera, a refusal's shake; all 0 under
+     reduced motion (app.css). */
+  --duration-fast: 120ms;
+  --duration-mid: 220ms;
+  --duration-camera: 380ms;
+  --duration-shake: 240ms;
+}
+
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-faint: var(--color-dim);
+    --color-line: var(--color-ink);
+    --color-edge: var(--color-line);
+    --color-dot: var(--color-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-mid: 0ms;
+    --duration-camera: 0ms;
+    --duration-shake: 0ms;
+  }
+}

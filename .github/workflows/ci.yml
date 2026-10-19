@@ -1,0 +1,55 @@
+# linlog © Fabian Lukas Grubmüller 2026
+# Licensed under the EUPL
+
+# Everything runs through the flake, so CI checks exactly what `nix flake
+# check` checks locally, with the tools flake.lock pins (linlog's among them,
+# whose package `linlog-web' comes from the Cachix cache `linlog-prover',
+# where linlog's own CI pushed it). Every push to main and every pull request
+# is checked; the deployment to GitHub Pages joins this workflow when the
+# site is published. Actions are pinned to full commit SHAs, with the version
+# in a trailing comment.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: nix flake check
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          # Fetching the `github:` inputs anonymously runs into rate limits.
+          github_access_token: ${{ github.token }}
+      # Pulls from the organization's public cache. Pushes only from main,
+      # and only once the repository has the cache's token: until then (and
+      # for a pull request from a fork, which gets no secret) nothing is
+      # pushed. What is pushed is this site's own outputs and the inputs of
+      # its checks, never another prover or a problem library, which this
+      # flake does not build; the npm tarballs are left out, being only the
+      # inputs of node_modules, which is pushed itself.
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: linlog-prover
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: ${{ github.ref != 'refs/heads/main' || secrets.CACHIX_AUTH_TOKEN == '' }}
+          pushFilter: '\.tgz$'
+      - run: nix flake check --print-build-logs --keep-going
+      # The checks' build-time inputs (node_modules, Chromium, the
+      # formatters), rooted so that the push above includes them.
+      - run: nix build --print-build-logs --no-link .#ci-cache

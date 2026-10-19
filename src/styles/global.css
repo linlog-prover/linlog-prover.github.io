@@ -1,0 +1,12 @@
+/* linlog © Fabian Lukas Grubmüller 2026
+   Licensed under the EUPL */
+
+/*
+ * The one stylesheet entry, imported by layouts/Base.astro: Tailwind v4
+ * through its Vite plugin, the design tokens, then the page's own rules.
+ * Astro writes it to a hashed file under /_astro/ (build.inlineStylesheets
+ * is "never").
+ */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./app.css";

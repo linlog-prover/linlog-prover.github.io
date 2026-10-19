@@ -1,0 +1,25 @@
+# Claude Code: personal, per-machine overrides
+.claude/settings.local.json
+CLAUDE.local.md
+
+# npm: node_modules is a directory of symlinks into the Nix store, made by
+# the dev shell (modules/devshell.nix); Vite and Astro add their caches.
+/node_modules/
+
+# The dev shell's links to node_modules, linlog's bindings and fonts in the
+# store (modules/devshell.nix)
+/.cache/
+
+# Astro: the local build, generated types
+/dist/
+/.astro/
+
+# Playwright: reports, traces and screenshots
+/playwright-report/
+/test-results/
+
+# nix
+result*
+.direnv/
+# The repo ships its .envrc: track it even under a global *.envrc ignore
+!.envrc

@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(nix build *)",
+      "Bash(nix eval *)",
+      "Bash(nix fmt *)",
+      "Bash(nix flake check *)",
+      "Bash(nix flake show *)",
+      "Bash(nix flake metadata *)",
+      "Bash(jj status *)",
+      "Bash(jj st *)",
+      "Bash(jj log *)",
+      "Bash(jj diff *)",
+      "Bash(jj show *)",
+      "Bash(jj evolog *)",
+      "Bash(jj op log *)",
+      "Bash(jj op show *)",
+      "Bash(jj file list *)",
+      "Bash(jj file show *)",
+      "Bash(jj file annotate *)",
+      "Bash(jj bookmark list *)",
+      "Bash(jj git remote list *)",
+      "Bash(jj config get *)",
+      "Bash(jj config list *)",
+      "Bash(jj root *)",
+      "Bash(biome lint *)",
+      "Bash(biome format *)",
+      "Bash(vitest run *)",
+      "Bash(astro check *)",
+      "Bash(astro build *)",
+      "WebFetch(domain:docs.astro.build)",
+      "WebFetch(domain:docs.solidjs.com)",
+      "WebFetch(domain:tailwindcss.com)",
+      "WebFetch(domain:vite.dev)",
+      "WebFetch(domain:vitest.dev)",
+      "WebFetch(domain:playwright.dev)",
+      "WebFetch(domain:biomejs.dev)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:docs.jj-vcs.dev)"
+    ],
+    "ask": ["Bash(jj git push *)", "Bash(gh *)"],
+    "deny": [
+      "Bash(git *)",
+      "Bash(npm ci *)",
+      "Bash(npx *)",
+      "Bash(npm exec *)",
+      "Bash(npm x *)",
+      "Edit(/LICENSE)",
+      "Edit(/package-lock.json)",
+      "Edit(/flake.lock)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-git.py",
+            "args": [],
+            "statusMessage": "Checking for git",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-jj-new-message.py",
+            "args": [],
+            "statusMessage": "Checking jj usage",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format.sh",
+            "args": [],
+            "statusMessage": "Formatting with treefmt",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-jj-state.sh",
+            "args": [],
+            "statusMessage": "Reading the jj working copy",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true
+  }
+}
