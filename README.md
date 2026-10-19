@@ -23,19 +23,38 @@ sent to a server.
   a refuted goal has no proof); the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
   linlog writes them; everything by keyboard (`?` lists the keys); light and dark.
+- Learn, a frame around the page with the tutorial's places, sequents to practise on
+  (each opened as a proof, or its proof watched step by step) and a reference of the
+  connectives; a tour of the page that proves a sequent as it goes; About, with every
+  licence the site serves.
+- After one visit the page works with no network, and it can be installed as an app.
+  No tracking: GitHub, which serves the site, logs visitors' IP addresses, as its privacy
+  statement says.
 
 ## Building
 
 Everything comes from the Nix flake (flake-parts, `modules/`): `nix develop` (or direnv)
 for the dev shell, whose `menu` lists the commands; `nix build` for the site in `result/`;
 `nix flake check` for every check (the site's build, Vitest, `astro check`, Biome,
-Playwright in Chromium, the formatting and the licence headers). The site is Astro with
-one Solid island, TypeScript and Tailwind; linlog's WebAssembly bindings come from
-linlog's own flake, a pinned input of this one.
+Playwright in Chromium, the Content-Security-Policy's hashes, the licences served, the
+formatting and the licence headers). The site is Astro with one Solid island, TypeScript
+and Tailwind; linlog's WebAssembly bindings come from linlog's own flake, a pinned input
+of this one. The written content is Markdown under `src/content/`.
+
+## Hosting
+
+GitHub Pages serves the site at https://linlog-prover.github.io/: every push to `main`
+whose checks pass is deployed by the CI workflow. linlog's API documentation at
+https://linlog-prover.github.io/linlog/ is linlog's own Pages site, which nothing here
+touches, the service worker included. The Content-Security-Policy is a `<meta>` element,
+since Pages sets no header.
 
 ## Licences
 
 The code is licensed under the [EUPL-1.2](LICENSE). The written content (explanations,
-tutorials, worked examples and exercises) is licensed under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The fonts are under the SIL
-Open Font License 1.1: Euler Math (from linlog), Figtree and Space Mono (from Fontsource).
+tutorials, worked examples and exercises, under `src/content/`) is licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as the pages that carry it say.
+The fonts are under the SIL Open Font License 1.1: Euler Math (from linlog), Figtree and
+Space Mono (from Fontsource), each served beside its licence under `/fonts/`. The site
+serves the notices of the npm packages in its bundle (`/licenses/bundle.txt`) and of the
+Rust crates in linlog's module (`/licenses/THIRD-PARTY-NOTICES.txt`).

@@ -19,3 +19,19 @@ test("a proof goes at a phone's width, and the page does not scroll sideways", a
   );
   expect(overflow).toBe(0);
 });
+
+test("Learn's frame takes the lower half at a phone's width, with no sideways scroll", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Learn" }).click();
+  const frame = page.getByRole("complementary", { name: "Learn" });
+  await frame.getByRole("button", { name: "Prove Tensor commutes" }).click();
+  await expect(page.locator(".ptab .pt-go .m")).toHaveText("A ⊗ B ⊢ B ⊗ A");
+  const [frameBox, stage] = [await frame.boundingBox(), await page.locator(".stage").boundingBox()];
+  expect(frameBox && stage && frameBox.y >= stage.y + stage.height).toBe(true);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBe(0);
+});
