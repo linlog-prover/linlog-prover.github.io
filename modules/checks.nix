@@ -23,6 +23,9 @@
 #               without 'unsafe-inline' makes browsers ignore them (the
 #               author's sites' rule); the island places things through the
 #               CSSOM, which no policy restricts
+#   pages-paths the site as Pages publishes it: a 404.html at its root, and
+#               nothing at /linlog or under it, where linlog's own Pages
+#               site (the rustdoc) lives on the same address
 #   licence-headers
 #               every source file starts with the project's licence header
 #               in its comment syntax
@@ -129,6 +132,23 @@
         print(f"no style attribute in the {len(files)} HTML and SVG files")
       '';
 
+      pagesPaths = pkgs.writeText "check-pages-paths.py" ''
+        import pathlib, sys
+
+        site = pathlib.Path(sys.argv[1])
+        problems = []
+        if not (site / "404.html").is_file():
+            problems.append("no 404.html at the site's root, which Pages serves for a missing path")
+        # Paths are matched as Pages matches them, case and all: /linlog is
+        # linlog's project site, which a file of this one must never shadow.
+        taken = sorted(str(p.relative_to(site)) for p in site.iterdir() if p.name.split(".")[0] == "linlog")
+        if taken:
+            problems.append("the site has paths at /linlog, linlog's own Pages site: " + ", ".join(taken))
+        if problems:
+            sys.exit("\n".join(problems))
+        print("404.html is at the root, and nothing is at /linlog")
+      '';
+
       licenceHeaders = pkgs.writeText "check-licence-headers.py" ''
         import pathlib, sys
 
@@ -171,95 +191,100 @@
       fontconfig = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
     in
     {
-      checks = lib.mapAttrs onBuild { no-style-attributes = noStyleAttributes; } // {
-        site = config.packages.default;
+      checks =
+        lib.mapAttrs onBuild {
+          no-style-attributes = noStyleAttributes;
+          pages-paths = pagesPaths;
+        }
+        // {
+          site = config.packages.default;
 
-        unit = config.npmTask {
-          name = "unit";
-          script = "npm test";
-          sources = src;
-          files = [ ../vitest.config.ts ];
-        };
-
-        typecheck = config.npmTask {
-          name = "typecheck";
-          script = "npm run typecheck";
-          sources = lib.fileset.unions [
-            src
-            ../astro.config.ts
-            ../tests
-            ../vitest.config.ts
-            ../playwright.config.ts
-          ];
-        };
-
-        e2e = config.npmTask {
-          name = "e2e";
-          # A failed run prints each failed test's error context (the page as
-          # Playwright last saw it), since the sandbox keeps no test-results.
-          script = ''
-            export HOME=$TMPDIR
-            npm run e2e -- --workers=$(( NIX_BUILD_CORES > 4 ? 4 : NIX_BUILD_CORES )) || {
-              for f in test-results/*/error-context.md; do
-                [ -e "$f" ] && { echo "== $f"; cat "$f"; }
-              done
-              exit 1
-            }
-          '';
-          sources = lib.fileset.unions [
-            fileSets.npm
-            ../playwright.config.ts
-            ../tests
-          ];
-          env = {
-            CI = "1";
-            SITE_DIR = config.packages.default;
-            PLAYWRIGHT_BROWSERS_PATH = config.playwrightBrowsers;
-            PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
-            PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-            FONTCONFIG_FILE = fontconfig;
+          unit = config.npmTask {
+            name = "unit";
+            script = "npm test";
+            sources = src;
+            files = [ ../vitest.config.ts ];
           };
+
+          typecheck = config.npmTask {
+            name = "typecheck";
+            script = "npm run typecheck";
+            sources = lib.fileset.unions [
+              src
+              ../astro.config.ts
+              ../tests
+              ../vitest.config.ts
+              ../playwright.config.ts
+            ];
+          };
+
+          e2e = config.npmTask {
+            name = "e2e";
+            # A failed run prints each failed test's error context (the page as
+            # Playwright last saw it), since the sandbox keeps no test-results.
+            script = ''
+              export HOME=$TMPDIR
+              npm run e2e -- --workers=$(( NIX_BUILD_CORES > 4 ? 4 : NIX_BUILD_CORES )) || {
+                for f in test-results/*/error-context.md; do
+                  [ -e "$f" ] && { echo "== $f"; cat "$f"; }
+                done
+                exit 1
+              }
+            '';
+            sources = lib.fileset.unions [
+              fileSets.npm
+              ../playwright.config.ts
+              ../tests
+            ];
+            env = {
+              CI = "1";
+              SITE_DIR = config.packages.default;
+              PLAYWRIGHT_BROWSERS_PATH = config.playwrightBrowsers;
+              PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+              PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+              FONTCONFIG_FILE = fontconfig;
+            };
+          };
+
+          lint = pkgs.runCommand "check-lint" { nativeBuildInputs = [ pkgs.biome ]; } ''
+            cd ${biomeSources}
+            biome lint --error-on-warnings
+            touch $out
+          '';
+
+          licence-headers = pkgs.runCommand "check-licence-headers" { } ''
+            ${pkgs.python3}/bin/python3 ${licenceHeaders} ${headerSources}
+            touch $out
+          '';
+
+          actionlint =
+            pkgs.runCommand "check-actionlint"
+              {
+                nativeBuildInputs = [
+                  pkgs.actionlint
+                  pkgs.shellcheck
+                ];
+              }
+              ''
+                cd ${../.github/workflows}
+                actionlint -shellcheck=shellcheck *.yml
+                touch $out
+              '';
+
+          deadnix =
+            pkgs.runCommand "check-deadnix"
+              {
+                nativeBuildInputs = [ pkgs.deadnix ];
+                src = lib.fileset.toSource {
+                  root = ../.;
+                  fileset = lib.fileset.fileFilter (f: f.hasExt "nix") ../.;
+                };
+              }
+              ''
+                cd $src
+                deadnix --fail .
+                touch $out
+              '';
         };
-
-        lint = pkgs.runCommand "check-lint" { nativeBuildInputs = [ pkgs.biome ]; } ''
-          cd ${biomeSources}
-          biome lint --error-on-warnings
-          touch $out
-        '';
-
-        licence-headers = pkgs.runCommand "check-licence-headers" { } ''
-          ${pkgs.python3}/bin/python3 ${licenceHeaders} ${headerSources}
-          touch $out
-        '';
-
-        actionlint =
-          pkgs.runCommand "check-actionlint"
-            {
-              nativeBuildInputs = [
-                pkgs.actionlint
-                pkgs.shellcheck
-              ];
-            }
-            ''
-              cd ${../.github/workflows}
-              actionlint -shellcheck=shellcheck *.yml
-              touch $out
-            '';
-
-        deadnix =
-          pkgs.runCommand "check-deadnix"
-            {
-              nativeBuildInputs = [ pkgs.deadnix ];
-              src = lib.fileset.toSource {
-                root = ../.;
-                fileset = lib.fileset.fileFilter (f: f.hasExt "nix") ../.;
-              };
-            }
-            ''
-              cd $src
-              deadnix --fail .
-              touch $out
-            '';
-      };
     };
 }

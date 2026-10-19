@@ -25,5 +25,12 @@ paths:
   then `.../git/ref/tags/<tag>`, following an annotated tag once more), and every `gh`
   call asks first.
 - **`actionlint`** (a flake check) validates the workflow and its shell steps.
-- **The deployment** to GitHub Pages (`upload-pages-artifact`, `deploy-pages`) joins this
-  workflow when the site is published.
+- **The deployment to GitHub Pages** is this workflow's: on `main` alone, after
+  `nix flake check` passed, the `check` job builds `packages.default` into `site/` and
+  uploads it (`upload-pages-artifact`, which drops dot-files: nothing the site serves may
+  start with a dot), and the `deploy` job, the only one with `pages: write` and
+  `id-token: write`, publishes it (`deploy-pages`) in the `github-pages` environment. The
+  repository's Pages source is "GitHub Actions": no Jekyll build, no `.nojekyll`.
+- **`/linlog` is linlog's own Pages site** (its rustdoc), a project site on the same
+  address: nothing here may publish a path at `/linlog` (the `pages-paths` check), and
+  the service worker leaves it alone (`.claude/rules/web.md`).

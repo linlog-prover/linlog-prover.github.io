@@ -5,10 +5,13 @@
 # check` checks locally, with the tools flake.lock pins (linlog's among them,
 # whose package `linlog-web' comes from the Cachix cache `linlog-prover',
 # where linlog's own CI pushed it). The scheme of the author's sites
-# (website-learn's deploy.yaml) for keeping the store between runs. Every push to main and every pull request
-# is checked; the deployment to GitHub Pages joins this workflow when the
-# site is published. Actions are pinned to full commit SHAs, with the version
-# in a trailing comment.
+# (website-learn's deploy.yaml) for keeping the store between runs. Every push
+# to main and every pull request is checked; main, once its checks pass, is
+# deployed to GitHub Pages as the organization's site at its root address:
+# packages.default and nothing else. linlog's own Pages site, the rustdoc at
+# /linlog/, is a project site of linlog's repository on the same address,
+# which no deployment here touches. Actions are pinned to full commit SHAs,
+# with the version in a trailing comment.
 name: CI
 
 on:
@@ -76,6 +79,18 @@ jobs:
       - name: Push the site to Cachix
         if: github.ref == 'refs/heads/main' && env.CACHIX_AUTH_TOKEN != ''
         run: nix build --print-out-paths --no-link .#default | cachix push linlog-prover
+      # The site as Pages serves it, from main alone and only after every
+      # check passed (a failed step above skips these). The action archives
+      # the directory, following the store's links, as the artifact the
+      # `deploy' job publishes.
+      - name: Build the site for Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: nix build --print-build-logs --out-link site .#default
+      - name: Upload the site for Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site/
       - name: Save the Nix store
         if: >-
           !cancelled() && steps.root.outcome == 'success' &&
@@ -85,6 +100,27 @@ jobs:
         with:
           primary-key: ${{ steps.root.outputs.key }}
           gc-max-store-size-linux: 3500M
+
+  # Publishes the artifact the check job uploaded; the only job given the
+  # rights to deploy Pages. One deployment at a time, never cancelled midway.
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    name: Deploy to GitHub Pages
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
   # Deletes all but the newest store cache of the ref, so the repository
   # keeps one store of its 10 GB; a job of its own because deleting caches

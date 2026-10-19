@@ -1,0 +1,22 @@
+---
+// linlog © Fabian Lukas Grubmüller 2026
+// Licensed under the EUPL
+
+// The page GitHub Pages serves for any path of the site that holds no file:
+// built to /404.html, and served at the missing path itself, so every link
+// on it is absolute. linlog's documentation at /linlog/ is a site of its own
+// on the same address and never reaches this page.
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Not found: linlog" description="No page of linlog's site is at this address.">
+  <main class="page">
+    <h1>Not found</h1>
+    <p>No page of this site is at this address.</p>
+    <ul>
+      <li><a href="/">The prover</a>: type a sequent of linear logic and prove it.</li>
+      <li><a href="/linlog/">linlog's documentation</a>, the library's API.</li>
+      <li><a href="https://github.com/linlog-prover/linlog">linlog on GitHub</a>.</li>
+    </ul>
+  </main>
+</Base>
