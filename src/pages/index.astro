@@ -2,11 +2,21 @@
 // linlog © Fabian Lukas Grubmüller 2026
 // Licensed under the EUPL
 
+// The one page: the prover, one Solid island rendered in the browser alone,
+// since everything on it is the prover's and runs on linlog's module there.
+// Without a script the page says what it is.
+import App from "../islands/App";
 import Base from "../layouts/Base.astro";
 ---
 
 <Base title="linlog" description="Prove sequents of linear logic step by step, in the browser.">
   <main>
-    <h1>linlog</h1>
+    <h1 class="sr-only">linlog: linear logic, proved in the browser</h1>
+    <App client:only="solid-js">
+      <p slot="fallback" class="noscript">
+        linlog proves sequents of linear logic in the browser; the page needs JavaScript and
+        WebAssembly.
+      </p>
+    </App>
   </main>
 </Base>

@@ -1,0 +1,300 @@
+// linlog © Fabian Lukas Grubmüller 2026
+// Licensed under the EUPL
+
+// One test per interaction of the island, against the built site with
+// linlog's real module in its worker.
+
+import { readFile } from "node:fs/promises";
+import { expect, test } from "@playwright/test";
+import { goto, proveCommuted, rule, start } from "./prover";
+
+test("the sequent field starts a proof, and marks where a sequent does not parse", async ({
+  page,
+}) => {
+  await goto(page);
+  await expect(page.getByRole("textbox", { name: "Sequent" })).toBeFocused();
+  await page.getByRole("textbox", { name: "Sequent" }).fill("A * * B");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert")).toContainText("Unexpected * at column 5");
+  await expect(page.locator(".caret .at")).toHaveText("*");
+  await page.getByRole("textbox", { name: "Sequent" }).fill("A * B |- B * A");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1 of goal 1/ })).toBeVisible();
+  await expect(page.locator(".pt-mark")).toContainText("MLL");
+});
+
+test("a formula's popover lists only the rules linlog gives for it", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await page.getByRole("button", { name: /^B ⊗ A, formula 2/ }).click();
+  const rules = page.getByRole("dialog", { name: "Rules" }).getByRole("button");
+  await expect(rules).toHaveCount(1);
+  await expect(rules.first()).toContainText("⊗");
+});
+
+test("the split chooser sends formulas left and says whether the split can close", async ({
+  page,
+}) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await rule(page, /^B ⊗ A/, "⊗");
+  const split = page.getByRole("dialog", { name: "Split" });
+  await page.getByRole("button", { name: /^A⊥, formula 1/ }).click();
+  await expect(split.getByText("Cannot close")).toBeVisible();
+  await page.getByRole("button", { name: /^A⊥, formula 1/ }).click();
+  await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
+  await expect(split.getByText("Passes")).toBeVisible();
+  await split.getByRole("button", { name: "Apply" }).click();
+  await expect(page.getByText("Goal 3 (1 of 2 open)")).toBeVisible();
+});
+
+test("a refused step says the library's reason at the goal", async ({ page }) => {
+  await start(page, "|- A, B");
+  await rule(page, /^A, formula 1/, "ax");
+  const refusal = page.locator(".dock .kw.bad");
+  await expect(refusal).toHaveText("ax refused: no dual partner");
+  await expect(refusal).toHaveAttribute("data-tip", /and its dual alone in the goal/);
+  await expect(page.locator("[aria-live]")).toContainText("ax refused");
+});
+
+test("undo takes back the last step on the active branch only, and redo puts it back", async ({
+  page,
+}) => {
+  await start(page, "|- (~A | A) & (~B | B)");
+  await rule(page, /^\(A⊥ ⅋ A\) & \(B⊥ ⅋ B\)/, "&");
+  // The right premise first, then the left: the session's last step is on the left branch.
+  await page.getByRole("button", { name: "Next goal" }).click();
+  await rule(page, /^B⊥ ⅋ B, formula 1 of goal 3/, "⅋");
+  await page.getByRole("button", { name: /^A⊥ ⅋ A, formula 1 of goal 2/ }).click();
+  await page.getByRole("dialog", { name: "Rules" }).getByRole("button", { name: /⅋/ }).click();
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 5/ })).toBeVisible();
+  // Back to the right branch's goal and undo there: the left branch's later step stays.
+  await page.getByRole("button", { name: /^B⊥, formula 1 of goal 4/ }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^B⊥ ⅋ B, formula 1/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1/ })).toBeVisible();
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^B⊥, formula 1/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^B⊥ ⅋ B, formula 1/ })).toHaveCount(0);
+});
+
+test("a goal's close grafts the search's proof, and close all closes the rest", async ({
+  page,
+}) => {
+  await start(page, "A * B |- B * A");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await page.getByRole("button", { name: "Close all" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  await expect(page.locator(".drawing g.search").first()).toBeAttached();
+});
+
+test("an unprovable goal's close says why, checked; a search that gives up offers twice the budget", async ({
+  page,
+}) => {
+  await start(page, "A * B |- A");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(page.locator(".dock .kw.bad")).toHaveText("Unprovable, checked: atom balance");
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("spinbutton").fill("1");
+  await page.getByRole("spinbutton").press("Enter");
+  await page.keyboard.press("Escape");
+  await start(page, "!A |- A * A", false);
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(page.locator(".dock .kw.warn")).toHaveText("Unknown: gave up");
+  await expect(page.getByRole("button", { name: "Try 2 units" })).toBeVisible();
+});
+
+test("the hint ladder climbs four rungs, and the last applies the step", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  const hint = page.getByRole("button", { name: "Hint" });
+  await hint.click();
+  await expect(page.locator(".dock .hint")).toContainText("an invertible rule comes next");
+  await hint.click();
+  await expect(page.locator(".dock .hint")).toContainText("Look at A⊥ ⅋ B⊥");
+  await expect(page.locator(".fb[data-hinted]")).toHaveCount(1);
+  await hint.click();
+  await expect(page.locator(".dock .hint")).toContainText("Apply ⅋ to A⊥ ⅋ B⊥");
+  await hint.click();
+  await expect(page.locator(".dock .hint")).toContainText("Why was this the step to take?");
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
+});
+
+test("the finished MLL proof's net is drawn, and the net tab says why it is greyed elsewhere", async ({
+  page,
+}) => {
+  await start(page, "!A |- A");
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute(
+    "data-tip",
+    /exist for MLL without units only/,
+  );
+  await start(page, "A * B |- B * A", false);
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-disabled", "true");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+});
+
+test("every export downloads, and the link is copied", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await proveCommuted(page);
+  const formats: [string, RegExp][] = [
+    ["SVG", /\.svg$/],
+    ["PNG", /\.png$/],
+    ["PDF", /\.pdf$/],
+    ["LaTeX", /\.tex$/],
+    ["Typst", /\.typ$/],
+    ["Text", /\.txt$/],
+    ["Session", /\.json$/],
+    ["Rocq", /\.v$/],
+  ];
+  for (const [label, name] of formats) {
+    await page.getByRole("button", { name: "Export" }).click();
+    const download = page.waitForEvent("download");
+    await page.getByRole("menuitem", { name: new RegExp(`^${label}`) }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(name);
+    expect((await readFile(await file.path())).length).toBeGreaterThan(20);
+    await page.keyboard.press("Escape");
+  }
+  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByRole("menuitem", { name: /^Link/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Link copied" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("#v=1");
+});
+
+test("the certificate of non-derivability downloads for a refuted goal", async ({ page }) => {
+  await start(page, "A |- B");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("button", { name: "Export" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: /^Not derivable/ }).click();
+  expect(await (await download).path()).toBeTruthy();
+});
+
+test("the link in the fragment restores the proof, or says it could not", async ({
+  page,
+  browser,
+}) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await expect(page).toHaveURL(/#v=1&m=classical&s=.*&d=/);
+  const url = page.url();
+  const fresh = await browser.newPage();
+  await fresh.goto(url);
+  await expect(fresh.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
+  await fresh.goto(url.replace(/&d=[^&]*/, "&d=AAAA"));
+  await fresh.reload();
+  await expect(fresh.getByText("Proof not restored")).toBeVisible();
+  await expect(fresh.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1 of goal 1/ })).toBeVisible();
+});
+
+test("autosave keeps every open proof, and the restore bar brings them back", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await page.getByRole("button", { name: "New proof" }).click();
+  await page.getByRole("textbox", { name: "Sequent" }).fill("A |- A");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 1/ })).toBeVisible();
+  await page.waitForTimeout(500);
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Restore" })).toContainText(
+    "2 proofs from your last visit",
+  );
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.locator(".ptab")).toHaveCount(2);
+  await page.locator(".pt-go").first().click();
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
+});
+
+test("several proofs are open at once, each with its own state", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await page.getByRole("button", { name: "New proof" }).click();
+  await page.getByRole("textbox", { name: "Sequent" }).fill("A, B |- A * B");
+  await page.keyboard.press("Enter");
+  await page.locator(".pt-go").first().click();
+  await expect(page.getByRole("button", { name: /^B ⊗ A, formula 2 of goal 1/ })).toBeVisible();
+  await page.locator(".pt-go").nth(1).click();
+  await expect(page.getByRole("button", { name: /^A ⊗ B, formula 3 of goal 1/ })).toBeVisible();
+  await page.getByRole("button", { name: "Close this proof" }).nth(1).click();
+  await expect(page.locator(".ptab")).toHaveCount(1);
+});
+
+test("import reads a session or a sequent, and refuses a level it does not know", async ({
+  page,
+}) => {
+  await proveCommuted(page);
+  await page.getByRole("button", { name: "Export" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: /^Session/ }).click();
+  const session = await readFile(await (await download).path(), "utf8");
+  await page.getByRole("button", { name: "Import" }).click();
+  const panel = page.getByRole("dialog", { name: "Import" });
+  await panel.getByRole("textbox").fill(session);
+  await panel.getByRole("button", { name: "Import", exact: true }).click();
+  await expect(panel.getByRole("status")).toHaveText("Imported a session.");
+  await expect(page.locator(".ptab")).toHaveCount(2);
+  await panel.getByRole("textbox").fill('{"version":9,"terms":[],"roots":[],"atoms":[]}');
+  await panel.getByRole("button", { name: "Import", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText("Level 9 unknown: not imported");
+  await panel.locator('input[type="file"]').setInputFiles({
+    name: "sequent.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(JSON.parse(session).sequent)),
+  });
+  await expect(panel.getByRole("status")).toHaveText("Imported a sequent from sequent.json.");
+});
+
+test("a proof goes by keyboard alone", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await page.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1/ }).focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("1");
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeFocused();
+  await page.keyboard.press("u");
+  await expect(page.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1/ })).toBeVisible();
+  await page.keyboard.press("Shift+U");
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
+  await page.keyboard.press("Shift+C");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: "Keys" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Keys" })).toHaveCount(0);
+});
+
+test("the calculus's switches restart the proof after a warning", async ({ page }) => {
+  await start(page, "A, B |- A * B");
+  await rule(page, /^A ⊗ B/, "⊗");
+  await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
+  await page.getByRole("dialog", { name: "Split" }).getByRole("button", { name: "Apply" }).click();
+  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await page.getByRole("button", { name: "Restart" }).click();
+  await expect(page.locator(".pt-mark")).toContainText("ILL");
+  await expect(page.getByRole("button", { name: /^A ⊗ B, formula 3 of goal 1/ })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
+  await start(page, "A |- B, C", false);
+  await expect(page.getByRole("alert")).toContainText("2 formulas right of ⊢");
+});
+
+test("the light and dark toggle pins a scheme, kept on the next visit", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await goto(page);
+  await page.getByRole("button", { name: "Light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  const field = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(field);
+  await page.getByRole("button", { name: "Dark theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});

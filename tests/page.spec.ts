@@ -12,7 +12,7 @@ test("the page loads without an error in both schemes", async ({ page }) => {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.emulateMedia({ colorScheme });
     await page.goto("/");
-    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Sequent" })).toBeVisible();
     expect(errors).toEqual([]);
   }
 });

@@ -124,7 +124,9 @@
             category = "verify";
             name = "e2e";
             help = "playwright: browser tests against a fresh `astro build` (a file narrows them)";
-            command = ''cd "$PRJ_ROOT" && exec playwright test "$@"'';
+            # The host's LD_LIBRARY_PATH (an audio library built against a
+            # newer glibc) breaks nixpkgs' Chromium, so it is dropped.
+            command = ''cd "$PRJ_ROOT" && exec env -u LD_LIBRARY_PATH playwright test "$@"'';
           }
           {
             category = "verify";
