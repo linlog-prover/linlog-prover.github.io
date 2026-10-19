@@ -150,6 +150,15 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
   const isActive = () => props.prover.store.active === props.proof.id;
   const [draft, setDraft] = createSignal(props.proof.input);
   let field: HTMLInputElement | undefined;
+  let typing: ReturnType<typeof setTimeout> | undefined;
+  /** The fragment beside the mark: the session's, or while typing the text's. */
+  const fragment = () =>
+    props.proof.view?.fragment ??
+    (props.proof.editing && props.proof.typed
+      ? props.proof.typed[
+          props.proof.mode.startsWith("intuitionistic") ? "intuitionistic" : "classical"
+        ]
+      : undefined);
   const { ui, setUi } = props.ui;
 
   const statusWords = () => {
@@ -207,8 +216,11 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
           autocomplete="off"
           value={draft()}
           onInput={(event) => {
-            setDraft(event.currentTarget.value);
-            props.prover.setInput(props.proof.id, event.currentTarget.value);
+            const text = event.currentTarget.value;
+            setDraft(text);
+            props.prover.setInput(props.proof.id, text);
+            clearTimeout(typing);
+            typing = setTimeout(() => void props.prover.preview(props.proof.id, text), 250);
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -233,7 +245,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         }}
       >
         {mark(props.proof)}
-        <Show when={props.proof.view}>{(v) => <span class="frag">{v().fragment}</span>}</Show>
+        <Show when={fragment()}>{(f) => <span class="frag">{f()}</span>}</Show>
       </button>
       <button
         type="button"

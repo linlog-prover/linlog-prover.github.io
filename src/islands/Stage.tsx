@@ -49,8 +49,8 @@ interface Camera {
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** The settings of the stage's drawing: the formulas large enough to click. */
-const drawSettings = (work: number) =>
-  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30 } } });
+const drawSettings = (work: number, essential: boolean) =>
+  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30, essential } } });
 
 export function Stage(props: { prover: Prover; ui: Ui }) {
   const prover = () => props.prover;
@@ -95,7 +95,11 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         const net = tab === "net" && v.complete && v.net === null;
         let svg: string;
         try {
-          const settings = drawSettings(props.prover.settings().budget);
+          // An intuitionistic proof's net is its essential net.
+          const settings = drawSettings(
+            props.prover.settings().budget,
+            session.mode.startsWith("intuitionistic"),
+          );
           svg = net
             ? await props.prover.api.drawNet(session, settings)
             : await props.prover.api.draw(session, settings);

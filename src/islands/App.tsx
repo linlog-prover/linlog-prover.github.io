@@ -235,6 +235,7 @@ export default function App() {
           queueMicrotask(() => document.querySelector<HTMLInputElement>(".field")?.focus());
         },
         e: () => setUi("menu", ui.menu === "export" ? null : "export"),
+        s: () => setUi("menu", ui.menu === "steps" ? null : "steps"),
         i: () => setUi("menu", ui.menu === "import" ? null : "import"),
         ",": () => setUi("menu", ui.menu === "settings" ? null : "settings"),
         "?": () => setUi("menu", ui.menu === "keys" ? null : "keys"),

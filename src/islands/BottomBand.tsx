@@ -14,6 +14,7 @@ import {
   Download,
   Keyboard,
   Lightbulb,
+  ListOrdered,
   Redo2,
   SlidersHorizontal,
   Undo2,
@@ -22,6 +23,7 @@ import {
 import { createSignal, For, type JSX, Show } from "solid-js";
 import { failure, type Outcome, type SessionDoc } from "../lib/linlog";
 import { writeLink } from "../lib/link";
+import { actions, goalAt } from "../lib/steps";
 import type { Theme } from "../lib/theme";
 import { DEFAULT_BUDGET, type Prover } from "./state";
 import { applyTheme } from "./TopBand";
@@ -46,6 +48,7 @@ export const KEYS: readonly (readonly [string, string])[] = [
   ["[ ]", "Previous and next open goal"],
   ["U", "Undo on this branch"],
   ["⇧U", "Redo"],
+  ["S", "Every step, to go back to one"],
   ["C", "Close the active goal by the search"],
   ["⇧C", "Close every open goal"],
   ["H", "The next rung of the hint ladder"],
@@ -97,6 +100,17 @@ export function BottomBand(props: {
             disabled={!proof()?.redo.length}
             onClick={() => void props.prover.redo()}
             show={key}
+          />
+          <Action
+            label="Steps"
+            icon={<ListOrdered size={18} aria-hidden="true" />}
+            tip="Every step; click one to go back to it"
+            keyName="S"
+            expanded={ui.menu === "steps"}
+            disabled={!proof()?.session}
+            onClick={() => toggle("steps")}
+            show={key}
+            labelled={labelled}
           />
           <Action
             label="Close all"
@@ -168,6 +182,9 @@ export function BottomBand(props: {
       <Show when={ui.menu === "export"}>
         <ExportMenu prover={props.prover} ui={props.ui} font={props.font} />
       </Show>
+      <Show when={ui.menu === "steps"}>
+        <StepsPanel prover={props.prover} />
+      </Show>
       <Show when={ui.menu === "import"}>
         <ImportPanel prover={props.prover} ui={props.ui} />
       </Show>
@@ -237,7 +254,9 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
   const exportSettings = () =>
     JSON.stringify({
       limits: { work: props.prover.settings().budget },
-      styles: { svg: { ids: false } },
+      styles: {
+        svg: { ids: false, essential: proof()?.mode.startsWith("intuitionistic") ?? false },
+      },
     });
   const name = () => "linlog-proof";
 
@@ -529,6 +548,45 @@ function SettingsPanel(props: {
           Show keys beside actions
         </label>
       </div>
+    </div>
+  );
+}
+
+function StepsPanel(props: { prover: Prover }) {
+  const proof = () => props.prover.current();
+  const list = () => {
+    const session = proof()?.session;
+    return session ? actions(session) : [];
+  };
+  const goalNumber = (path: readonly number[]) => {
+    const session = proof()?.session;
+    return session ? (goalAt(session, path) ?? 0) + 1 : 0;
+  };
+  return (
+    <div class="cluster menu" role="dialog" aria-label="Steps">
+      <p class="kw-label h">Steps</p>
+      <ol class="mlist">
+        <li>
+          <button type="button" class="mi" onClick={() => void props.prover.backTo(0)}>
+            <span class="fmt">0</span>
+            <span class="fn">The sequent, before any step</span>
+          </button>
+        </li>
+        <For each={list()}>
+          {(action, i) => (
+            <li>
+              <button type="button" class="mi" onClick={() => void props.prover.backTo(i() + 1)}>
+                <span class="fmt">{i() + 1}</span>
+                <span class="fn">
+                  {action.kind === "step"
+                    ? `${action.step.rule} on goal ${goalNumber(action.path)}`
+                    : `The search closed goal ${goalNumber(action.path)}`}
+                </span>
+              </button>
+            </li>
+          )}
+        </For>
+      </ol>
     </div>
   );
 }

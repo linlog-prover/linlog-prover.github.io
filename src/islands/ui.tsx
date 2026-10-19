@@ -41,7 +41,7 @@ export type Menu =
   | "keys"
   | "status"
   | "calculus"
-  | "restart"
+  | "steps"
   | null;
 
 /** Creates the view state. */

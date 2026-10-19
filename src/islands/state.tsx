@@ -30,7 +30,15 @@ import {
   setAside,
   type Store,
 } from "../lib/shelf";
-import { type Action, goalAt, paths, type Path, retract, within } from "../lib/steps";
+import {
+  type Action,
+  actions as actionsOf,
+  goalAt,
+  paths,
+  type Path,
+  retract,
+  within,
+} from "../lib/steps";
 import { inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
 
 /** A note at a goal: a refusal, or what a search answered there. */
@@ -62,6 +70,8 @@ export interface Proof {
   note: Note | null;
   /** The whole sequent's verdict, when a search on its root or every goal said one. */
   verdict: (Said & { tone: Tone; outcome?: Outcome }) | null;
+  /** The fragment of the text being typed, as linlog detects it, before it is started. */
+  typed: { classical: string; intuitionistic: string } | null;
   /** A line on the stage that is no goal's: a proof the link could not restore. */
   banner: Said | null;
 }
@@ -114,6 +124,7 @@ const blank = (mode: Mode): Proof => ({
   active: null,
   note: null,
   verdict: null,
+  typed: null,
   banner: null,
 });
 
@@ -298,6 +309,14 @@ export function createProver() {
         p.input = input;
         p.inputProblem = null;
       });
+    },
+
+    /** Reads the field's text as it is typed, for the fragment beside it. */
+    async preview(id: string, input: string) {
+      const read = await attempt(() => api.read(input, json()));
+      const p = store.proofs.find((q) => q.id === id);
+      if (!p || p.input !== input) return;
+      update(id, (q) => (q.typed = read.ok ? (read.value.fragment ?? null) : null));
     },
 
     /** Starts the field's text as a new session in the proof's mode (or opens a session pasted there). */
@@ -488,6 +507,24 @@ export function createProver() {
       if (!result.ok) return;
       const reopened = goalAt(result.value.session, back.reopened);
       update(p.id, (q) => q.redo.push([...back.removed]));
+      show(p.id, result.value, reopened);
+      if (result.value.failed.length) actions.lost(p.id, result.value.failed);
+      save();
+    },
+
+    /** Goes back to the session as it was after its first `count` actions; redo brings the rest back. */
+    async backTo(count: number) {
+      const p = current();
+      if (!p?.session) return;
+      const all = actionsOf(p.session);
+      if (count >= all.length) return;
+      const result = await attempt(() =>
+        api.replay(p.session as SessionDoc, all.slice(0, count), json()),
+      );
+      if (!result.ok) return;
+      const removed = all.slice(count);
+      update(p.id, (q) => q.redo.push(removed));
+      const reopened = removed[0] ? goalAt(result.value.session, removed[0].path) : undefined;
       show(p.id, result.value, reopened);
       if (result.value.failed.length) actions.lost(p.id, result.value.failed);
       save();

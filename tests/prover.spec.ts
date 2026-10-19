@@ -298,3 +298,43 @@ test("the light and dark toggle pins a scheme, kept on the next visit", async ({
   await page.getByRole("button", { name: "Dark theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
+
+test("the step list goes back to a step, and redo brings the rest back", async ({ page }) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Steps" }).click();
+  const steps = page.getByRole("dialog", { name: "Steps" });
+  await expect(steps.getByRole("button")).toHaveText([
+    /^0/,
+    /^1⅋ on goal 1/,
+    /^2The search closed goal 2/,
+  ]);
+  await steps.getByRole("button", { name: /^0/ }).click();
+  await expect(page.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1 of goal 1/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+});
+
+test("the fragment shows beside the calculus while the sequent is typed", async ({ page }) => {
+  await goto(page);
+  await page.getByRole("textbox", { name: "Sequent" }).fill("!A |- A * A");
+  await expect(page.locator(".pt-mark .frag")).toHaveText("MELL");
+  await page.getByRole("textbox", { name: "Sequent" }).fill("A & B |- A");
+  await expect(page.locator(".pt-mark .frag")).toHaveText("ALL");
+});
+
+test("a finished intuitionistic proof's essential net is drawn", async ({ page }) => {
+  await start(page, "A, B |- A * B");
+  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await expect(page.locator(".pt-mark")).toContainText("ILL");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+});
