@@ -83,6 +83,10 @@ the page reads.
 
 ## The state (`src/islands/state.tsx`)
 
+- **A tab names its sequent as linlog prints it in the proof's mode** (`shown`, set by
+  `entitle`): the text export of a session of that sequent with no step, which is the
+  sequent alone, two-sided in intuitionistic mode; `read`'s `text` is one-sided only.
+
 - **One action that changes a proof at a time** (`guard`): each reads the session, waits on
   the worker and shows the answer, so a second begun meanwhile would build on a session
   the first replaces. An action asked for while one runs does nothing; the bottom band's
@@ -93,7 +97,9 @@ the page reads.
 - **The link** (`src/lib/link.ts`): `#v=1&m=<mode>&s=<sequent>&d=<session>` in the fragment,
   the session deflate-raw and base64url, dropped past 2000 characters (the export menu
   says so). A link whose session linlog refuses loads the sequent and the mode, with
-  "Proof not restored". The sequent is the field's text with the ASCII connectives as their signs (`pretty`, which `words.test.ts` holds to read as the same sequent).
+  "Proof not restored"; one past `UNPACKED_LIMIT` (512 KiB, read through a capped
+  inflate) says so, and one whose sequent does not parse puts it in the field with the
+  parse error marked, as if typed. The sequent is the field's text with the ASCII connectives as their signs (`pretty`, which `words.test.ts` holds to read as the same sequent).
 - **Autosave** (`src/lib/shelf.ts`): every visit (tab) saves its open proofs under
   `linlog-proofs:<visit>`, each with the time, so two tabs never overwrite each other; at a
   visit's start the other visits' are gathered into `linlog-proofs-previous` for the restore

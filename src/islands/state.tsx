@@ -39,7 +39,7 @@ import {
   retract,
   within,
 } from "../lib/steps";
-import { inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
+import { formulaText, inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
 
 /** A note at a goal: a refusal, or what a search answered there. */
 export interface Note {
@@ -74,6 +74,9 @@ export interface Proof {
   typed: { classical: string; intuitionistic: string } | null;
   /** A line on the stage that is no goal's: a proof the link could not restore. */
   banner: Said | null;
+  /** The sequent as linlog prints it in the proof's mode, for the tab; and the sequent and mode it is of. */
+  shown: string | null;
+  shownFor: string | null;
 }
 
 /** The visitor's settings, kept in the browser. */
@@ -132,6 +135,8 @@ const blank = (mode: Mode): Proof => ({
   verdict: null,
   typed: null,
   banner: null,
+  shown: null,
+  shownFor: null,
 });
 
 /** The prover's state and actions, for one island. */
@@ -193,8 +198,31 @@ export function createProver() {
   const pathOf = (p: Proof, goal: number): Path =>
     p.session ? (paths(p.session).get(goal) ?? []) : [];
 
+  /**
+   * Names a proof's tab by its sequent as linlog prints it in the proof's
+   * mode (two-sided in intuitionistic mode): the text export of a session of
+   * that sequent with no step yet, which is the sequent alone.
+   */
+  async function entitle(id: string) {
+    const p = store.proofs.find((q) => q.id === id);
+    const sequent = p?.session?.sequent;
+    if (!p || !sequent) return;
+    const mode = p.mode;
+    const key = JSON.stringify([sequent, mode]);
+    if (p.shownFor === key) return;
+    const fresh = await attempt(() => api.start(sequent, mode, json()));
+    if (!fresh.ok) return;
+    const text = await attempt(() => api.exportAs(fresh.value.session, "text", json()));
+    if (text.ok) {
+      update(id, (q) => {
+        q.shown = formulaText(text.value.trim());
+        q.shownFor = key;
+      });
+    }
+  }
+
   /** Shows a played session, the active goal moved to `goal` (or kept where it is still open). */
-  const show = (id: string, played: Played, goal?: number) =>
+  const show = (id: string, played: Played, goal?: number) => {
     update(id, (p) => {
       p.session = played.session;
       p.view = played.view;
@@ -205,6 +233,8 @@ export function createProver() {
       if (goal !== undefined) p.active = paths(played.session).get(goal) ?? null;
       if (played.view.complete) p.verdict = null;
     });
+    void entitle(id);
+  };
 
   /** Runs a call, turning a stop into nothing and every other failure into the library's error. */
   async function attempt<T>(
@@ -308,6 +338,7 @@ export function createProver() {
       if (!p?.session) return;
       const result = await attempt(() => api.view(p.session as SessionDoc, json()));
       if (result.ok) update(id, (q) => (q.view = result.value));
+      void entitle(id);
     },
 
     /** Opens a new proof with the sequent field. */

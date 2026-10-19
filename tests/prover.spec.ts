@@ -225,6 +225,51 @@ test("the link in the fragment restores the proof, or says it could not", async 
   await expect(fresh.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1 of goal 1/ })).toBeVisible();
 });
 
+test("a link whose sequent does not parse shows the parse error under the field", async ({
+  page,
+}) => {
+  await page.goto("/#v=1&m=classical&s=A+*+*+B");
+  await expect(page.getByRole("textbox", { name: "Sequent" })).toHaveValue("A * * B");
+  await expect(page.getByRole("alert")).toContainText("Unexpected * at column 5");
+  await expect(page.locator(".caret .at")).toHaveText("*");
+});
+
+test("a link whose session unpacks past the cap loads the sequent alone and says why", async ({
+  page,
+}) => {
+  // 4 MiB of one character, deflated: about four kilobytes of link.
+  const hash = await page.evaluate(async () => {
+    const text = JSON.stringify({ pad: "a".repeat(4 * 1024 * 1024) });
+    const packed = new Blob([text]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    const bytes = new Uint8Array(await new Response(packed).arrayBuffer());
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const d = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+    return `#v=1&m=classical&s=A+|-+A&d=${d}`;
+  });
+  await page.goto(`/${hash}`);
+  await page.reload();
+  await expect(page.getByText("Proof not restored")).toBeVisible();
+  await expect(page.getByText("Proof not restored")).toHaveAttribute(
+    "data-tip",
+    /more than a link may hold/,
+  );
+  await expect(page.getByRole("button", { name: /^A, formula/ })).toBeVisible();
+});
+
+test("a proof's tab shows its sequent as linlog prints it, in Euler Math", async ({ page }) => {
+  await start(page, "a^ par b |- b * a");
+  const tab = page.locator(".pt-go .m");
+  await expect(tab).toHaveText("⊢ a ⊗ b⊥, b ⊗ a");
+  expect(await tab.evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/^"Euler Math"/);
+  await expect
+    .poll(() => page.evaluate(() => document.fonts.check('16px "Euler Math"', "⊗")))
+    .toBe(true);
+  await page.goto("/#v=1&m=intuitionistic&s=A,+A+-o+B+|-+B");
+  await page.reload();
+  await expect(page.locator(".ptab[aria-current] .pt-go .m")).toHaveText("A, A ⊸ B ⊢ B");
+});
+
 test("autosave keeps every open proof, and the restore bar brings them back", async ({ page }) => {
   await start(page, "A * B |- B * A");
   await rule(page, /^A⊥ ⅋ B⊥/, "⅋");

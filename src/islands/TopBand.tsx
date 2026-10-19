@@ -11,7 +11,7 @@
  */
 
 import { Moon, Plus, Sun, X } from "lucide-solid";
-import { createSignal, For, onMount, Show } from "solid-js";
+import { createEffect, createSignal, For, on, onMount, Show } from "solid-js";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
 import { pretty } from "../lib/words";
 import type { Proof, Prover } from "./state";
@@ -149,6 +149,8 @@ export function TopBand(props: {
 function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
   const isActive = () => props.prover.store.active === props.proof.id;
   const [draft, setDraft] = createSignal(props.proof.input);
+  // The field follows a text set from elsewhere (a link's sequent).
+  createEffect(on(() => props.proof.input, setDraft, { defer: true }));
   let field: HTMLInputElement | undefined;
   let typing: ReturnType<typeof setTimeout> | undefined;
   /** The fragment beside the mark: the session's, or while typing the text's. */
@@ -199,7 +201,9 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
               } else props.prover.activate(props.proof.id);
             }}
           >
-            <span class="m">{props.proof.input ? pretty(props.proof.input) : "New proof"}</span>
+            <span class="m">
+              {props.proof.shown ?? (props.proof.input ? pretty(props.proof.input) : "New proof")}
+            </span>
           </button>
         }
       >

@@ -3,7 +3,14 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { fromBase64url, LINK_LIMIT, readLink, toBase64url, writeLink } from "./link";
+import {
+  fromBase64url,
+  LINK_LIMIT,
+  readLink,
+  toBase64url,
+  UNPACKED_LIMIT,
+  writeLink,
+} from "./link";
 
 describe("the link's codec", () => {
   it("reads back what it wrote: the sequent, the mode and the session", async () => {
@@ -58,6 +65,23 @@ describe("the link's codec", () => {
       problem: "version",
     });
     expect(await readLink("#about")).toBeUndefined();
+  });
+
+  it("refuses a session that unpacks past the cap, and keeps the sequent", async () => {
+    // Eight times the cap of one repeated character: a few kilobytes deflated.
+    const bomb = JSON.stringify({ pad: "a".repeat(8 * UNPACKED_LIMIT) });
+    const written = await writeLink("A |- A", "classical", bomb, Number.POSITIVE_INFINITY);
+    expect(written.hash.length).toBeLessThan(UNPACKED_LIMIT / 16);
+    expect(await readLink(written.hash)).toEqual({
+      sequent: "A |- A",
+      mode: "classical",
+      problem: "size",
+    });
+    // At the cap itself it still reads.
+    const fits = JSON.stringify({ pad: "a".repeat(UNPACKED_LIMIT - 10) });
+    expect(fits.length).toBe(UNPACKED_LIMIT);
+    const read = await readLink((await writeLink("A", "mix", fits, Infinity)).hash);
+    expect(read?.session).toBe(fits);
   });
 
   it("encodes bytes as base64url and back", () => {

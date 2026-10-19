@@ -62,9 +62,16 @@ export default function App(props: {
     if (link) {
       const restored = link.session !== undefined ? await prover.open(link.session) : null;
       if (!restored || "problem" in restored) {
-        await prover.open(link.sequent, link.mode as Mode);
+        const opened = await prover.open(link.sequent, link.mode as Mode);
         const p = prover.current();
-        if (p && (link.session !== undefined || link.problem)) {
+        if ("problem" in opened) {
+          // The link's sequent does not parse: it goes into the field with its
+          // problem marked, as if it had been typed.
+          const id = prover.add();
+          prover.setInput(id, link.sequent);
+          await prover.setMode(id, link.mode as Mode);
+          await prover.submit(id);
+        } else if (p && (link.session !== undefined || link.problem)) {
           prover.banner(p.id, {
             keyword: "Proof not restored",
             sentence:
@@ -72,7 +79,9 @@ export default function App(props: {
                 ? `The link's proof was not read (${restored.problem.keyword}), so the sequent is loaded alone: start again, or import the session file.`
                 : link.problem === "version"
                   ? "The link was made by another version of this page, so the sequent is loaded alone."
-                  : "The link's proof did not unpack, so the sequent is loaded alone.",
+                  : link.problem === "size"
+                    ? "The link's proof unpacks to more than a link may hold, so the sequent is loaded alone: import the session file instead."
+                    : "The link's proof did not unpack, so the sequent is loaded alone.",
           });
         }
       }

@@ -12,6 +12,9 @@
  * position of one library version is ever stored. The document goes
  * deflate-raw (`CompressionStream`) and then base64url. Past `LINK_LIMIT`
  * characters the link holds the sequent and the mode alone, and says so.
+ * Reading a link unpacks at most `UNPACKED_LIMIT` bytes: a crafted link can
+ * hold a document that inflates a thousandfold, in the visitor's own tab,
+ * before linlog's limits ever read it.
  */
 
 import type { Mode } from "./linlog";
@@ -22,14 +25,21 @@ export const LINK_VERSION = "1";
 /** The longest link that carries the session; a longer one carries the sequent alone. */
 export const LINK_LIMIT = 2000;
 
+/**
+ * The most a link's session unpacks to, in bytes. A link the page writes is
+ * at most `LINK_LIMIT` characters, about 1.5 KB of deflated JSON, which
+ * unpacks to some tens of kilobytes; this is ten times that much and more.
+ */
+export const UNPACKED_LIMIT = 512 * 1024;
+
 /** What a link holds. */
 export interface LinkContent {
   readonly sequent: string;
   readonly mode: Mode | string;
   /** The session document's JSON text, when the link carried one that unpacked. */
   readonly session?: string;
-  /** Why the session could not be read back: a version mark this page does not know, or a document that did not unpack. */
-  readonly problem?: "version" | "document";
+  /** Why the session could not be read back: a version mark this page does not know, a document that did not unpack, or one past `UNPACKED_LIMIT`. */
+  readonly problem?: "version" | "document" | "size";
 }
 
 /** A link written: the fragment, and whether it carries the session. */
@@ -41,6 +51,36 @@ export interface Written {
 async function through(bytes: Uint8Array, stream: CompressionStream | DecompressionStream) {
   const out = new Blob([bytes as BlobPart]).stream().pipeThrough(stream);
   return new Uint8Array(await new Response(out).arrayBuffer());
+}
+
+/** Thrown when what a link unpacks to passes `UNPACKED_LIMIT`. */
+class TooLarge extends Error {}
+
+/** Inflates deflate-raw bytes, giving up as soon as the output passes `limit` bytes. */
+async function inflate(bytes: Uint8Array, limit: number): Promise<Uint8Array> {
+  const reader = new Blob([bytes as BlobPart])
+    .stream()
+    .pipeThrough(new DecompressionStream("deflate-raw"))
+    .getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    length += value.length;
+    if (length > limit) {
+      await reader.cancel();
+      throw new TooLarge();
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(length);
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
 }
 
 /** Bytes as base64url, without padding. */
@@ -79,7 +119,10 @@ export async function writeLink(
 }
 
 /** What a fragment holds, or undefined when it is no link of this page's. */
-export async function readLink(hash: string): Promise<LinkContent | undefined> {
+export async function readLink(
+  hash: string,
+  limit = UNPACKED_LIMIT,
+): Promise<LinkContent | undefined> {
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const sequent = params.get("s");
   const mode = params.get("m");
@@ -88,9 +131,9 @@ export async function readLink(hash: string): Promise<LinkContent | undefined> {
   const packed = params.get("d");
   if (packed === null) return { sequent, mode };
   try {
-    const bytes = await through(fromBase64url(packed), new DecompressionStream("deflate-raw"));
+    const bytes = await inflate(fromBase64url(packed), limit);
     return { sequent, mode, session: new TextDecoder("utf-8", { fatal: true }).decode(bytes) };
-  } catch {
-    return { sequent, mode, problem: "document" };
+  } catch (thrown) {
+    return { sequent, mode, problem: thrown instanceof TooLarge ? "size" : "document" };
   }
 }
