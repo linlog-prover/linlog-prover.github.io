@@ -4,7 +4,8 @@
 # Everything runs through the flake, so CI checks exactly what `nix flake
 # check` checks locally, with the tools flake.lock pins (linlog's among them,
 # whose package `linlog-web' comes from the Cachix cache `linlog-prover',
-# where linlog's own CI pushed it). Every push to main and every pull request
+# where linlog's own CI pushed it). The scheme of the author's sites
+# (website-learn's deploy.yaml) for keeping the store between runs. Every push to main and every pull request
 # is checked; the deployment to GitHub Pages joins this workflow when the
 # site is published. Actions are pinned to full commit SHAs, with the version
 # in a trailing comment.
@@ -16,8 +17,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,6 +28,14 @@ jobs:
     name: nix flake check
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Saving a cache needs no permission; deleting the old ones does, and is
+    # left to `prune-caches` below.
+    permissions:
+      contents: read
+    env:
+      # Read by `cachix push`; empty until the author adds the secret, and
+      # empty for a pull request from a fork.
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,20 +44,68 @@ jobs:
         with:
           # Fetching the `github:` inputs anonymously runs into rate limits.
           github_access_token: ${{ github.token }}
-      # Pulls from the organization's public cache. Pushes only from main,
-      # and only once the repository has the cache's token: until then (and
-      # for a pull request from a fork, which gets no secret) nothing is
-      # pushed. What is pushed is this site's own outputs and the inputs of
-      # its checks, never another prover or a problem library, which this
-      # flake does not build; the npm tarballs are left out, being only the
-      # inputs of node_modules, which is pushed itself.
+      # The organization's public cache, read only: linlog's package
+      # `linlog-web' comes from there, so this CI never builds Rust. Nothing
+      # is pushed by the action (below for what is).
       - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
           name: linlog-prover
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          skipPush: ${{ github.ref != 'refs/heads/main' || secrets.CACHIX_AUTH_TOKEN == '' }}
-          pushFilter: '\.tgz$'
+          skipPush: true
+      # Everything else a run needs (node_modules, Chromium, the formatters,
+      # every check's result) is kept between runs in GitHub's Actions cache,
+      # private to this repository, as the author's sites do: the run
+      # restores the newest store, and saves it under the hash of
+      # `ci-cache`'s store path when that changed. A pull request restores
+      # main's and saves none of its own.
+      - name: Restore the Nix store
+        id: restore
+        uses: nix-community/cache-nix-action/restore@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-${{ runner.os }}-newest
+          restore-prefixes-first-match: nix-${{ runner.os }}-
       - run: nix flake check --print-build-logs --keep-going
-      # The checks' build-time inputs (node_modules, Chromium, the
-      # formatters), rooted so that the push above includes them.
-      - run: nix build --print-build-logs --no-link .#ci-cache
+      - name: Root the cache contents
+        id: root
+        run: |
+          nix build --print-build-logs --out-link result-cache .#ci-cache
+          hash=$(basename "$(readlink result-cache)")
+          echo "key=nix-${RUNNER_OS}-${hash%%-*}" >> "$GITHUB_OUTPUT"
+      # The site's own output, and nothing else, goes to the public cache:
+      # the built site, whose closure is itself alone. Only from main, and
+      # only while the repository has the cache's token.
+      - name: Push the site to Cachix
+        if: github.ref == 'refs/heads/main' && env.CACHIX_AUTH_TOKEN != ''
+        run: nix build --print-out-paths --no-link .#default | cachix push linlog-prover
+      - name: Save the Nix store
+        if: >-
+          !cancelled() && steps.root.outcome == 'success' &&
+          github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+          steps.root.outputs.key != steps.restore.outputs.restored-key
+        uses: nix-community/cache-nix-action/save@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: ${{ steps.root.outputs.key }}
+          gc-max-store-size-linux: 3500M
+
+  # Deletes all but the newest store cache of the ref, so the repository
+  # keeps one store of its 10 GB; a job of its own because deleting caches
+  # needs `actions: write`, which nothing else here is given.
+  prune-caches:
+    needs: check
+    if: >-
+      !cancelled() && github.event_name != 'pull_request' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    name: Delete all but the newest Nix store cache
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the older caches of this ref
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh cache list --ref "$GITHUB_REF" --key "nix-${RUNNER_OS}-" \
+            --sort created_at --order desc --limit 100 --json id --jq '.[1:][].id' |
+            while read -r id; do gh cache delete "$id"; done
