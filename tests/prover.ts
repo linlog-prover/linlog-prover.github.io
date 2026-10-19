@@ -17,6 +17,8 @@ export async function start(page: Page, sequent: string, fresh = true) {
   else await page.getByRole("button", { name: "New proof" }).click();
   await page.getByRole("textbox", { name: "Sequent" }).fill(sequent);
   await page.getByRole("textbox", { name: "Sequent" }).press("Enter");
+  // Started: the field gave way to the proof, or said why it could not.
+  await expect(page.locator(".stage .fb, [role=alert]").first()).toBeVisible();
 }
 
 /** Applies a rule to the active goal's formula whose name matches. */

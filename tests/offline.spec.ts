@@ -55,7 +55,8 @@ test("the service worker leaves linlog's documentation at /linlog/ alone", async
   // With no network the documentation is not served from anywhere, while the prover is.
   await context.setOffline(true);
   await expect(page.goto("/linlog/")).rejects.toThrow();
-  const prover = await page.goto("/");
+  const other = await context.newPage();
+  const prover = await other.goto("/");
   expect(prover?.fromServiceWorker()).toBe(true);
 });
 

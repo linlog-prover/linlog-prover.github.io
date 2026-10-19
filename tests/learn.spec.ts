@@ -60,6 +60,8 @@ test("the tour walks the page by keyboard and ends on a checked proof", async ({
   await expect(tour).toContainText("The sequent (1 of 8)");
   await expect(page.locator("[aria-live]")).toContainText("Tour, stop 1 of 8");
   for (let stop = 2; stop <= 8; stop++) {
+    // Next waits while the stop's step runs, as a keyboard user does.
+    await expect(tour.getByRole("button", { name: "Next", exact: true })).toBeEnabled();
     await expect(tour.getByRole("button", { name: "Next", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(tour).toContainText(`(${stop} of 8)`);
