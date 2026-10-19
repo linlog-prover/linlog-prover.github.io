@@ -257,10 +257,10 @@ test("a link whose session unpacks past the cap loads the sequent alone and says
   await expect(page.getByRole("button", { name: /^A, formula/ })).toBeVisible();
 });
 
-test("a proof's tab shows its sequent as linlog prints it, in Euler Math", async ({ page }) => {
+test("a proof's tab shows its sequent in signs, in Euler Math", async ({ page }) => {
   await start(page, "a^ par b |- b * a");
   const tab = page.locator(".pt-go .m");
-  await expect(tab).toHaveText("⊢ a ⊗ b⊥, b ⊗ a");
+  await expect(tab).toHaveText("a⊥ ⅋ b ⊢ b ⊗ a");
   expect(await tab.evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/^"Euler Math"/);
   await expect
     .poll(() => page.evaluate(() => document.fonts.check('16px "Euler Math"', "⊗")))

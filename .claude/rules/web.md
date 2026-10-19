@@ -83,9 +83,9 @@ the page reads.
 
 ## The state (`src/islands/state.tsx`)
 
-- **A tab names its sequent as linlog prints it in the proof's mode** (`shown`, set by
-  `entitle`): the text export of a session of that sequent with no step, which is the
-  sequent alone, two-sided in intuitionistic mode; `read`'s `text` is one-sided only.
+- **A tab shows its sequent as typed, in signs** (`displayed` in `src/lib/words.ts`, in
+  Euler Math): `A⊥` for `~A` and `A^`, which linlog's parser does not read, so the link
+  keeps `pretty`'s text, which it does.
 
 - **One action that changes a proof at a time** (`guard`): each reads the session, waits on
   the worker and shows the answer, so a second begun meanwhile would build on a session
@@ -137,6 +137,39 @@ the page reads.
   because `index.astro` imports its URL and passes it to the island as `font`); Astro's
   client build names its own assets, so a font imported from the island would land in
   `/_astro/` and fail the build. A new family is a line of `FONTS` and of the check.
+
+## The written content (`src/content/`, CC BY 4.0)
+
+- **Markdown in content collections** (`src/content.config.ts`): `examples/` (a sequent,
+  its mode, difficulty and verdict; a provable one's proof beside it as
+  `<id>.session.json`), `tour/` (the stops in order, each with the element it points at
+  and the step it performs), `texts/` (About and Learn's three openings).
+- **Rendered by `index.astro` into `<template data-written data-content="…">`** and cloned
+  by the island (`Written` in `Learn.tsx`), never set from strings: the content is in the
+  built HTML, where `no-style-attributes`, `csp` and `licences` read it. The examples' and
+  the tour's data are the island's props. The `licence` template is the CC BY line, shown
+  with the content (Learn's frame); every page with a `data-written` element must link CC
+  BY 4.0 (the `licences` check).
+- **An example's session is written by the command**: `linlog interact` with `save`, then
+  `proof` (exit 0). `src/content/examples.test.ts` holds every example to linlog's verdict
+  and every session to its sequent, mode and a finished proof. Learn's lessons, when
+  written, prove or refute every sequent with the command first.
+- **Watch** opens an example's proof taken back to the sequent with each step alone on the
+  redo stack, so Redo plays it; an example opens as a proof of its own, in place of the
+  page's empty one only, so it replaces no work and needs no warning.
+
+## Learn, the tour, About
+
+- **Learn** (`Learn.tsx`) is `ui.learn`, the place shown or null: a frame of `--color-learn`
+  around the window (`.app[data-learn]`, the window is `.win`) with the panel beside it,
+  under it on a phone; with it on every action shows its label. Off, nothing of it is on
+  the page. The tutorial's lessons are places (`LESSONS`) until they are written.
+- **The tour** (`Tour.tsx`) runs on `ui.tour`: each stop's `act` is performed once, on the
+  way forward, through the state's own actions; the caption takes the focus, says each
+  stop in the live region, and marks what it points at with `data-tour-spot`.
+- **About** is a menu of the bottom band: its text, linlog's version from `about`, every
+  licence the site serves (linked, `tests/learn.spec.ts` fetches each) and the line that
+  GitHub logs visitors' addresses.
 
 ## Styling
 

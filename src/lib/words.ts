@@ -217,6 +217,41 @@ export function pretty(input: string): string {
     .replaceAll("+", "⊕");
 }
 
+/**
+ * A typed sequent as the tab shows it, in Euler Math: `pretty`'s signs, the
+ * units and `par` as theirs, and a negation, `~A` or `A^`, as `A⊥`, the dual
+ * of a group or of an exponential formula parenthesised (`(A ⊗ B)⊥`,
+ * `(!A)⊥`). For the eye only: linlog's parser does not read `A⊥`.
+ */
+export function displayed(input: string): string {
+  let text = pretty(input)
+    .replace(/\bpar\b/g, "⅋")
+    .replace(/\bbot\b/g, "⊥")
+    .replace(/\btop\b/g, "⊤")
+    .replace(/\^/g, "⊥");
+  // Each `~`, the last first, so that its operand is already shown.
+  for (let at = text.lastIndexOf("~"); at >= 0; at = text.lastIndexOf("~", at - 1)) {
+    const rest = text.slice(at + 1);
+    const prefix = /^\s*[!?]*\s*/.exec(rest)?.[0] ?? "";
+    let end = prefix.length;
+    if (rest[end] === "(") {
+      let depth = 0;
+      for (; end < rest.length; end++) {
+        if (rest[end] === "(") depth++;
+        else if (rest[end] === ")" && --depth === 0) break;
+      }
+      end++;
+    } else end += /^[A-Za-z0-9_']*/.exec(rest.slice(end))?.[0].length ?? 0;
+    end += /^⊥*/.exec(rest.slice(end))?.[0].length ?? 0;
+    const operand = rest.slice(0, end).trim();
+    if (!operand) continue;
+    const shown = /^[!?]/.test(operand) ? `(${operand})⊥` : `${operand}⊥`;
+    text = text.slice(0, at) + shown + rest.slice(end);
+    if (at === 0) break;
+  }
+  return text;
+}
+
 /** A formula as the library writes it, with each negated atom as `A⊥`, as the drawing sets it. */
 export function formulaText(text: string): string {
   return text.replace(/~([A-Za-z0-9_']+)/g, "$1⊥");

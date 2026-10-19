@@ -6,12 +6,15 @@
  * its key. Undo and redo (icons alone, as is conventional, with their names
  * on hover and focus), close all, hint; Export (a menu of the formats and
  * the link), Import (a file, a paste, or a drop onto the stage), Settings;
- * Keys. The menus open above the band.
+ * Learn, the tour, Keys and About. The menus open above the band.
  */
 
 import {
   CheckCheck,
+  Compass,
   Download,
+  GraduationCap,
+  Info,
   Keyboard,
   Lightbulb,
   ListOrdered,
@@ -20,13 +23,14 @@ import {
   Undo2,
   Upload,
 } from "lucide-solid";
-import { createSignal, For, type JSX, Show } from "solid-js";
+import { createResource, createSignal, For, type JSX, Show } from "solid-js";
 import { failure, type Outcome, type SessionDoc } from "../lib/linlog";
 import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
 import { pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import { DEFAULT_BUDGET, type Prover } from "./state";
+import { Written } from "./Learn";
 import { applyTheme } from "./TopBand";
 import type { Menu, Ui } from "./ui";
 
@@ -56,6 +60,7 @@ export const KEYS: readonly (readonly [string, string])[] = [
   ["V", "Tree or net"],
   ["+ − F", "Zoom in, zoom out, fit"],
   ["N", "A new proof"],
+  ["L", "Learn on or off"],
   ["E I ,", "Export, Import, Settings"],
   ["?", "This list"],
 ];
@@ -67,6 +72,7 @@ export function BottomBand(props: {
   font: () => Promise<Uint8Array>;
   theme: () => Theme;
   setTheme: (t: Theme) => void;
+  tour: () => void;
 }) {
   const { ui, setUi } = props.ui;
   const proof = () => props.prover.current();
@@ -169,12 +175,41 @@ export function BottomBand(props: {
         </div>
         <div class="group">
           <Action
+            label="Learn"
+            icon={<GraduationCap size={18} aria-hidden="true" />}
+            tip="The tutorial, practice and the reference, around the stage"
+            keyName="L"
+            pressed={ui.learn !== null}
+            onClick={() => setUi("learn", ui.learn ? null : "practice")}
+            show={key}
+            labelled={labelled}
+          />
+          <Action
+            label="Tour"
+            icon={<Compass size={18} aria-hidden="true" />}
+            tip="A walk through the page, proving a sequent"
+            keyName=""
+            onClick={props.tour}
+            show={key}
+            labelled={labelled}
+          />
+          <Action
             label="Keys"
             icon={<Keyboard size={18} aria-hidden="true" />}
             tip="Every key"
             keyName="?"
             expanded={ui.menu === "keys"}
             onClick={() => toggle("keys")}
+            show={key}
+            labelled={labelled}
+          />
+          <Action
+            label="About"
+            icon={<Info size={18} aria-hidden="true" />}
+            tip="What this page is, its licences"
+            keyName=""
+            expanded={ui.menu === "about"}
+            onClick={() => toggle("about")}
             show={key}
             labelled={labelled}
           />
@@ -191,6 +226,9 @@ export function BottomBand(props: {
       </Show>
       <Show when={ui.menu === "settings"}>
         <SettingsPanel prover={props.prover} theme={props.theme} setTheme={props.setTheme} />
+      </Show>
+      <Show when={ui.menu === "about"}>
+        <AboutPane prover={props.prover} />
       </Show>
       <Show when={ui.menu === "keys"}>
         <div class="cluster menu" role="dialog" aria-label="Keys">
@@ -221,6 +259,7 @@ function Action(props: {
   alone?: boolean;
   disabled?: boolean | undefined;
   expanded?: boolean;
+  pressed?: boolean;
   onClick: () => void;
   show: (k: string) => JSX.Element;
   labelled?: (label: string) => JSX.Element;
@@ -231,14 +270,15 @@ function Action(props: {
       class="btn act"
       aria-label={props.alone ? props.label : undefined}
       aria-expanded={props.expanded}
+      aria-pressed={props.pressed}
       data-tip={props.tip}
-      data-key={props.keyName}
+      data-key={props.keyName || undefined}
       disabled={props.disabled}
       onClick={() => props.onClick()}
     >
       {props.icon}
       {props.alone ? null : props.labelled?.(props.label)}
-      {props.show(props.keyName)}
+      {props.keyName ? props.show(props.keyName) : null}
     </button>
   );
 }
@@ -588,6 +628,48 @@ function StepsPanel(props: { prover: Prover }) {
           )}
         </For>
       </ol>
+    </div>
+  );
+}
+
+/** The licences of what the page sends, each served with it. */
+const LICENCES: readonly (readonly [string, string, string])[] = [
+  ["The page's code and linlog", "EUPL-1.2", "/licenses/LICENSE.txt"],
+  ["The written content", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"],
+  ["Euler Math, the formulas' font", "SIL OFL 1.1", "/fonts/Euler-Math-OFL.txt"],
+  ["Figtree, the text's font", "SIL OFL 1.1", "/fonts/Figtree-OFL.txt"],
+  ["Space Mono, the field's font", "SIL OFL 1.1", "/fonts/SpaceMono-OFL.txt"],
+  ["The JavaScript's packages, Lucide's icons among them", "notices", "/licenses/bundle.txt"],
+  ["The Rust crates inside linlog's module", "notices", "/licenses/THIRD-PARTY-NOTICES.txt"],
+];
+
+function AboutPane(props: { prover: Prover }) {
+  const [about] = createResource(() => props.prover.api.about());
+  return (
+    <div class="cluster menu about" role="dialog" aria-label="About">
+      <p class="kw-label h">About</p>
+      <Written name="texts/about" />
+      <p class="sub">
+        linlog {about()?.linlog ?? ""}, reading session documents up to level {about()?.level ?? ""}
+        .
+      </p>
+      <p class="kw-label h">Licences</p>
+      <ul class="licences">
+        <For each={LICENCES}>
+          {([what, licence, href]) => (
+            <li>
+              {what}: <a href={href}>{licence}</a>
+            </li>
+          )}
+        </For>
+      </ul>
+      <p class="sub privacy">
+        No tracking. GitHub, which serves this site, logs every visitor's IP address, as{" "}
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">
+          GitHub's privacy statement
+        </a>{" "}
+        says.
+      </p>
     </div>
   );
 }

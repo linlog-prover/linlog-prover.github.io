@@ -13,7 +13,7 @@
 import { Moon, Plus, Sun, X } from "lucide-solid";
 import { createEffect, createSignal, For, on, onMount, Show } from "solid-js";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
-import { pretty } from "../lib/words";
+import { displayed } from "../lib/words";
 import type { Proof, Prover } from "./state";
 import type { Ui } from "./ui";
 
@@ -201,9 +201,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
               } else props.prover.activate(props.proof.id);
             }}
           >
-            <span class="m">
-              {props.proof.shown ?? (props.proof.input ? pretty(props.proof.input) : "New proof")}
-            </span>
+            <span class="m">{props.proof.input ? displayed(props.proof.input) : "New proof"}</span>
           </button>
         }
       >

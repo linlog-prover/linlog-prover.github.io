@@ -603,7 +603,17 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
 
       <Show when={!proof()?.session}>
         <div class="empty">
-          <p>Type a sequent in the field above, then press Enter.</p>
+          <p>
+            Type a sequent, or open one from{" "}
+            <button
+              type="button"
+              class="linkish"
+              onClick={() => props.ui.setUi("learn", "practice")}
+            >
+              Practice
+            </button>
+            .
+          </p>
         </div>
       </Show>
 

@@ -2,7 +2,7 @@
 // Licensed under the EUPL
 
 import { describe, expect, it } from "vitest";
-import { pretty } from "./words";
+import { displayed, pretty } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -19,5 +19,14 @@ describe("the typed sequent's signs", () => {
       const ascii = JSON.parse(linlog.read(text, "")).sequent;
       expect(JSON.parse(linlog.read(pretty(text), "")).sequent, text).toEqual(ascii);
     }
+  });
+});
+
+describe("the tab's sequent", () => {
+  it("shows negations as duals and every connective by its sign", () => {
+    expect(displayed("a^ par b |- b * a")).toBe("a⊥ ⅋ b ⊢ b ⊗ a");
+    expect(displayed("|- ~A | A, bot, top")).toBe("⊢ A⊥ ⅋ A, ⊥, ⊤");
+    expect(displayed("~(A * ~B) |- ~~C, ~!D")).toBe("(A ⊗ B⊥)⊥ ⊢ C⊥⊥, (!D)⊥");
+    expect(displayed("A, A -o B |- B")).toBe("A, A ⊸ B ⊢ B");
   });
 });

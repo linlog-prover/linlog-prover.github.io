@@ -21,6 +21,7 @@ import {
   type StepForm,
   type View,
 } from "../lib/linlog";
+import type { Example } from "../lib/content";
 import { Cancelled } from "../lib/protocol";
 import {
   type Shelf,
@@ -39,7 +40,7 @@ import {
   retract,
   within,
 } from "../lib/steps";
-import { formulaText, inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
+import { inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
 
 /** A note at a goal: a refusal, or what a search answered there. */
 export interface Note {
@@ -74,9 +75,6 @@ export interface Proof {
   typed: { classical: string; intuitionistic: string } | null;
   /** A line on the stage that is no goal's: a proof the link could not restore. */
   banner: Said | null;
-  /** The sequent as linlog prints it in the proof's mode, for the tab; and the sequent and mode it is of. */
-  shown: string | null;
-  shownFor: string | null;
 }
 
 /** The visitor's settings, kept in the browser. */
@@ -135,8 +133,6 @@ const blank = (mode: Mode): Proof => ({
   verdict: null,
   typed: null,
   banner: null,
-  shown: null,
-  shownFor: null,
 });
 
 /** The prover's state and actions, for one island. */
@@ -198,29 +194,6 @@ export function createProver() {
   const pathOf = (p: Proof, goal: number): Path =>
     p.session ? (paths(p.session).get(goal) ?? []) : [];
 
-  /**
-   * Names a proof's tab by its sequent as linlog prints it in the proof's
-   * mode (two-sided in intuitionistic mode): the text export of a session of
-   * that sequent with no step yet, which is the sequent alone.
-   */
-  async function entitle(id: string) {
-    const p = store.proofs.find((q) => q.id === id);
-    const sequent = p?.session?.sequent;
-    if (!p || !sequent) return;
-    const mode = p.mode;
-    const key = JSON.stringify([sequent, mode]);
-    if (p.shownFor === key) return;
-    const fresh = await attempt(() => api.start(sequent, mode, json()));
-    if (!fresh.ok) return;
-    const text = await attempt(() => api.exportAs(fresh.value.session, "text", json()));
-    if (text.ok) {
-      update(id, (q) => {
-        q.shown = formulaText(text.value.trim());
-        q.shownFor = key;
-      });
-    }
-  }
-
   /** Shows a played session, the active goal moved to `goal` (or kept where it is still open). */
   const show = (id: string, played: Played, goal?: number) => {
     update(id, (p) => {
@@ -233,7 +206,6 @@ export function createProver() {
       if (goal !== undefined) p.active = paths(played.session).get(goal) ?? null;
       if (played.view.complete) p.verdict = null;
     });
-    void entitle(id);
   };
 
   /** Runs a call, turning a stop into nothing and every other failure into the library's error. */
@@ -338,7 +310,6 @@ export function createProver() {
       if (!p?.session) return;
       const result = await attempt(() => api.view(p.session as SessionDoc, json()));
       if (result.ok) update(id, (q) => (q.view = result.value));
-      void entitle(id);
     },
 
     /** Opens a new proof with the sequent field. */
@@ -494,6 +465,34 @@ export function createProver() {
       save();
       return { kind: "sequent" };
     },
+
+    /**
+     * Opens an example as a proof of its own, in place of the page's empty
+     * one if that is shown: its sequent to prove, or with `watch` its proof
+     * taken back to the sequent, each step on the redo stack by itself, so
+     * that Redo plays the proof one step at a time. Nothing open is replaced.
+     */
+    example: guard(async (example: Example, watch: boolean) => {
+      const empty = current();
+      const blankId = empty && !empty.session && !empty.input.trim() ? empty.id : null;
+      const opened = await actions.open(
+        watch && example.session ? example.session : example.sequent,
+        example.mode,
+      );
+      if ("problem" in opened) return;
+      const p = current();
+      if (blankId && blankId !== p?.id) actions.remove(blankId);
+      if (!watch || !p?.session) return;
+      const all = actionsOf(p.session);
+      const result = await attempt(() => api.replay(p.session as SessionDoc, [], json()));
+      if (!result.ok) return;
+      update(p.id, (q) => {
+        q.input = example.sequent;
+        q.redo = all.toReversed().map((action) => [action]);
+      });
+      show(p.id, result.value, 0);
+      save();
+    }),
 
     /** Notes a line on the stage that is no goal's. */
     banner(id: string, said: Said | null) {

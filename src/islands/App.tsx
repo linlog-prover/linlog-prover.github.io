@@ -18,15 +18,22 @@ import type { Mode } from "../lib/linlog";
 import { paths } from "../lib/steps";
 import { pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
+import type { Example, Stop } from "../lib/content";
 import { BottomBand } from "./BottomBand";
+import { LearnFrame } from "./Learn";
 import { Stage } from "./Stage";
 import { createProver } from "./state";
 import { TopBand } from "./TopBand";
+import { Tour } from "./Tour";
 import { createUi, ladderKey } from "./ui";
 
 export default function App(props: {
   /** Euler Math's address: the page imports it, so the font is served under /fonts/ beside its licence. */
   font: string;
+  /** Learn's practice: the examples, in their order. */
+  examples: readonly Example[];
+  /** The tour's stops, in their order. */
+  stops: readonly Stop[];
 }) {
   const prover = createProver();
   const view = createUi();
@@ -255,6 +262,7 @@ export default function App(props: {
         i: () => setUi("menu", ui.menu === "import" ? null : "import"),
         ",": () => setUi("menu", ui.menu === "settings" ? null : "settings"),
         "?": () => setUi("menu", ui.menu === "keys" ? null : "keys"),
+        l: () => setUi("learn", ui.learn ? null : "practice"),
         Escape: () => {
           setTip(null);
           setUi({ menu: null, pendingMode: null });
@@ -282,36 +290,58 @@ export default function App(props: {
   );
 
   return (
-    <div class="app" data-keys={prover.settings().showKeys ? "" : undefined}>
-      <TopBand prover={prover} ui={view} theme={theme} setTheme={setTheme} />
-      <Show when={prover.aside()}>
-        {(shelf) => (
-          <section class="restore cluster" aria-label="Restore">
-            <span>
-              {shelf().proofs.length} {shelf().proofs.length === 1 ? "proof" : "proofs"} from your
-              last visit
-            </span>
-            <button type="button" class="btn btn-primary" onClick={() => prover.restore()}>
-              Restore
-            </button>
-            <button type="button" class="btn" onClick={() => prover.discard()}>
-              Discard
-            </button>
-          </section>
-        )}
+    <div
+      class="app"
+      data-keys={prover.settings().showKeys ? "" : undefined}
+      data-learn={ui.learn ? "" : undefined}
+    >
+      <div class="win">
+        <TopBand prover={prover} ui={view} theme={theme} setTheme={setTheme} />
+        <Show when={prover.aside()}>
+          {(shelf) => (
+            <section class="restore cluster" aria-label="Restore">
+              <span>
+                {shelf().proofs.length} {shelf().proofs.length === 1 ? "proof" : "proofs"} from your
+                last visit
+              </span>
+              <button type="button" class="btn btn-primary" onClick={() => prover.restore()}>
+                Restore
+              </button>
+              <button type="button" class="btn" onClick={() => prover.discard()}>
+                Discard
+              </button>
+            </section>
+          )}
+        </Show>
+        <Stage prover={prover} ui={view} />
+        <Show when={linkShort() && ui.menu === "export"}>
+          <p class="sr-only">The link holds the sequent alone.</p>
+        </Show>
+        <BottomBand
+          prover={prover}
+          ui={view}
+          hint={() => void hint()}
+          font={font}
+          theme={theme}
+          setTheme={setTheme}
+          tour={() => {
+            setUi({ menu: null, tour: null });
+            setUi("tour", 0);
+          }}
+        />
+      </div>
+      <Show when={ui.learn}>
+        <LearnFrame
+          prover={prover}
+          ui={view}
+          examples={props.examples}
+          tour={() => {
+            setUi({ tour: null });
+            setUi("tour", 0);
+          }}
+        />
       </Show>
-      <Stage prover={prover} ui={view} />
-      <Show when={linkShort() && ui.menu === "export"}>
-        <p class="sr-only">The link holds the sequent alone.</p>
-      </Show>
-      <BottomBand
-        prover={prover}
-        ui={view}
-        hint={() => void hint()}
-        font={font}
-        theme={theme}
-        setTheme={setTheme}
-      />
+      <Tour prover={prover} ui={view} stops={props.stops} />
       <Show when={tip()}>
         {(t) => (
           <div class="tip" ref={tipBox} role="tooltip">

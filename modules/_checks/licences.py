@@ -29,7 +29,7 @@ lock = json.loads(pathlib.Path(sys.argv[5]).read_text())
 licence = pathlib.Path(sys.argv[6]).read_bytes()
 CC_BY = "https://creativecommons.org/licenses/by/4.0/"
 # The pages that must carry written content, and so the CC BY line.
-WRITTEN: set[str] = set()
+WRITTEN = {"index.html"}
 FONT_FILES = {".woff", ".woff2", ".otf", ".ttf"}
 
 problems = []

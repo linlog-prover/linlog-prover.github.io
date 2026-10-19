@@ -7,19 +7,71 @@
 // Without a script the page says what it is. Euler Math, which the island
 // loads for its drawings and exports, is imported here, so that it is built
 // as the other fonts are, under /fonts/ (astro.config.ts).
+//
+// The written content (src/content.config.ts) is rendered here into inert
+// templates, each marked data-written, which the island clones where it
+// shows them (Learn, the tour, About); the examples' and the tour's data go
+// to the island as props. The licence of the written content is a template
+// of its own, shown with it.
 import font from "linlog-fonts/Euler-Math.otf?url";
+import { getCollection, render } from "astro:content";
 import App from "../islands/App";
+import type { Example, Stop } from "../lib/content";
 import Base from "../layouts/Base.astro";
+
+const sessions = import.meta.glob<string>("../content/examples/*.session.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const examples = (await getCollection("examples")).sort((a, b) => a.data.order - b.data.order);
+const stops = (await getCollection("tour")).sort((a, b) => a.id.localeCompare(b.id));
+const texts = await getCollection("texts");
+
+const exampleData: Example[] = examples.map((e) => ({
+  id: e.id,
+  title: e.data.title,
+  sequent: e.data.sequent,
+  mode: e.data.mode,
+  difficulty: e.data.difficulty,
+  verdict: e.data.verdict,
+  session: sessions[`../content/examples/${e.id}.session.json`] ?? null,
+}));
+const stopData: Stop[] = stops.map((s) => ({
+  id: s.id,
+  title: s.data.title,
+  target: s.data.target,
+  act: s.data.act,
+}));
+const rendered = await Promise.all(
+  [...examples, ...stops, ...texts].map(async (entry) => ({
+    key: `${entry.collection}/${entry.id}`,
+    Content: (await render(entry)).Content,
+  })),
+);
 ---
 
 <Base title="linlog" description="Prove sequents of linear logic step by step, in the browser.">
   <main>
     <h1 class="sr-only">linlog: linear logic, proved in the browser</h1>
-    <App client:only="solid-js" font={font}>
+    <App client:only="solid-js" font={font} examples={exampleData} stops={stopData}>
       <p slot="fallback" class="noscript">
         linlog proves sequents of linear logic in the browser; the page needs JavaScript and
         WebAssembly.
       </p>
     </App>
+    {
+      rendered.map(({ key, Content }) => (
+        <template data-written data-content={key}>
+          <Content />
+        </template>
+      ))
+    }
+    <template data-written data-content="licence">
+      <p class="licence">
+        The text of this page is licensed under
+        <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>.
+      </p>
+    </template>
   </main>
 </Base>

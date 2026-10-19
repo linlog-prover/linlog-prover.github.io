@@ -49,6 +49,9 @@
   --color-edge: light-dark(#b9c1d4, #2a3352);
   /* The stage's dotted grid. */
   --color-dot: light-dark(#a9b2c8, #2e3858);
+  /* Learn's frame, the page's one mode, and its panel. */
+  --color-learn: light-dark(#8e3a9e, #d98be6);
+  --color-learn-wash: light-dark(#f3e6f5, #2a1e3a);
   /* The net's ⅋ edges. */
   --color-net-par: light-dark(#0072b2, #6fb3ee);
   /* The drawing's glow on the dark field; none by day. */

@@ -4,7 +4,8 @@
 /**
  * The island's own view state, beside the proofs' (state.tsx): what is
  * selected, which popover or menu is open, the tree or net tab, the camera,
- * the hint ladder and the live region's message.
+ * the hint ladder, the live region's message, Learn's place and the tour's
+ * stop.
  */
 
 import { createSignal } from "solid-js";
@@ -42,7 +43,11 @@ export type Menu =
   | "status"
   | "calculus"
   | "steps"
+  | "about"
   | null;
+
+/** Learn's three places. */
+export type Rubric = "tutorial" | "practice" | "reference";
 
 /** Creates the view state. */
 export function createUi() {
@@ -56,6 +61,10 @@ export function createUi() {
     live: string;
     /** The mode a calculus switch asked for, until the visitor confirms the restart. */
     pendingMode: string | null;
+    /** Learn's place shown, or null with Learn off. */
+    learn: Rubric | null;
+    /** The tour's stop shown (from 0), or null when no tour runs. */
+    tour: number | null;
   }>({
     selected: null,
     offered: null,
@@ -65,6 +74,8 @@ export function createUi() {
     ladder: null,
     live: "",
     pendingMode: null,
+    learn: null,
+    tour: null,
   });
   /** Bumped when the drawing must be laid out again (a new drawing, a resize). */
   const [drawn, setDrawn] = createSignal(0);

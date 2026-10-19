@@ -72,7 +72,11 @@ which its flake, its tooling and its Claude Code setup are taken.
 `flake.nix` declares the inputs; its outputs are one `import-tree` call over `modules/`
 (dendritic flake-parts: one concern per file, never an imports list). `astro.config.ts`
 and `src/` are the site:
-- `src/pages/index.astro`: the one page, the island placed `client:only`.
+- `src/pages/index.astro`: the one page, the island placed `client:only`, the written
+  content rendered into templates; `404.astro` the page Pages serves for a missing path.
+- `src/content/`: the written content (CC BY 4.0), Markdown in content collections
+  (`src/content.config.ts`): the examples with their sessions, the tour, About and Learn.
+- `src/integrations/licences.ts`: the licences written into the build.
 - `src/islands/`: the prover, one Solid island (`App.tsx` and its parts).
 - `src/worker/linlog.worker.ts`: the module worker that loads linlog's module and answers
   the page's requests.
@@ -82,7 +86,9 @@ and `src/` are the site:
 - `src/styles/tokens.css`: every colour, font and size (`@theme static`); `app.css` the
   page's rules.
 - `tests/`: Playwright, one test per interaction of the island; `tests/serve.ts` the static
-  server.
+  server; `tests/fixtures.ts` the `test` every spec imports, failing on a CSP violation.
+- `modules/_checks/`: the checks written in Python (`csp.py`, `licences.py`), which
+  import-tree skips.
 
 Each area's conventions are a rule in `.claude/rules/`, which loads when a matching file
 is opened with Read, Edit or Write.
