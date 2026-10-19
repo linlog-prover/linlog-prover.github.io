@@ -1,7 +1,7 @@
 // linlog © Fabian Lukas Grubmüller 2026
 // Licensed under the EUPL
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { rule, start } from "./prover";
 
 test("a proof goes at a phone's width, and the page does not scroll sideways", async ({ page }) => {

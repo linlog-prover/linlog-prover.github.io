@@ -29,3 +29,10 @@ export function effective(theme: Theme, systemDark: boolean): "light" | "dark" {
 export function toggled(theme: Theme, systemDark: boolean): Theme {
   return effective(theme, systemDark) === "dark" ? "light" : "dark";
 }
+
+/**
+ * The script that applies the pinned scheme before the first paint, inline
+ * at the start of every page's body (layouts/Base.astro), after the policy's
+ * <meta>; astro.config.ts allows it by this very text's hash.
+ */
+export const PREPAINT = `try{const t=localStorage.getItem(${JSON.stringify(THEME_KEY)});if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch{}`;

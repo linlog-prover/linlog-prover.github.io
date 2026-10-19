@@ -5,7 +5,7 @@
 // linlog's real module in its worker.
 
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { goto, proveCommuted, rule, start } from "./prover";
 
 test("the sequent field starts a proof, and marks where a sequent does not parse", async ({

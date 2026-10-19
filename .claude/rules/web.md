@@ -101,6 +101,25 @@ the page reads.
   overwrites nothing. A proof open already (a link's) is taken out of the bar (`prune`). Settings are `linlog-settings`,
   the theme `linlog-theme` (read before the first paint by `Base.astro`).
 
+## The Content-Security-Policy
+
+- **A `<meta>` element, Astro's** (`security.csp` in `astro.config.ts`): Pages sets no
+  header. Astro writes it at the end of `<head>` with the hashes of the inline code it
+  makes (the island's runtime and its `astro-island` style), and a `<meta>` policy covers
+  only what follows it: so nothing inline goes into `<head>`. The pre-paint theme script
+  is the body's first element, its text `PREPAINT` (`src/lib/theme.ts`), whose hash the
+  config adds, since Astro hashes no `is:inline` script.
+- **What a `<meta>` policy cannot do**: `frame-ancestors`, `report-uri` and `sandbox` are
+  ignored there, so the page can be framed; the worker that runs linlog's module gets no
+  policy at all (a worker's comes from its own response's headers).
+- **Checked twice**: the `csp` flake check (`modules/_checks/csp.py`) recomputes every
+  inline script's and style's hash from the built HTML and fails on one the policy lacks,
+  on a policy after any script or stylesheet, on a loose source or a missing
+  `'wasm-unsafe-eval'`; `tests/fixtures.ts` fails any Playwright test during which the
+  browser reported a violation, so every interaction runs under the policy. Import
+  `test` from `./fixtures`, never from `@playwright/test`.
+- **No Shiki** (`markdown.syntaxHighlight: false`): it colours code with style attributes.
+
 ## Styling
 
 - **Every colour, font and size is a token** in `src/styles/tokens.css` (`@theme static`,

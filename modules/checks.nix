@@ -23,6 +23,11 @@
 #               without 'unsafe-inline' makes browsers ignore them (the
 #               author's sites' rule); the island places things through the
 #               CSSOM, which no policy restricts
+#   csp         every page carries the Content-Security-Policy as a <meta>
+#               element first in its head, allowing each inline script and
+#               style by a hash recomputed here apart from Astro, with
+#               'wasm-unsafe-eval' and nothing that allows inline code
+#               wholesale; no data: URL (modules/_checks/csp.py)
 #   pages-paths the site as Pages publishes it: a 404.html at its root, and
 #               nothing at /linlog or under it, where linlog's own Pages
 #               site (the rustdoc) lives on the same address
@@ -195,6 +200,7 @@
         lib.mapAttrs onBuild {
           no-style-attributes = noStyleAttributes;
           pages-paths = pagesPaths;
+          csp = ./_checks/csp.py;
         }
         // {
           site = config.packages.default;

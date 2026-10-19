@@ -5,9 +5,11 @@
 // The page's frame: the head, the fonts (Fontsource's packages, which Vite
 // copies into /_astro/ under hashed names; Euler Math is loaded by the island
 // from linlog's fonts, since its bytes also go to the PNG and PDF exports),
-// the stylesheet, and the theme applied before the first paint.
+// the stylesheet, and the theme applied before the first paint. The
+// Content-Security-Policy's <meta> is Astro's (astro.config.ts).
 import "@fontsource-variable/figtree";
 import "@fontsource/space-mono/400.css";
+import { PREPAINT } from "../lib/theme";
 import "../styles/global.css";
 
 interface Props {
@@ -26,16 +28,11 @@ const { title, description } = Astro.props;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    {/* The stored theme, before the first paint (src/lib/theme.ts keeps the
-        same key and values). */}
-    <script is:inline>
-      try {
-        const theme = localStorage.getItem("linlog-theme");
-        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
-      } catch {}
-    </script>
   </head>
   <body>
+    {/* The stored theme, before the first paint: the body's first element,
+        after the policy, which Astro writes at the end of the head. */}
+    <script is:inline set:html={PREPAINT} />
     <slot />
   </body>
 </html>
