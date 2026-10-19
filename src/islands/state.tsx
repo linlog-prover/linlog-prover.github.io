@@ -112,6 +112,12 @@ function loadSettings(): Settings {
 let counter = 0;
 const freshId = () => `p${Date.now().toString(36)}${(counter++).toString(36)}`;
 
+/** Whether an open proof is a stored one: the same session, or the same text not started. */
+const isOpen = (open: Proof, stored: StoredProof) =>
+  open.session
+    ? JSON.stringify(open.session) === JSON.stringify(stored.session)
+    : !stored.session && open.input.trim() !== "" && open.input === stored.input;
+
 const blank = (mode: Mode): Proof => ({
   id: freshId(),
   input: "",
@@ -142,6 +148,28 @@ export function createProver() {
   const [settings, setSettingsSignal] = createSignal<Settings>(loadSettings());
   const [aside, setAsideShelf] = createSignal<Shelf | undefined>(undefined);
   const [lastMode, setLastMode] = createSignal<Mode>("classical");
+  const [busy, setBusy] = createSignal(false);
+  /** This visit's key among the stored proofs. */
+  const visit = freshId();
+
+  /**
+   * One action that changes a proof at a time: each reads the session before
+   * it waits on the worker and shows the answer after, so a second one begun
+   * meanwhile would build on the session the first replaces, and one answer
+   * would overwrite the other. An action asked for while another runs does
+   * nothing (and answers undefined); its buttons and keys wait on `busy`.
+   */
+  const guard =
+    <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
+    async (...args: A): Promise<R | undefined> => {
+      if (busy()) return undefined;
+      setBusy(true);
+      try {
+        return await run(...args);
+      } finally {
+        setBusy(false);
+      }
+    };
 
   /** The settings as linlog reads them: the tab's defaults with the budget. */
   const json = (budget = settings().budget) => JSON.stringify({ limits: { work: budget } });
@@ -203,16 +231,18 @@ export function createProver() {
             mode: p.mode,
             session: p.session,
             redo: p.redo,
+            saved: Date.now(),
           }),
         ),
     };
-    saveShelf(storage(), shelf);
+    saveShelf(storage(), visit, shelf);
   }
 
   const actions = {
     api,
     store,
     pending,
+    busy,
     settings,
     aside,
     current,
@@ -231,7 +261,7 @@ export function createProver() {
 
     /** At the page's start: sets the last visit's proofs aside for the restore bar. */
     begin() {
-      setAsideShelf(setAside(storage()));
+      setAsideShelf(setAside(storage(), visit));
     },
 
     /** Restores the last visit's proofs beside the open ones. */
@@ -240,7 +270,7 @@ export function createProver() {
       if (!shelf) return;
       batch(() => {
         for (const stored of shelf.proofs) {
-          if (store.proofs.some((p) => p.id === stored.id)) continue;
+          if (store.proofs.some((p) => p.id === stored.id || isOpen(p, stored))) continue;
           const proof: Proof = {
             ...blank(stored.mode),
             id: stored.id,
@@ -257,6 +287,12 @@ export function createProver() {
       setAsideShelf(undefined);
       for (const p of store.proofs) if (p.session && !p.view) void actions.refresh(p.id);
       save();
+    },
+
+    /** Takes out of the restore bar the proofs open already (a link's). */
+    prune() {
+      if (!aside()) return;
+      setAsideShelf(dropAside(storage(), (stored) => !store.proofs.some((p) => isOpen(p, stored))));
     },
 
     discard() {
@@ -320,7 +356,7 @@ export function createProver() {
     },
 
     /** Starts the field's text as a new session in the proof's mode (or opens a session pasted there). */
-    async submit(id: string, mode?: Mode) {
+    submit: guard(async (id: string, mode?: Mode) => {
       const p = store.proofs.find((q) => q.id === id);
       if (!p) return;
       const read = await attempt(() => api.read(p.input, json()));
@@ -364,10 +400,10 @@ export function createProver() {
       });
       show(id, started.value, 0);
       save();
-    },
+    }),
 
     /** Changes the proof's calculus, which restarts a started proof from its sequent. */
-    async setMode(id: string, mode: Mode) {
+    setMode: guard(async (id: string, mode: Mode) => {
       const p = store.proofs.find((q) => q.id === id);
       if (!p) return;
       setLastMode(mode);
@@ -389,7 +425,7 @@ export function createProver() {
       });
       show(id, started.value, 0);
       save();
-    },
+    }),
 
     /** Opens a document (a sequent or a session as linlog writes them) as a new proof; says which it got. */
     async open(text: string, mode?: Mode): Promise<{ kind: string } | { problem: Said }> {
@@ -467,7 +503,7 @@ export function createProver() {
     },
 
     /** Applies a step; a refusal becomes the note at the goal. Returns whether it applied. */
-    async apply(goal: number, step: StepForm): Promise<boolean> {
+    apply: guard(async (goal: number, step: StepForm): Promise<boolean> => {
       const p = current();
       if (!p?.session) return false;
       const result = await attempt(() => api.apply(p.session as SessionDoc, goal, step, json()));
@@ -483,10 +519,10 @@ export function createProver() {
       show(p.id, result.value, result.value.opened[0] ?? result.value.view.goals[0]?.goal);
       save();
       return true;
-    },
+    }),
 
     /** Undo on the active goal's branch (on a finished proof, the last step). */
-    async undo() {
+    undo: guard(async () => {
       const p = current();
       if (!p?.session) return;
       const back = retract(p.session, p.view?.complete ? undefined : activeGoal(p));
@@ -510,10 +546,10 @@ export function createProver() {
       show(p.id, result.value, reopened);
       if (result.value.failed.length) actions.lost(p.id, result.value.failed);
       save();
-    },
+    }),
 
     /** Goes back to the session as it was after its first `count` actions; redo brings the rest back. */
-    async backTo(count: number) {
+    backTo: guard(async (count: number) => {
       const p = current();
       if (!p?.session) return;
       const all = actionsOf(p.session);
@@ -528,10 +564,10 @@ export function createProver() {
       show(p.id, result.value, reopened);
       if (result.value.failed.length) actions.lost(p.id, result.value.failed);
       save();
-    },
+    }),
 
     /** Redoes what the last undo took back. */
-    async redo() {
+    redo: guard(async () => {
       const p = current();
       const todo = p?.redo.at(-1);
       if (!p?.session || !p.view || !todo) return;
@@ -547,7 +583,7 @@ export function createProver() {
       show(p.id, result.value, next);
       if (result.value.failed.length) actions.lost(p.id, result.value.failed);
       save();
-    },
+    }),
 
     /** Says that a replay left goals open that it had closed before. */
     lost(id: string, failed: readonly Path[]) {
@@ -565,7 +601,7 @@ export function createProver() {
     },
 
     /** Closes a goal by the search, within the budget (times `factor`). */
-    async close(goal: number, factor = 1) {
+    close: guard(async (goal: number, factor: number = 1) => {
       const p = current();
       if (!p?.session) return;
       const budget = settings().budget * factor;
@@ -604,10 +640,10 @@ export function createProver() {
         q.note = { path, said, tone: said.tone, outcome: closed.outcome, budget };
         if (path.length === 0) q.verdict = { ...said, outcome: closed.outcome };
       });
-    },
+    }),
 
     /** Closes every open goal within one budget. */
-    async closeAll() {
+    closeAll: guard(async () => {
       const p = current();
       if (!p?.session) return;
       const result = await attempt(() => api.closeAll(p.session as SessionDoc, json()));
@@ -649,7 +685,7 @@ export function createProver() {
         });
       }
       save();
-    },
+    }),
 
     stop() {
       api.cancel();

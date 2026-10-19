@@ -52,6 +52,9 @@ export default function App() {
 
   onMount(async () => {
     void font().catch(() => undefined);
+    // The worker starts with the first call: this one, so that linlog's
+    // module loads after the first paint, before the visitor's first step.
+    void prover.api.about().catch(() => undefined);
     prover.begin();
     const link = await readLink(location.hash);
     if (link) {
@@ -72,6 +75,7 @@ export default function App() {
         }
       }
     }
+    prover.prune();
     if (prover.store.proofs.length === 0) prover.add();
   });
 

@@ -25,7 +25,10 @@ the page reads.
   pattern alone). The module reads no clock and a call cannot be interrupted, so the one
   cancel is `terminate()` and a fresh worker (`Client.cancel`): every pending call
   rejects with `Cancelled`, and nothing is lost, because the module keeps nothing between
-  calls and the page sends every document with every call.
+  calls and the page sends every document with every call. A worker starts with a call,
+  never on its own: one that fails as it loads (a chunk gone after a redeploy) would
+  otherwise be restarted in a loop; the island makes one call on mount, so the module
+  loads after the first paint.
 - **Requests carry ids**; answers may come in any order. A call rejects with what it
   threw: linlog's error JSON as a string, which `failure()` reads. The page branches on
   `code`, `kind` and `details.kind` and words the message itself (`src/lib/words.ts`);
@@ -49,11 +52,19 @@ the page reads.
   replays by `close` again (deterministic: one thread, bounded by work), and a graft that
   no longer closes leaves its goal open and says so. The search's inferences are drawn
   apart (`searchMade`, the class `search` on the drawing's `g#i<n>`, whose rule label is
-  the next sibling text: linlog's SVG writes it right after the conclusion).
+  the next sibling text: linlog's SVG writes it right after the conclusion). A graft the
+  search no longer closes within the settings (it closed under a larger budget, "Try N
+  units") replays from its own inferences as steps (the action's `graft`), so an undo
+  elsewhere never reopens it; only its marking as the search's is lost.
+- **Every replayed step must make the premises it made** (the action's `made`); one that
+  does not is taken back with linlog's `undo` and its goal reported, never kept as a
+  different proof.
 - **`stepOf` rebuilds a step from its inference**: the principal's position; for two
-  premises that split the context (each context formula in exactly one premise), the
-  positions in the left premise; a rule that copies the context (`&`) takes no split,
-  which linlog refuses. The fast-check property in `steps.test.ts` replays random proof
+  premises that split the context, the positions in the left premise, found by aligning
+  the goal with both premises (`leftOf`): a contraction gives copies one occurrence, so a
+  context formula may carry the principal's subformula's occurrence and no count tells
+  them apart. Premises that hold the context twice over (`&`) take no split, which linlog
+  refuses. The fast-check property in `steps.test.ts` replays random proof
   attempts against the real module; extend its sequents when a rule is added.
 
 ## The drawing and the stage (`src/islands/Stage.tsx`)
@@ -70,15 +81,24 @@ the page reads.
 - Solid's narrowed accessor in `<Show>{(x) => …}` goes stale once its condition is false:
   read it before the handler changes what the condition reads (the restart warning).
 
+## The state (`src/islands/state.tsx`)
+
+- **One action that changes a proof at a time** (`guard`): each reads the session, waits on
+  the worker and shows the answer, so a second begun meanwhile would build on a session
+  the first replaces. An action asked for while one runs does nothing; the bottom band's
+  buttons wait on `busy`, and the dock shows "Stop the search" instead of the close.
+
 ## What holds the work
 
 - **The link** (`src/lib/link.ts`): `#v=1&m=<mode>&s=<sequent>&d=<session>` in the fragment,
   the session deflate-raw and base64url, dropped past 2000 characters (the export menu
   says so). A link whose session linlog refuses loads the sequent and the mode, with
   "Proof not restored". The sequent is the field's text with the ASCII connectives as their signs (`pretty`, which `words.test.ts` holds to read as the same sequent).
-- **Autosave** (`src/lib/shelf.ts`): every open proof under `linlog-proofs`; at a visit's
-  start the last visit's go aside to `linlog-proofs-previous` for the restore bar, so work
-  begun before the visitor answers overwrites nothing. Settings are `linlog-settings`,
+- **Autosave** (`src/lib/shelf.ts`): every visit (tab) saves its open proofs under
+  `linlog-proofs:<visit>`, each with the time, so two tabs never overwrite each other; at a
+  visit's start the other visits' are gathered into `linlog-proofs-previous` for the restore
+  bar, the copy of a proof saved last winning, and work begun before the visitor answers
+  overwrites nothing. A proof open already (a link's) is taken out of the bar (`prune`). Settings are `linlog-settings`,
   the theme `linlog-theme` (read before the first paint by `Base.astro`).
 
 ## Styling

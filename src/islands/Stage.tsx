@@ -419,7 +419,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       position: spot.position,
       rule: rule.rule,
     });
-    announce(applied, rule.rule);
+    announce(applied === true, rule.rule);
   }
 
   async function applySplit() {
@@ -431,7 +431,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       rule: split.rule,
       left: split.left,
     });
-    announce(applied, split.rule);
+    announce(applied === true, split.rule);
   }
 
   function announce(applied: boolean, rule: string) {
@@ -643,7 +643,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             </button>
             <span class="sep" />
             <Show
-              when={props.prover.pending() === 0}
+              when={!props.prover.busy()}
               fallback={
                 <>
                   <span class="lamp run" aria-hidden="true" />

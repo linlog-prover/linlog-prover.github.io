@@ -26,8 +26,19 @@ export type Path = readonly number[];
 
 /** What expanded a goal: a step the student applied, or a search's graft. */
 export type Action =
-  | { readonly path: Path; readonly kind: "step"; readonly step: StepForm }
-  | { readonly path: Path; readonly kind: "close" };
+  | {
+      readonly path: Path;
+      readonly kind: "step";
+      readonly step: StepForm;
+      /** The premises' formulas the step made, which its replay must make again. */
+      readonly made: readonly (readonly number[])[];
+    }
+  | {
+      readonly path: Path;
+      readonly kind: "close";
+      /** The graft's inferences as steps, from its root up. */
+      readonly graft: readonly Action[];
+    };
 
 /** Every expanded and open inference's path, by its number. */
 export function paths(doc: SessionDoc): Map<number, Path> {
@@ -94,11 +105,59 @@ export function searchMade(doc: SessionDoc): Set<number> {
 }
 
 /**
+ * The left premise's share of a goal split between two premises: the
+ * positions of `goal` (but the principal's, `principal`) whose formulas went
+ * to the left premise, found by aligning the goal with the two premises.
+ * Each premise is its share of the goal in the goal's order, plus, where the
+ * rule has a principal, one formula of its own (the principal's subformula),
+ * which may carry the same occurrence as a formula of the context once a
+ * contraction has copied it; so the alignment searches every way of
+ * interleaving, not the counts. Undefined when there is none.
+ */
+export function leftOf(
+  goal: readonly number[],
+  principal: number | undefined,
+  left: readonly number[],
+  right: readonly number[],
+): number[] | undefined {
+  const own = principal === undefined ? 0 : 1;
+  const dead = new Set<string>();
+  const chosen: number[] = [];
+  // i: the goal's next position; a, b: each premise's next formula; c, d:
+  // whether each premise's own formula is placed yet.
+  const walk = (i: number, a: number, b: number, c: number, d: number): boolean => {
+    const key = `${i},${a},${b},${c},${d}`;
+    if (dead.has(key)) return false;
+    if (i === principal) {
+      if (walk(i + 1, a, b, c, d)) return true;
+      dead.add(key);
+      return false;
+    }
+    if (c < own && a < left.length && walk(i, a + 1, b, c + 1, d)) return true;
+    if (d < own && b < right.length && walk(i, a, b + 1, c, d + 1)) return true;
+    if (i === goal.length) {
+      if (a === left.length && b === right.length && c === own && d === own) return true;
+      dead.add(key);
+      return false;
+    }
+    if (goal[i] === left[a]) {
+      chosen.push(i);
+      if (walk(i + 1, a + 1, b, c, d)) return true;
+      chosen.pop();
+    }
+    if (goal[i] === right[b] && walk(i + 1, a, b + 1, c, d)) return true;
+    dead.add(key);
+    return false;
+  };
+  return walk(0, 0, 0, 0, 0) ? chosen : undefined;
+}
+
+/**
  * The step that expanded a goal, as `apply` takes it again: the principal's
  * position, and where the rule splits the goal's context between two
  * premises (`⊗`, Mix, the two-sided splits), the positions whose formulas
  * went to the left premise. A rule that copies the context (`&`) takes no
- * split: there every formula is in both premises.
+ * split: there the premises hold the context twice over.
  */
 export function stepOf(doc: SessionDoc, goal: number): StepForm {
   const inference = doc.inferences[goal];
@@ -109,30 +168,21 @@ export function stepOf(doc: SessionDoc, goal: number): StepForm {
   if (premises.length !== 2 || left === undefined || right === undefined) {
     return { position, rule: inference.rule };
   }
-  const context = inference.sequent
-    .map((occurrence, at) => ({ occurrence, at }))
-    .filter(({ at }) => inference.principal === undefined || at !== inference.principal);
-  const counts = (sequent: readonly number[]) => {
-    const count = new Map<number, number>();
-    for (const o of sequent) count.set(o, (count.get(o) ?? 0) + 1);
-    return count;
-  };
-  const inLeft = counts(left);
-  const inRight = counts(right);
-  const contextOccurrences = new Set(context.map(({ occurrence }) => occurrence));
-  let shared = 0;
-  for (const o of contextOccurrences) shared += (inLeft.get(o) ?? 0) + (inRight.get(o) ?? 0);
-  // Copied (every formula in both premises) unless each went to exactly one.
-  if (shared !== context.length) return { position, rule: inference.rule };
-  const leftPositions: number[] = [];
-  for (const { occurrence, at } of context) {
-    const remaining = inLeft.get(occurrence) ?? 0;
-    if (remaining > 0) {
-      leftPositions.push(at);
-      inLeft.set(occurrence, remaining - 1);
-    }
-  }
-  return { position, rule: inference.rule, left: leftPositions };
+  const context = inference.sequent.length - (inference.principal === undefined ? 0 : 1);
+  if (left.length + right.length - context > 2) return { position, rule: inference.rule };
+  const share = leftOf(inference.sequent, inference.principal, left, right);
+  return share
+    ? { position, rule: inference.rule, left: share }
+    : { position, rule: inference.rule };
+}
+
+/** What expanding a goal made: its premises' formulas, which a replay must make again. */
+const madeOf = (doc: SessionDoc, goal: number): number[][] =>
+  (doc.inferences[goal]?.premises ?? []).map((p) => [...(doc.inferences[p]?.sequent ?? [])]);
+
+/** A goal's expansion as a step, with what it made. */
+function stepAction(doc: SessionDoc, goal: number, path: Path): Action {
+  return { path, kind: "step", step: stepOf(doc, goal), made: madeOf(doc, goal) };
 }
 
 /** The session's actions, in the order they were taken. */
@@ -141,9 +191,17 @@ export function actions(doc: SessionDoc): Action[] {
   const history = new Set(doc.history);
   return doc.history.map((goal): Action => {
     const path = where.get(goal) ?? [];
-    return grafted(doc, goal, history)
-      ? { path, kind: "close" }
-      : { path, kind: "step", step: stepOf(doc, goal) };
+    if (!grafted(doc, goal, history)) return stepAction(doc, goal, path);
+    // The graft's inferences from its root up, each as a step: what replays
+    // it when the search no longer closes the goal.
+    const graft: Action[] = [];
+    const todo = [goal];
+    for (let next = todo.shift(); next !== undefined; next = todo.shift()) {
+      if (!expanded(doc.inferences[next])) continue;
+      graft.push(stepAction(doc, next, where.get(next) ?? []));
+      todo.push(...(doc.inferences[next]?.premises ?? []));
+    }
+    return { path, kind: "close", graft };
   });
 }
 
@@ -183,13 +241,18 @@ export interface Replayed extends Played {
   readonly failed: readonly Path[];
 }
 
+const same = (a: readonly (readonly number[])[], b: readonly (readonly number[])[]) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
 /**
- * Plays actions onto a session, each on the goal at its path: a step through
- * `apply`, a graft through `close`, the search run again with the same
- * settings (it is deterministic: one thread, bounded by work, not time).
- * A step the library refuses, or a search that no longer proves its goal
- * (the budget was lowered since), leaves that goal open; its path is
- * reported, and the actions under it are left out.
+ * Plays actions onto a session, each on the goal at its path. A step goes
+ * through `apply` and must make the premises it made before, or it is taken
+ * back (`undo`) and its goal left open. A graft goes through `close` again
+ * (deterministic: one thread, bounded by work, not time), and where the
+ * search no longer closes the goal within these settings (it closed it under
+ * a larger budget), through its own inferences as steps, which keep it
+ * closed though no longer set apart as the search's. A goal that cannot be
+ * expanded again is reported by its path, and the actions under it left out.
  */
 export function play(
   prover: Prover,
@@ -199,29 +262,53 @@ export function play(
 ): Replayed {
   let played: Played = start;
   const failed: Path[] = [];
+  const step = (action: Action & { kind: "step" }): boolean => {
+    const goal = goalAt(played.session, action.path);
+    if (goal === undefined || expanded(played.session.inferences[goal])) return false;
+    try {
+      const next = JSON.parse(
+        prover.apply(JSON.stringify(played.session), goal, JSON.stringify(action.step), settings),
+      ) as Played;
+      if (!same(madeOf(next.session, goal), action.made)) {
+        played = JSON.parse(prover.undo(JSON.stringify(next.session), settings)) as Played;
+        return false;
+      }
+      played = next;
+      return true;
+    } catch {
+      return false;
+    }
+  };
   for (const action of todo) {
     if (failed.some((path) => within(action.path, path))) continue;
+    if (action.kind === "step") {
+      if (!step(action)) failed.push(action.path);
+      continue;
+    }
     const goal = goalAt(played.session, action.path);
     if (goal === undefined || expanded(played.session.inferences[goal])) {
       failed.push(action.path);
       continue;
     }
-    const session = JSON.stringify(played.session);
     try {
-      if (action.kind === "step") {
-        played = JSON.parse(
-          prover.apply(session, goal, JSON.stringify(action.step), settings),
-        ) as Played;
-      } else {
-        const closed = JSON.parse(prover.close(session, goal, settings)) as Played & {
-          outcome: { verdict: string };
-          refused: unknown;
-        };
-        if (closed.outcome.verdict !== "proved" || closed.refused) failed.push(action.path);
+      const closed = JSON.parse(
+        prover.close(JSON.stringify(played.session), goal, settings),
+      ) as Played & {
+        outcome: { verdict: string };
+        refused: unknown;
+      };
+      if (closed.outcome.verdict === "proved" && !closed.refused) {
         played = closed;
+        continue;
       }
     } catch {
-      failed.push(action.path);
+      // Replayed from its inferences below.
+    }
+    for (const inner of action.graft) {
+      if (inner.kind === "step" && !step(inner)) {
+        failed.push(action.path);
+        break;
+      }
     }
   }
   return { ...played, failed };

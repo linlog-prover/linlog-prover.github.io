@@ -10,8 +10,9 @@
  * error JSON as a string). Answers may come in any order and are matched by
  * id. The module reads no clock and its calls cannot be interrupted, so the
  * one way to stop a call is to terminate the worker: `cancel` does, rejects
- * every pending call with `Cancelled`, and starts a fresh worker for the
- * next one. Nothing is lost, since the module keeps nothing between calls:
+ * every pending call with `Cancelled`, and the next call starts a fresh
+ * worker. A worker starts only for a call, so one that fails as it loads (a
+ * script gone after a redeploy) is not restarted in a loop. Nothing is lost, since the module keeps nothing between calls:
  * the page holds every document it sends.
  */
 
@@ -55,7 +56,7 @@ export class WorkerFailed extends Error {
 export interface Client {
   /** Calls `call` in the worker with `args`; rejects with what the call threw. */
   call<T>(call: string, ...args: unknown[]): Promise<T>;
-  /** Stops every pending call: the worker is terminated and a fresh one started. */
+  /** Stops every pending call: the worker is terminated, and the next call starts a fresh one. */
   cancel(): void;
   /** How many calls are pending. */
   pending(): number;
@@ -76,7 +77,7 @@ export function createClient(
 ): Client {
   const waiting = new Map<number, Waiting>();
   let next = 1;
-  let worker = start();
+  let worker: WorkerLike | undefined;
 
   function start(): WorkerLike {
     const fresh = spawn();
@@ -91,9 +92,9 @@ export function createClient(
     };
     fresh.onerror = (event: ErrorEvent) => {
       event.preventDefault?.();
+      if (worker === fresh) worker = undefined;
+      fresh.terminate();
       failAll(new WorkerFailed(event.message || "the worker failed"));
-      worker.terminate();
-      worker = start();
     };
     return fresh;
   }
@@ -111,13 +112,14 @@ export function createClient(
       return new Promise<T>((resolve, reject) => {
         waiting.set(id, { resolve: resolve as (value: unknown) => void, reject });
         changed(waiting.size);
+        worker ??= start();
         worker.postMessage({ id, call, args } satisfies Request);
       });
     },
     cancel() {
-      worker.terminate();
+      worker?.terminate();
+      worker = undefined;
       failAll(new Cancelled());
-      worker = start();
     },
     pending: () => waiting.size,
   };

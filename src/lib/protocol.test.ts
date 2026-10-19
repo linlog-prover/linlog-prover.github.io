@@ -71,7 +71,7 @@ describe("the worker protocol", () => {
     await expect(promise).rejects.toBe('{"code":"step","kind":"invalid","message":"refused"}');
   });
 
-  it("cancels by terminating the worker and starting a fresh one", async () => {
+  it("cancels by terminating the worker, and the next call starts a fresh one", async () => {
     const workers: Fake[] = [];
     const counts: number[] = [];
     const client = createClient(
@@ -88,17 +88,17 @@ describe("the worker protocol", () => {
     await expect(first).rejects.toBeInstanceOf(Cancelled);
     await expect(second).rejects.toBeInstanceOf(Cancelled);
     expect(workers[0]?.terminated).toBe(true);
-    expect(workers).toHaveLength(2);
     expect(counts.at(-1)).toBe(0);
     // The old worker's late answer is ignored; the fresh one serves the next call.
     workers[0]?.reply(workers[0].received[0] as Request, calls);
     const third = client.call("echo", 3);
+    expect(workers).toHaveLength(2);
     const fresh = workers[1] as Fake;
     fresh.reply(fresh.received[0] as Request, calls);
     await expect(third).resolves.toBe(3);
   });
 
-  it("fails every pending call when the worker itself fails, and starts a fresh one", async () => {
+  it("fails every pending call when the worker itself fails, and starts no other until a call", async () => {
     const workers: Fake[] = [];
     const client = createClient(() => {
       const w = new Fake();
@@ -108,7 +108,15 @@ describe("the worker protocol", () => {
     const call = client.call("echo", 1);
     workers[0]?.onerror?.({ message: "out of memory", preventDefault() {} } as ErrorEvent);
     await expect(call).rejects.toBeInstanceOf(WorkerFailed);
+    expect(workers).toHaveLength(1);
+    expect(workers[0]?.terminated).toBe(true);
+    // A worker that fails as it loads, with no call waiting, is not restarted.
+    workers[0]?.onerror?.({ message: "failed to load", preventDefault() {} } as ErrorEvent);
+    expect(workers).toHaveLength(1);
+    const next = client.call("echo", 2);
     expect(workers).toHaveLength(2);
+    workers[1]?.reply(workers[1].received[0] as Request, calls);
+    await expect(next).resolves.toBe(2);
   });
 
   it("answers a call the worker does not have as an error", () => {

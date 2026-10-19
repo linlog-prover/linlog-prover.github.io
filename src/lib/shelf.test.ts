@@ -7,15 +7,22 @@ import {
   dropAside,
   PREVIOUS_KEY,
   parseShelf,
-  SHELF_KEY,
+  SHELF_PREFIX,
   type Shelf,
   type Store,
   saveShelf,
   setAside,
+  type StoredProof,
 } from "./shelf";
 
 class Memory implements Store {
   map = new Map<string, string>();
+  get length() {
+    return this.map.size;
+  }
+  key(i: number) {
+    return [...this.map.keys()][i] ?? null;
+  }
   getItem(key: string) {
     return this.map.get(key) ?? null;
   }
@@ -27,12 +34,18 @@ class Memory implements Store {
   }
 }
 
-const proof = (id: string) => ({
+const proof = (id: string, saved = 1, input = "A |- A"): StoredProof => ({
   id,
-  input: "A |- A",
-  mode: "classical" as const,
+  input,
+  mode: "classical",
   session: null,
   redo: [],
+  saved,
+});
+const shelf = (...proofs: StoredProof[]): Shelf => ({
+  version: 1,
+  proofs,
+  active: proofs[0]?.id ?? null,
 });
 
 describe("the stored proofs", () => {
@@ -40,9 +53,9 @@ describe("the stored proofs", () => {
     fc.assert(
       fc.property(fc.uniqueArray(fc.string(), { minLength: 1 }), (ids) => {
         const store = new Memory();
-        const shelf: Shelf = { version: 1, proofs: ids.map(proof), active: ids[0] ?? null };
-        expect(saveShelf(store, shelf)).toBe(true);
-        expect(parseShelf(store.getItem(SHELF_KEY))).toEqual(shelf);
+        const saved = shelf(...ids.map((id) => proof(id)));
+        expect(saveShelf(store, "v", saved)).toBe(true);
+        expect(parseShelf(store.getItem(`${SHELF_PREFIX}v`))).toEqual(saved);
       }),
     );
   });
@@ -53,22 +66,53 @@ describe("the stored proofs", () => {
     expect(parseShelf('{"version":1,"proofs":[{"id":1}]}')).toBeUndefined();
   });
 
-  it("sets the last visit's proofs aside, so new work overwrites none of them", () => {
+  it("gathers what other visits left, so new work overwrites none of it", () => {
     const store = new Memory();
-    saveShelf(store, { version: 1, proofs: [proof("a"), proof("b")], active: "b" });
-    const aside = setAside(store);
-    expect(aside?.proofs.map((p) => p.id)).toEqual(["a", "b"]);
-    expect(store.getItem(SHELF_KEY)).toBeNull();
-    saveShelf(store, { version: 1, proofs: [proof("c")], active: "c" });
+    saveShelf(store, "first", shelf(proof("a"), proof("b")));
+    expect(setAside(store, "second")?.proofs.map((p) => p.id)).toEqual(["a", "b"]);
+    expect(store.getItem(`${SHELF_PREFIX}first`)).toBeNull();
+    saveShelf(store, "second", shelf(proof("c", 2)));
     // A visit that never answered the bar: both visits' proofs are offered next time.
-    expect(setAside(store)?.proofs.map((p) => p.id)).toEqual(["a", "b", "c"]);
+    expect(setAside(store, "third")?.proofs.map((p) => p.id)).toEqual(["a", "b", "c"]);
     dropAside(store);
     expect(store.getItem(PREVIOUS_KEY)).toBeNull();
-    expect(setAside(store)).toBeUndefined();
+    expect(setAside(store, "fourth")).toBeUndefined();
+  });
+
+  it("keeps the copy of a proof saved last, whichever visit saved it", () => {
+    const store = new Memory();
+    // Tab A saves p at one step; tab B opens and sets it aside; tab A goes on.
+    saveShelf(store, "A", shelf(proof("p", 1, "one step")));
+    setAside(store, "B");
+    saveShelf(store, "A", shelf(proof("p", 5, "five steps")));
+    expect(setAside(store, "C")?.proofs).toEqual([proof("p", 5, "five steps")]);
+  });
+
+  it("keeps two visits from overwriting each other", () => {
+    const store = new Memory();
+    saveShelf(store, "A", shelf(proof("a")));
+    saveShelf(store, "B", shelf(proof("b")));
+    expect(
+      setAside(store, "C")
+        ?.proofs.map((p) => p.id)
+        .sort(),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("takes out of the bar what is open already", () => {
+    const store = new Memory();
+    saveShelf(store, "A", shelf(proof("a", 1, "A |- A"), proof("b", 1, "B |- B")));
+    setAside(store, "B");
+    expect(dropAside(store, (p) => p.input !== "A |- A")?.proofs.map((p) => p.id)).toEqual(["b"]);
+    expect(dropAside(store, () => false)).toBeUndefined();
   });
 
   it("reads a storage that throws as empty", () => {
     const refusing: Store = {
+      length: 0,
+      key() {
+        throw new Error("denied");
+      },
       getItem() {
         throw new Error("denied");
       },
@@ -79,7 +123,7 @@ describe("the stored proofs", () => {
         throw new Error("denied");
       },
     };
-    expect(setAside(refusing)).toBeUndefined();
-    expect(saveShelf(refusing, { version: 1, proofs: [], active: null })).toBe(false);
+    expect(setAside(refusing, "v")).toBeUndefined();
+    expect(saveShelf(refusing, "v", shelf())).toBe(false);
   });
 });

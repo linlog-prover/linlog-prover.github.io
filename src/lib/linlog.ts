@@ -167,6 +167,7 @@ export interface Prover {
   start(sequent: string, mode: string, settings: string): string;
   apply(session: string, goal: number, step: string, settings: string): string;
   close(session: string, goal: number, settings: string): string;
+  undo(session: string, settings: string): string;
 }
 
 /** The library's error a call threw, read from its JSON, or one of the page's own. */

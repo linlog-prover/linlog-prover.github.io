@@ -88,7 +88,7 @@ export function BottomBand(props: {
             tip="Undo on this branch"
             keyName="U"
             alone
-            disabled={!proof()?.session || proof()?.view?.steps === 0}
+            disabled={!proof()?.session || proof()?.view?.steps === 0 || props.prover.busy()}
             onClick={() => void props.prover.undo()}
             show={key}
           />
@@ -98,7 +98,7 @@ export function BottomBand(props: {
             tip="Redo"
             keyName="⇧U"
             alone
-            disabled={!proof()?.redo.length}
+            disabled={!proof()?.redo.length || props.prover.busy()}
             onClick={() => void props.prover.redo()}
             show={key}
           />
@@ -118,7 +118,7 @@ export function BottomBand(props: {
             icon={<CheckCheck size={18} aria-hidden="true" />}
             tip="The search closes every open goal"
             keyName="⇧C"
-            disabled={!proof()?.view || proof()?.view?.complete || props.prover.pending() > 0}
+            disabled={!proof()?.view || proof()?.view?.complete || props.prover.busy()}
             onClick={() => void props.prover.closeAll()}
             show={key}
             labelled={labelled}
@@ -128,7 +128,7 @@ export function BottomBand(props: {
             icon={<Lightbulb size={18} aria-hidden="true" />}
             tip="The next rung of the hint ladder"
             keyName="H"
-            disabled={!proof()?.view || proof()?.view?.complete}
+            disabled={!proof()?.view || proof()?.view?.complete || props.prover.busy()}
             onClick={props.hint}
             show={key}
             labelled={labelled}

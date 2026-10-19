@@ -81,11 +81,13 @@ describe("the step tree", () => {
       "!A |- A * A",
       "A, B, C |- (A * B) * C",
       "A & B |- B + A",
+      "|- ?(A * B), C * D",
+      "!(A * B) |- (A * B) * (A * B)",
     ];
     fc.assert(
       fc.property(
         fc.constantFrom(...sequents),
-        fc.array(fc.nat(1000), { minLength: 1, maxLength: 12 }),
+        fc.array(fc.nat(1000), { minLength: 1, maxLength: 14 }),
         (text, choices) => {
           let p = started(text);
           // A random walk of legal steps, each picked by the choices.
@@ -124,7 +126,50 @@ describe("the step tree", () => {
           }
         },
       ),
-      { numRuns: 60 },
+      { numRuns: 150 },
     );
+  });
+
+  it("reads a split right where a contraction gave a context formula the subformula's occurrence", () => {
+    // ⊢ ?(A ⊗ B), C ⊗ D: contract and derelict twice, so both A ⊗ B share
+    // their occurrences; split the first with the other copy left, then the
+    // goal A ⊗ B, A with A left, whose left premise holds two formulas of
+    // one occurrence.
+    let p: Played & { opened?: number[] } = started("|- ?(A * B), C * D");
+    p = step(p, 0, 0, "?c");
+    p = step(p, p.opened?.[0] ?? -1, 0, "?d");
+    p = step(p, p.opened?.[0] ?? -1, 0, "?d");
+    const tensors = p.opened?.[0] ?? -1;
+    p = step(p, tensors, 0, "⊗", [1]);
+    const [first] = p.opened as [number, number];
+    const goal = p.view.goals.find((g) => g.goal === first);
+    expect(goal?.formulas.map((f) => f.text)).toEqual(["A ⊗ B", "A"]);
+    p = step(p, first, 0, "⊗", [1]);
+    expect(p.session.inferences[p.opened?.[0] ?? -1]?.sequent).toEqual([2, 2]);
+    const doc = p.session;
+    same(replay(linlog, doc, actions(doc), S).session, doc);
+  });
+
+  it("keeps a goal the search closed under a larger budget through an undo elsewhere", () => {
+    const small = JSON.stringify({ limits: { work: 32 } });
+    const large = JSON.stringify({ limits: { work: 64 } });
+    let p = started("A * (B + C) |- ((A * B) + (A * C)) & (D -o D)");
+    const and = step(p, 0, 1, "&");
+    const [left, right] = and.opened as [number, number];
+    const tried = JSON.parse(linlog.close(JSON.stringify(and.session), left, small));
+    expect(tried.outcome.verdict).toBe("unknown");
+    const closed = JSON.parse(linlog.close(JSON.stringify(and.session), left, large));
+    expect(closed.outcome.verdict).toBe("proved");
+    p = { session: closed.session, view: closed.view };
+    const par = step(
+      p,
+      right,
+      closed.view.goals[0]?.formulas.findIndex((f: { text: string }) => f.text.includes("⅋")) ?? 0,
+      "⅋",
+    );
+    const back = retract(par.session, par.opened[0]);
+    const after = replay(linlog, par.session, back?.kept ?? [], small);
+    expect(after.failed).toEqual([]);
+    expect(after.session.inferences[goalAt(after.session, [0]) ?? -1]?.rule).toBeDefined();
   });
 });
