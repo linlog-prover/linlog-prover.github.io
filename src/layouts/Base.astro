@@ -9,8 +9,10 @@
 // Content-Security-Policy's <meta> is Astro's (astro.config.ts).
 import "@fontsource-variable/figtree";
 import "@fontsource/space-mono/400.css";
+import { panelColors } from "../lib/colors";
 import { PREPAINT } from "../lib/theme";
 import "../styles/global.css";
+import tokens from "../styles/tokens.css?raw";
 
 interface Props {
   title: string;
@@ -18,6 +20,7 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const colors = panelColors(tokens);
 ---
 
 <!doctype html>
@@ -28,11 +31,23 @@ const { title, description } = Astro.props;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content={colors.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={colors.dark} media="(prefers-color-scheme: dark)" />
   </head>
   <body>
     {/* The stored theme, before the first paint: the body's first element,
         after the policy, which Astro writes at the end of the head. */}
     <script is:inline set:html={PREPAINT} />
     <slot />
+    <script>
+      // The service worker (src/offline/sw.js), once the page has loaded, so
+      // that it takes nothing from the first paint.
+      if ("serviceWorker" in navigator && import.meta.env.PROD) {
+        addEventListener("load", () => {
+          void navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        });
+      }
+    </script>
   </body>
 </html>

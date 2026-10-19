@@ -115,6 +115,8 @@ def directives(policy):
 site = pathlib.Path(sys.argv[1])
 problems = []
 pages = sorted(site.rglob("*.html"))
+if not pages:
+    problems.append("the site has no page")
 counts = [0, 0]
 for path in pages:
     name = path.relative_to(site)

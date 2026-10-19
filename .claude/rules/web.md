@@ -171,6 +171,28 @@ the page reads.
   licence the site serves (linked, `tests/learn.spec.ts` fetches each) and the line that
   GitHub logs visitors' addresses.
 
+## Offline and installable (`src/offline/sw.js`, `src/integrations/offline.ts`)
+
+- **The service worker is written by hand**: `@vite-pwa/astro` supports Astro up to 5, and
+  the plugin alone never sees Astro's pages. The build fills `FILES` (every file of the
+  site, the page as `/`) and `VERSION` (a hash of their contents) into `/sw.js`.
+- **Its scope is the origin, its reach is the site's own files**: a worker at `/sw.js`
+  cannot be scoped narrower than `/`, where the page is, and `/linlog/` (linlog's rustdoc,
+  another Pages site on the origin) lies under it. So the fetch handler answers only the
+  paths in `FILES` and navigations to `/`, and returns without `respondWith` for anything
+  else; under `/linlog` it returns first, and the Static Routing API (`addRoutes`, where
+  the browser has it) sends those requests to the network before the worker wakes.
+  Never cache by pattern, never add a fallback page for other navigations, never cache
+  a path under `/linlog`.
+- **No `skipWaiting`**: a new worker waits until no page of the old one is open, so a page
+  and the files it loads later (the module, its worker, Euler Math) come from one
+  deployment; the old caches are deleted on activation, the `linlog-site-` ones only.
+- **The manifest and its icons** are written by the same integration, the icons drawn
+  from `public/icon.svg` by linlog's own `render` in Node (the maskable one without the
+  rounded corners); `tests/offline.spec.ts` asks Chromium's installability over CDP.
+- **`tests/serve.ts` serves `tests/linlog-docs/` at `/linlog/`**, as Pages serves the
+  rustdoc beside the site, so the tests see the worker leave it alone.
+
 ## Styling
 
 - **Every colour, font and size is a token** in `src/styles/tokens.css` (`@theme static`,

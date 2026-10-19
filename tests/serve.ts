@@ -5,13 +5,17 @@
 // the path, a directory's index.html, and 404.html (or a bare 404) for the
 // rest, with the media types the page needs (the module as
 // application/wasm, which streaming compilation requires). No header beyond
-// those, since Pages sets none the site could choose.
+// those, since Pages sets none the site could choose. Under /linlog/ it serves
+// tests/linlog-docs/, a stand-in for linlog's own Pages site (the rustdoc),
+// which Pages serves on the same origin.
 // Usage: node tests/serve.ts DIR PORT
 import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const [dir = "dist", port = "8790"] = process.argv.slice(2);
+const docs = fileURLToPath(new URL("./linlog-docs/", import.meta.url));
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -41,8 +45,12 @@ function file(path: string): string | undefined {
 
 createServer((request, response) => {
   const url = new URL(request.url ?? "/", "http://localhost");
-  const path = normalize(join(dir, decodeURIComponent(url.pathname)));
-  const found = path.startsWith(normalize(dir)) ? file(path) : undefined;
+  const pathname = decodeURIComponent(url.pathname);
+  const [root, rest] = pathname.startsWith("/linlog/")
+    ? [docs, pathname.slice("/linlog/".length)]
+    : [dir, pathname];
+  const path = normalize(join(root, rest));
+  const found = path.startsWith(normalize(root)) ? file(path) : undefined;
   const served = found ?? file(join(dir, "404.html"));
   response.statusCode = found ? 200 : 404;
   if (!served) {

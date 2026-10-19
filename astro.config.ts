@@ -16,6 +16,7 @@ import solidJs from "@astrojs/solid-js";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import { LICENCES, licences } from "./src/integrations/licences";
+import { offline } from "./src/integrations/offline";
 import { PREPAINT } from "./src/lib/theme";
 
 /** A script's or style's hash as a CSP source names it. */
@@ -73,8 +74,10 @@ export default defineConfig({
   // The dev toolbar floats over the page and into every screenshot.
   devToolbar: { enabled: false },
   // licences writes what the site serves of its parts' licences
-  // (src/integrations/licences.ts).
-  integrations: [solidJs(), licences()],
+  // (src/integrations/licences.ts); offline, after it, the icons, the web app
+  // manifest and the service worker that caches every file
+  // (src/integrations/offline.ts).
+  integrations: [solidJs(), licences(), offline()],
   vite: {
     plugins: [tailwindcss()],
     resolve: {
