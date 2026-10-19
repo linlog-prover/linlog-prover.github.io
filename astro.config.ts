@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import solidJs from "@astrojs/solid-js";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
+import { LICENCES, licences } from "./src/integrations/licences";
 import { PREPAINT } from "./src/lib/theme";
 
 /** A script's or style's hash as a CSP source names it. */
@@ -71,7 +72,9 @@ export default defineConfig({
   markdown: { syntaxHighlight: false },
   // The dev toolbar floats over the page and into every screenshot.
   devToolbar: { enabled: false },
-  integrations: [solidJs()],
+  // licences writes what the site serves of its parts' licences
+  // (src/integrations/licences.ts).
+  integrations: [solidJs(), licences()],
   vite: {
     plugins: [tailwindcss()],
     resolve: {
@@ -84,6 +87,18 @@ export default defineConfig({
       // Nothing is inlined as a data: URI (a font or the module would be):
       // every asset is a file of its own.
       assetsInlineLimit: 0,
+      // The notices of the npm packages in the bundle, served with the site.
+      license: { fileName: LICENCES.bundle },
+      rolldownOptions: {
+        output: {
+          // The fonts under /fonts/, where each family's licence is put
+          // beside them; every other asset where Astro puts it.
+          assetFileNames: (asset) =>
+            /\.(woff2?|otf|ttf)$/.test(asset.names[0] ?? "")
+              ? "fonts/[name].[hash][extname]"
+              : "_astro/[name].[hash][extname]",
+        },
+      },
     },
     server: {
       fs: {

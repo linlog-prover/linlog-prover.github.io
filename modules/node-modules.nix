@@ -99,12 +99,13 @@
           ../package-lock.json
           ../tsconfig.json
         ];
-        # What the site build reads: the sources but their tests, and the
-        # public files. The tests, the CI workflow, .claude/ and the notes stay
+        # What the site build reads: the sources but their tests, the public
+        # files, and LICENSE, which the site serves. The tests, the CI workflow, .claude/ and the notes stay
         # out, so editing them rebuilds nothing.
         site = lib.fileset.unions [
           npm
           ../astro.config.ts
+          ../LICENSE
           (lib.fileset.difference ../src (lib.fileset.fileFilter (f: lib.hasSuffix ".test.ts" f.name) ../src))
           ../public
         ];

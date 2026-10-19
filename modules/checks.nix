@@ -28,6 +28,12 @@
 #               style by a hash recomputed here apart from Astro, with
 #               'wasm-unsafe-eval' and nothing that allows inline code
 #               wholesale; no data: URL (modules/_checks/csp.py)
+#   licences    the site serves the licence of everything it sends: the npm
+#               bundle's notices (Vite's build.license) naming every run-time
+#               dependency at its locked version, linlog-web's
+#               THIRD-PARTY-NOTICES.txt and the code's LICENSE byte for byte,
+#               each font beside its OFL text, and CC BY 4.0 on every page of
+#               written content (modules/_checks/licences.py)
 #   pages-paths the site as Pages publishes it: a 404.html at its root, and
 #               nothing at /linlog or under it, where linlog's own Pages
 #               site (the rustdoc) lives on the same address
@@ -255,6 +261,12 @@
           lint = pkgs.runCommand "check-lint" { nativeBuildInputs = [ pkgs.biome ]; } ''
             cd ${biomeSources}
             biome lint --error-on-warnings
+            touch $out
+          '';
+
+          licences = pkgs.runCommand "check-licences" { } ''
+            ${pkgs.python3}/bin/python3 ${./_checks/licences.py} ${config.packages.default} \
+              ${config.linlogWeb} ${config.linlogFonts} ${../package.json} ${../package-lock.json} ${../LICENSE}
             touch $out
           '';
 

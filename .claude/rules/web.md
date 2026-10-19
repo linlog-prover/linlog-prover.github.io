@@ -120,6 +120,18 @@ the page reads.
   `test` from `./fixtures`, never from `@playwright/test`.
 - **No Shiki** (`markdown.syntaxHighlight: false`): it colours code with style attributes.
 
+## The licences served (`src/integrations/licences.ts`, the `licences` check)
+
+- `/licenses/bundle.txt` is Vite's `build.license` (the npm packages in the bundle), plus
+  Astro's notice, whose island runtime is inline in the pages where no bundle sees it;
+  `/licenses/THIRD-PARTY-NOTICES.txt` the Rust crates' (linlog-web's), `LICENSE.txt` the
+  EUPL. The upload to Pages drops dot-files, so nothing is under `.vite/`.
+- **Fonts live under `/fonts/`** beside `<Family>-OFL.txt`: `assetFileNames` sends them
+  there, but only for what the server build emits (the stylesheet's fonts, and Euler Math
+  because `index.astro` imports its URL and passes it to the island as `font`); Astro's
+  client build names its own assets, so a font imported from the island would land in
+  `/_astro/` and fail the build. A new family is a line of `FONTS` and of the check.
+
 ## Styling
 
 - **Every colour, font and size is a token** in `src/styles/tokens.css` (`@theme static`,

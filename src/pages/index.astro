@@ -4,7 +4,10 @@
 
 // The one page: the prover, one Solid island rendered in the browser alone,
 // since everything on it is the prover's and runs on linlog's module there.
-// Without a script the page says what it is.
+// Without a script the page says what it is. Euler Math, which the island
+// loads for its drawings and exports, is imported here, so that it is built
+// as the other fonts are, under /fonts/ (astro.config.ts).
+import font from "linlog-fonts/Euler-Math.otf?url";
 import App from "../islands/App";
 import Base from "../layouts/Base.astro";
 ---
@@ -12,7 +15,7 @@ import Base from "../layouts/Base.astro";
 <Base title="linlog" description="Prove sequents of linear logic step by step, in the browser.">
   <main>
     <h1 class="sr-only">linlog: linear logic, proved in the browser</h1>
-    <App client:only="solid-js">
+    <App client:only="solid-js" font={font}>
       <p slot="fallback" class="noscript">
         linlog proves sequents of linear logic in the browser; the page needs JavaScript and
         WebAssembly.

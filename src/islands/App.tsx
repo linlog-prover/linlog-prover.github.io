@@ -11,7 +11,6 @@
  * and PDF exports render with.
  */
 
-import eulerUrl from "linlog-fonts/Euler-Math.otf?url";
 import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { readLink, writeLink } from "../lib/link";
@@ -25,7 +24,10 @@ import { createProver } from "./state";
 import { TopBand } from "./TopBand";
 import { createUi, ladderKey } from "./ui";
 
-export default function App() {
+export default function App(props: {
+  /** Euler Math's address: the page imports it, so the font is served under /fonts/ beside its licence. */
+  font: string;
+}) {
   const prover = createProver();
   const view = createUi();
   const { ui, setUi } = view;
@@ -39,7 +41,7 @@ export default function App() {
   let fontBytes: Promise<Uint8Array> | undefined;
   /** Euler Math's bytes, fetched once: for the page's drawings and the PNG and PDF exports. */
   const font = () => {
-    fontBytes ??= fetch(eulerUrl)
+    fontBytes ??= fetch(props.font)
       .then((r) => r.arrayBuffer())
       .then((buffer) => {
         const face = new FontFace("Euler Math", buffer.slice(0));
