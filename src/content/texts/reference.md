@@ -96,5 +96,7 @@ false under one assignment has no proof. "Mapping ⊗ and &amp; to ∧ and ⅋ a
 LLHandbook project, <a
 href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
 of linear logic</a>, section 1.1, proved in section 1.8 (Theorem 1.8.1, the
-skeleton).</dd>
+skeleton). The refuter's ground is that statement read backward: a formula
+false under one assignment is no valid classical formula, so no provable
+linear one.</dd>
 </dl>
