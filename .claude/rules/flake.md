@@ -35,7 +35,10 @@ never through `specialArgs`. The scheme is the author's learning sites'
   must be in one, or the sandbox does not see it while the dev shell still works.
 - **The age gate** (`min-release-age=14` in `.npmrc`) holds for security fixes too, and is
   bypassed only with the author's agreement. `solid-js` is 1.9.17, the version the author's
-  sites run, taken past the gate for its seroval fix.
+  sites run, taken past the gate for its seroval fix. `@playwright/test` 1.64.1 was taken
+  past it on 2026-10-22, at eight days, with the author's agreement: linlog's nixpkgs
+  moved `playwright-driver` to it, and the two must be equal. Install such a version with
+  `npm install --package-lock-only --min-release-age=0 PACKAGE@VERSION`, one package alone.
 - **Pins that are not "latest" on purpose**: `typescript` stays on 6 (until 7.1 ships an
   API `astro check` can use); `solid-js` stays on 1.x until the port to Solid 2.0;
   `@playwright/test` equals nixpkgs' `playwright-driver` (the `playwright-version` check
