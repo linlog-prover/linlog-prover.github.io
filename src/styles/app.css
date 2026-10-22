@@ -672,6 +672,7 @@ button svg.lucide {
 }
 .seg-b[aria-pressed="true"],
 .seg-b[aria-checked="true"],
+.mi[aria-checked="true"],
 .tab[aria-selected="true"] {
   background: var(--color-panel);
   color: var(--color-ink);
@@ -953,6 +954,19 @@ button svg.lucide {
 }
 .mi.icon-row {
   grid-template-columns: var(--size-icon) 1fr;
+}
+/* The exports' font: four names two by two, the one chosen marked as a segment is. */
+.font-choice {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.mlist.fonts {
+  grid-template-columns: 1fr 1fr;
+}
+.mlist.fonts .mi {
+  grid-template-columns: 1fr;
 }
 .fmt {
   font: var(--font-weight-bold) var(--text-label) / var(--leading-none) var(--font-text);

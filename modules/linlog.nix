@@ -9,12 +9,15 @@
 #                THIRD-PARTY-NOTICES.txt, the Rust crates' notices. Built by
 #                linlog's flake (and fetched from the Cachix cache
 #                `linlog-prover' where its CI pushed it), never here.
-#   linlogFonts  Euler Math (Euler-Math.otf) and its OFL.txt, from linlog's
-#                cli/fonts/, where the prover keeps the font its drawings are
-#                measured with: the font every drawing of the page is set in,
-#                and the bytes the PNG and PDF exports render with. Taken from
-#                the input's source at its pinned commit, never copied into
-#                this repository.
+#   linlogFonts  linlog's math fonts and their licences, every file of
+#                linlog's cli/fonts/, where the prover keeps the fonts its
+#                drawings are measured with: Euler Math (Euler-Math.otf,
+#                OFL.txt), the font every drawing of the page is set in, and
+#                STIX Two Math, Garamond-Math and Asana Math (each with its
+#                <file>-OFL.txt), which an export may be set in; the bytes the
+#                PNG and PDF exports render with. Taken from the input's
+#                source at its pinned commit, never copied into this
+#                repository.
 #
 # The dev shell and every npm task link the two at .cache/linlog-web and
 # .cache/linlog-fonts, where astro.config.ts's aliases `linlog-web' and
@@ -36,10 +39,10 @@
           type = lib.types.package;
           default = pkgs.runCommand "linlog-fonts" { } ''
             mkdir $out
-            cp ${inputs.linlog}/cli/fonts/Euler-Math.otf ${inputs.linlog}/cli/fonts/OFL.txt $out/
+            cp ${inputs.linlog}/cli/fonts/*.otf ${inputs.linlog}/cli/fonts/*.txt $out/
           '';
-          defaultText = lib.literalMD "Euler Math and its OFL.txt from linlog's `cli/fonts/`";
-          description = "The font linlog's drawings are set in, with its licence.";
+          defaultText = lib.literalMD "linlog's math fonts and their licences from linlog's `cli/fonts/`";
+          description = "The fonts linlog's drawings are set in, with their licences.";
         };
       };
     };

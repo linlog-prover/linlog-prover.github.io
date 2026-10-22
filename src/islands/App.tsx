@@ -7,14 +7,14 @@
  * what holds the work: the link in the URL's fragment, written as the proof
  * changes and read when the page opens; autosave of every open proof, with
  * the restore bar on the next visit; the one hover rule for tips; the
- * keyboard; the hint ladder; light dismiss; and the Euler Math font, whose
- * bytes the PNG and PDF exports render with.
+ * keyboard; the hint ladder; light dismiss; and linlog's math fonts, whose
+ * bytes the PNG and PDF exports render with, Euler Math also the drawings'.
  */
 
 import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { readLink, writeLink } from "../lib/link";
-import type { Mode } from "../lib/linlog";
+import type { MathFont, Mode } from "../lib/linlog";
 import { paths } from "../lib/steps";
 import { failure } from "../lib/linlog";
 import { Cancelled } from "../lib/protocol";
@@ -30,8 +30,8 @@ import { Tour } from "./Tour";
 import { createUi, ladderKey } from "./ui";
 
 export default function App(props: {
-  /** Euler Math's address: the page imports it, so the font is served under /fonts/ beside its licence. */
-  font: string;
+  /** The math fonts' addresses: the page imports them, so each is served under /fonts/ beside its licence. */
+  fonts: Record<MathFont, string>;
   /** Learn's practice: the examples, in their order. */
   examples: readonly Example[];
   /** The tour's stops, in their order. */
@@ -47,18 +47,30 @@ export default function App(props: {
   const [linkShort, setLinkShort] = createSignal(false);
   let tipBox: HTMLDivElement | undefined;
 
-  let fontBytes: Promise<Uint8Array> | undefined;
-  /** Euler Math's bytes, fetched once: for the page's drawings and the PNG and PDF exports. */
-  const font = () => {
-    fontBytes ??= fetch(props.font)
-      .then((r) => r.arrayBuffer())
-      .then((buffer) => {
-        const face = new FontFace("Euler Math", buffer.slice(0));
-        document.fonts.add(face);
-        void face.load();
-        return new Uint8Array(buffer);
-      });
-    return fontBytes;
+  const fontBytes = new Map<MathFont, Promise<Uint8Array>>();
+  /**
+   * A math font's bytes, each fetched once when first asked for: Euler Math at the start, for
+   * the page's drawings, which it is added to the document for, and the PNG and PDF exports; the
+   * others when an export is set in them.
+   */
+  const font = (name: MathFont = "euler") => {
+    let bytes = fontBytes.get(name);
+    if (!bytes) {
+      bytes = fetch(props.fonts[name])
+        .then((r) => r.arrayBuffer())
+        .then((buffer) => {
+          if (name === "euler") {
+            const face = new FontFace("Euler Math", buffer.slice(0));
+            document.fonts.add(face);
+            void face.load();
+          }
+          return new Uint8Array(buffer);
+        });
+      // A failed fetch is asked again by the next export.
+      bytes.catch(() => fontBytes.delete(name));
+      fontBytes.set(name, bytes);
+    }
+    return bytes;
   };
 
   onMount(async () => {

@@ -192,6 +192,52 @@ test("every export downloads, and the link is copied", async ({ page, context })
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("#v=1");
 });
 
+test("the export menu chooses the font of the SVG, PNG and PDF, kept for the next visit, and the page's drawing stays in Euler Math", async ({
+  page,
+}) => {
+  await proveCommuted(page);
+  const exported = async (label: string) => {
+    await page.getByRole("button", { name: "Export" }).click();
+    const download = page.waitForEvent("download");
+    await page.getByRole("menuitem", { name: new RegExp(`^${label}`) }).click();
+    const bytes = await readFile(await (await download).path());
+    await page.keyboard.press("Escape");
+    return bytes;
+  };
+  const euler = {
+    svg: await exported("SVG"),
+    png: await exported("PNG"),
+    pdf: await exported("PDF"),
+  };
+  expect(euler.svg.toString("utf8")).toContain("font-family=\"'Euler Math', 'Neo Euler', serif\"");
+  expect(euler.pdf.toString("latin1")).toContain("Euler-Math");
+  await page.getByRole("button", { name: "Export" }).click();
+  const font = page.getByRole("menuitemradio", { name: "STIX Two Math" });
+  await expect(page.getByRole("menuitemradio", { name: "Euler Math" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await font.click();
+  await expect(font).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  const svg = (await exported("SVG")).toString("utf8");
+  expect(svg).toContain("font-family=\"'STIX Two Math', serif\"");
+  // Laid out in STIX Two Math's advances, not Euler Math's.
+  expect(svg.match(/textLength="\d+"/g)).not.toEqual(
+    euler.svg.toString("utf8").match(/textLength="\d+"/g),
+  );
+  expect((await exported("PNG")).equals(euler.png)).toBe(false);
+  expect((await exported("PDF")).toString("latin1")).toContain("STIXTwoMath-Regular");
+  // The page draws in Euler Math whatever the exports are set in.
+  await expect(page.locator(".drawing svg")).toHaveAttribute("font-family", /'Euler Math'/);
+  await start(page, "A |- A");
+  await page.getByRole("button", { name: "Export" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "STIX Two Math" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+});
+
 test("the certificate of non-derivability downloads for a refuted goal", async ({ page }) => {
   await start(page, "A |- B");
   await page.getByRole("button", { name: "Close goal" }).click();

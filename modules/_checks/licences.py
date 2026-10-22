@@ -11,8 +11,9 @@
 # - licenses/THIRD-PARTY-NOTICES.txt is linlog-web's, the Rust crates inside
 #   the module, byte for byte, and licenses/LICENSE.txt this repository's;
 # - every font file of the site is under fonts/, beside its family's
-#   <Family>-OFL.txt, an SIL Open Font License text, Euler Math's being
-#   linlog's own byte for byte;
+#   <Family>-OFL.txt, an SIL Open Font License text, linlog's math fonts'
+#   (Euler Math, STIX Two Math, Garamond-Math, Asana Math) being the
+#   licences linlog keeps beside them, byte for byte;
 # - every page that carries written content (an element marked
 #   data-written) says that it is under CC BY 4.0, with a link to the
 #   licence, and the prover's page is one of them.
@@ -78,6 +79,9 @@ if (
 
 families = {
     "Euler-Math": "Euler-Math",
+    "STIXTwoMath-": "STIXTwoMath",
+    "Garamond-Math": "Garamond-Math",
+    "Asana-Math": "Asana-Math",
     "figtree-": "Figtree",
     "space-mono-": "SpaceMono",
 }
@@ -98,9 +102,16 @@ for path in sorted(p for p in site.rglob("*") if p.suffix in FONT_FILES):
         or "sil open font license" not in beside.read_text().lower()
     ):
         problems.append(f"{name}: no OFL text beside it ({beside.name})")
-euler = site / "fonts/Euler-Math-OFL.txt"
-if not euler.is_file() or euler.read_bytes() != (fonts / "OFL.txt").read_bytes():
-    problems.append("fonts/Euler-Math-OFL.txt is not linlog's OFL.txt for Euler Math")
+# linlog's math fonts, each served with the licence linlog keeps beside it.
+for served, source in [
+    ("Euler-Math-OFL.txt", "OFL.txt"),
+    ("STIXTwoMath-OFL.txt", "STIXTwoMath-Regular-OFL.txt"),
+    ("Garamond-Math-OFL.txt", "Garamond-Math-OFL.txt"),
+    ("Asana-Math-OFL.txt", "Asana-Math-OFL.txt"),
+]:
+    path = site / "fonts" / served
+    if not path.is_file() or path.read_bytes() != (fonts / source).read_bytes():
+        problems.append(f"fonts/{served} is not linlog's {source}")
 
 
 class Written(html.parser.HTMLParser):

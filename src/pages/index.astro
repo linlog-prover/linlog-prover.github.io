@@ -4,8 +4,9 @@
 
 // The one page: the prover, one Solid island rendered in the browser alone,
 // since everything on it is the prover's and runs on linlog's module there.
-// Without a script the page says what it is. Euler Math, which the island
-// loads for its drawings and exports, is imported here, so that it is built
+// Without a script the page says what it is. linlog's math fonts, Euler
+// Math, which the island loads for its drawings and exports, and the three
+// others an export may be set in, are imported here, so that they are built
 // as the other fonts are, under /fonts/ (astro.config.ts).
 //
 // The written content (src/content.config.ts) is rendered here into inert
@@ -13,7 +14,10 @@
 // shows them (Learn, the tour, About); the examples' and the tour's data go
 // to the island as props. The licence of the written content is a template
 // of its own, shown with it.
-import font from "linlog-fonts/Euler-Math.otf?url";
+import asana from "linlog-fonts/Asana-Math.otf?url";
+import euler from "linlog-fonts/Euler-Math.otf?url";
+import garamond from "linlog-fonts/Garamond-Math.otf?url";
+import stix from "linlog-fonts/STIXTwoMath-Regular.otf?url";
 import { getCollection, render } from "astro:content";
 import App from "../islands/App";
 import type { Example, Stop } from "../lib/content";
@@ -55,7 +59,12 @@ const rendered = await Promise.all(
 <Base title="linlog" description="Prove sequents of linear logic step by step, in the browser.">
   <main>
     <h1 class="sr-only">linlog: linear logic, proved in the browser</h1>
-    <App client:only="solid-js" font={font} examples={exampleData} stops={stopData}>
+    <App
+      client:only="solid-js"
+      fonts={{ euler, "stix-two": stix, garamond, asana }}
+      examples={exampleData}
+      stops={stopData}
+    >
       <p slot="fallback" class="noscript">
         linlog proves sequents of linear logic in the browser; the page needs JavaScript and
         WebAssembly.

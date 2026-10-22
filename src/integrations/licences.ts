@@ -36,6 +36,17 @@ export const LICENCES = {
 export const FONTS: readonly { family: string; files: string; licence: string }[] = [
   { family: "Euler-Math", files: "Euler-Math", licence: ".cache/linlog-fonts/OFL.txt" },
   {
+    family: "STIXTwoMath",
+    files: "STIXTwoMath-",
+    licence: ".cache/linlog-fonts/STIXTwoMath-Regular-OFL.txt",
+  },
+  {
+    family: "Garamond-Math",
+    files: "Garamond-Math",
+    licence: ".cache/linlog-fonts/Garamond-Math-OFL.txt",
+  },
+  { family: "Asana-Math", files: "Asana-Math", licence: ".cache/linlog-fonts/Asana-Math-OFL.txt" },
+  {
     family: "Figtree",
     files: "figtree-",
     licence: "node_modules/@fontsource-variable/figtree/LICENSE",

@@ -15,6 +15,8 @@ import {
   type Engines,
   failure,
   type Failure,
+  MATH_FONTS,
+  type MathFont,
   type Mode,
   type Outcome,
   type Played,
@@ -91,6 +93,8 @@ export interface Settings {
   net: NetDrawing;
   /** The engine every search is forced to, `search.engine`; null for linlog's own choice. */
   engine: string | null;
+  /** The math font the SVG, PNG and PDF exports are set in, `styles.svg.font`; the page draws in Euler Math. */
+  font: MathFont;
 }
 
 /** linlog's two drawings of a net: every formula occurrence written, or only the literals and the conclusions. */
@@ -117,9 +121,16 @@ function loadSettings(): Settings {
       showKeys: stored.showKeys === true,
       net: stored.net === "compact" ? "compact" : "formulas",
       engine: typeof stored.engine === "string" ? stored.engine : null,
+      font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? "euler",
     };
   } catch {
-    return { budget: DEFAULT_BUDGET, showKeys: false, net: "formulas", engine: null };
+    return {
+      budget: DEFAULT_BUDGET,
+      showKeys: false,
+      net: "formulas",
+      engine: null,
+      font: "euler",
+    };
   }
 }
 

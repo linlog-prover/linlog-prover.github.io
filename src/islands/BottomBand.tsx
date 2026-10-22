@@ -28,7 +28,14 @@ import {
 } from "lucide-solid";
 import { createResource, createSignal, For, type JSX, Show } from "solid-js";
 import { engineLabel, engineName, engineTip } from "../lib/engines";
-import { failure, type Failure, type Outcome, type SessionDoc } from "../lib/linlog";
+import {
+  failure,
+  type Failure,
+  MATH_FONTS,
+  type MathFont,
+  type Outcome,
+  type SessionDoc,
+} from "../lib/linlog";
 import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
 import { notTaken, pretty } from "../lib/words";
@@ -74,7 +81,7 @@ export function BottomBand(props: {
   prover: Prover;
   ui: Ui;
   hint: () => void;
-  font: () => Promise<Uint8Array>;
+  font: (name: MathFont) => Promise<Uint8Array>;
   theme: () => Theme;
   setTheme: (t: Theme) => void;
   tour: () => void;
@@ -312,7 +319,11 @@ function Action(props: {
   );
 }
 
-function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Array> }) {
+function ExportMenu(props: {
+  prover: Prover;
+  ui: Ui;
+  font: (name: MathFont) => Promise<Uint8Array>;
+}) {
   const proof = () => props.prover.current();
   const [said, setSaid] = createSignal<string | null>(null);
   const net = () => props.ui.ui.tab === "net";
@@ -329,6 +340,7 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
           ids: false,
           essential: proof()?.mode.startsWith("intuitionistic") ?? false,
           net: props.prover.settings().net,
+          font: props.prover.settings().font,
         },
       },
     });
@@ -369,7 +381,7 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
     const bytes = await props.prover.api.render(
       await drawing(),
       format,
-      await props.font(),
+      await props.font(props.prover.settings().font),
       settings,
     );
     download(
@@ -492,6 +504,28 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
             </li>
           )}
         </For>
+        <li class="msep" aria-hidden="true" />
+        <li role="none">
+          <fieldset class="font-choice">
+            <legend class="kw-label h">Font of SVG, PNG and PDF</legend>
+            <div class="mlist fonts">
+              <For each={MATH_FONTS}>
+                {(font) => (
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    class="mi"
+                    aria-checked={props.prover.settings().font === font.key}
+                    data-tip={font.look}
+                    onClick={() => props.prover.setSettings({ font: font.key })}
+                  >
+                    <span class="fmt">{font.name}</span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </fieldset>
+        </li>
         <li class="msep" aria-hidden="true" />
         <li>
           <button type="button" role="menuitem" class="mi" onClick={() => void run(copyLink)}>
@@ -807,6 +841,9 @@ const LICENCES: readonly (readonly [string, string, string])[] = [
   ["The page's code and linlog", "EUPL-1.2", "/licenses/LICENSE.txt"],
   ["The written content", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"],
   ["Euler Math, the formulas' font", "SIL OFL 1.1", "/fonts/Euler-Math-OFL.txt"],
+  ["STIX Two Math, a font of the exports", "SIL OFL 1.1", "/fonts/STIXTwoMath-OFL.txt"],
+  ["Garamond-Math, a font of the exports", "SIL OFL 1.1", "/fonts/Garamond-Math-OFL.txt"],
+  ["Asana Math, a font of the exports", "SIL OFL 1.1", "/fonts/Asana-Math-OFL.txt"],
   ["Figtree, the text's font", "SIL OFL 1.1", "/fonts/Figtree-OFL.txt"],
   ["Space Mono, the field's font", "SIL OFL 1.1", "/fonts/SpaceMono-OFL.txt"],
   ["The JavaScript's packages, Lucide's icons among them", "notices", "/licenses/bundle.txt"],
