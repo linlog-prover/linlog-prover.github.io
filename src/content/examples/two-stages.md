@@ -1,0 +1,10 @@
+---
+title: A machine of two stages
+sequent: "!(a -o b * b), !(b * b -o c), a |- c"
+mode: intuitionistic
+difficulty: 3
+verdict: provable
+lesson: 7
+order: 172
+---
+The first rule turns `a` into two `b`, the second two `b` into `c`: each used once, though `!` would allow more, and the search finds that once is enough.

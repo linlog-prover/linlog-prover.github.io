@@ -21,6 +21,7 @@ const entries = readdirSync(here)
       sequent: field("sequent"),
       mode: field("mode"),
       verdict: field("verdict"),
+      difficulty: Number(field("difficulty")),
       lesson: Number(field("lesson")),
       order: Number(field("order")),
     };
@@ -41,6 +42,15 @@ describe("the examples", () => {
       expect(new Set(verdicts).size, `lesson ${lesson}`).toBe(2);
       const runs = verdicts.filter((v, i) => v === verdicts[i + 1] && v === verdicts[i + 2]);
       expect(runs, `lesson ${lesson}`).toEqual([]);
+    }
+  });
+
+  it("give every lesson from the second at least two provable problems at the hardest difficulty", () => {
+    for (const lesson of new Set(entries.map((e) => e.lesson).filter((l) => l >= 2))) {
+      const hard = entries.filter(
+        (e) => e.lesson === lesson && e.verdict === "provable" && e.difficulty === 3,
+      );
+      expect(hard.length, `lesson ${lesson}`).toBeGreaterThanOrEqual(2);
     }
   });
 
