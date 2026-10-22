@@ -62,7 +62,7 @@ export const ENGINES: Readonly<Record<string, Engine>> = {
   classical: {
     name: "classical refuter",
     does: "finds an assignment under which the sequent read classically is false",
-    source: "the forgetful map, Ferreira, Oliva and Protin",
+    source: "the Handbook of linear logic, the skeleton of a proof (Theorem 1.8.1)",
   },
 };
 
