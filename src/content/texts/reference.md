@@ -91,8 +91,10 @@ problem for lattices</a>, Canadian Mathematical Bulletin 13(2), 253–254,
 as and, <code>⅋</code> and <code>⊕</code> as or, <code>!</code> and
 <code>?</code> erased) and looks for an assignment that makes it false: read
 so, every rule of linear logic is a rule of ordinary logic, so a sequent
-false under one assignment has no proof. That every proof of linear logic so
-read is a proof of classical logic: the LLHandbook project, <a
+false under one assignment has no proof. "Mapping ⊗ and &amp; to ∧ and ⅋ and
+⊕ to ∨ turns linear provable formulas into valid classical formulas": the
+LLHandbook project, <a
 href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
-of linear logic</a>, section 1.8, Theorem 1.8.1 (the skeleton).</dd>
+of linear logic</a>, section 1.1, proved in section 1.8 (Theorem 1.8.1, the
+skeleton).</dd>
 </dl>
