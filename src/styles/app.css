@@ -144,6 +144,12 @@ button.kw {
 .kw.plain {
   color: var(--color-dim);
 }
+/* A status in a line of controls: its colour without a control's box. */
+.kw.flat {
+  border-color: transparent;
+  background: none;
+  padding-inline: 0;
+}
 /* The engine that ran a search, its source on hover and in Learn. */
 .kw.engine {
   color: var(--color-dim);
@@ -599,6 +605,10 @@ button svg.lucide {
 .empty p {
   margin: 0;
 }
+.empty .linkish {
+  padding: 0;
+  min-width: 0;
+}
 .banner,
 .done {
   position: absolute;
@@ -610,12 +620,12 @@ button svg.lucide {
   cursor: default;
 }
 /* Over the dotted field a keyword is laid on the panel, so no dot shows through. */
-.banner,
-.done {
+.stage .banner,
+.stage .done {
   background-color: var(--color-panel);
   background-image: linear-gradient(var(--color-ok-wash), var(--color-ok-wash));
 }
-.banner.warn {
+.stage .banner.warn {
   background-image: linear-gradient(var(--color-warn-wash), var(--color-warn-wash));
 }
 
@@ -637,7 +647,8 @@ button svg.lucide {
   box-shadow: none;
   backdrop-filter: none;
   max-width: none;
-  padding: var(--spacing-1);
+  padding: var(--spacing-2);
+  gap: var(--spacing-2) var(--spacing-3);
 }
 .seg {
   display: inline-flex;
@@ -961,7 +972,7 @@ button svg.lucide {
 .form {
   display: grid;
   gap: var(--spacing-3);
-  padding: var(--spacing-1);
+  padding: var(--spacing-1) 0;
 }
 .lbl {
   display: grid;
@@ -1391,6 +1402,24 @@ fieldset {
   /* The field takes what the row's five other controls leave. */
   .field {
     width: calc(100vw - 5 * var(--size-control) - var(--spacing-7));
+  }
+  .app[data-learn] .field {
+    width: calc(100vw - 5 * var(--size-control) - var(--spacing-7) - var(--spacing-4));
+  }
+  /* With Learn on every action keeps its name (D54): under its icon. */
+  .app[data-learn] .act {
+    flex-direction: column;
+    gap: 0;
+    padding: var(--spacing-0-5) var(--spacing-0-5) 0;
+    min-width: var(--size-control);
+  }
+  .app[data-learn] .act .lb {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    font-size: var(--text-label);
+    line-height: var(--leading-none);
   }
   .menu {
     bottom: var(--size-band);

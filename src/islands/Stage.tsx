@@ -350,8 +350,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const above = hudBottom() + token("--spacing-8");
     const below = token("--spacing-8");
     let { x, y } = camera();
-    if (r.left < s.left + edge) x += s.left + edge - r.left;
+    // A goal wider than the stage shows its start.
     if (r.right > s.right - edge) x -= r.right - (s.right - edge);
+    if (r.left - (x - camera().x) < s.left + edge) x += s.left + edge - (r.left - (x - camera().x));
     if (r.top < s.top + above) y += s.top + above - r.top;
     else if (r.bottom > s.bottom - below) y -= r.bottom - (s.bottom - below);
     if (x !== camera().x || y !== camera().y) move({ ...camera(), x, y }, smooth);
@@ -390,9 +391,15 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const gap = token("--spacing-2");
     const height = dock.offsetHeight;
     const left = Math.max(gap, Math.min(r.left - s.left, s.width - dock.offsetWidth - gap));
+    // The goal's extent with its formulas' buttons, which reach past its text.
+    const buttons = [...stage.querySelectorAll(".fb[data-active]")].map((b) =>
+      b.getBoundingClientRect(),
+    );
+    const goalTop = Math.min(r.top, ...buttons.map((b) => b.top));
+    const goalBottom = Math.max(r.bottom, ...buttons.map((b) => b.bottom));
     // Above the goal, or below it where the calculus's cluster leaves no room.
-    const above = r.top - s.top - height - gap;
-    const top = above >= hudBottom() + gap ? above : r.bottom - s.top + gap;
+    const above = goalTop - s.top - height - gap;
+    const top = above >= hudBottom() + gap ? above : goalBottom - s.top + gap;
     dock.style.visibility = "visible";
     dock.style.left = `${left}px`;
     dock.style.top = `${top}px`;
@@ -421,9 +428,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     let top: number;
     if (narrow) {
       // A sheet at the stage's bottom, above its controls.
-      const controls = stage.querySelector<HTMLElement>(".stage-ctl")?.offsetHeight ?? 0;
+      const controls = stage.querySelector<HTMLElement>(".stage-ctl")?.offsetTop ?? s.height;
       left = gap;
-      top = s.height - popover.offsetHeight - controls - 2 * gap;
+      top = controls - popover.offsetHeight - gap;
     } else if (ui.split) {
       left = r.left - s.left;
       top = r.bottom - s.top + gap;
@@ -925,7 +932,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 Split for <span class="m">{split().rule}</span>
               </span>
             </p>
-            <p class="sub">Click the formulas that go to the left premise.</p>
+            <p class="sub">Choose the formulas that go to the left premise.</p>
             <div class="split-pre" data-fails={split().passes === false ? "" : undefined}>
               <p class="prem">
                 <span class="kw-label">Left</span>
@@ -952,7 +959,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 fallback={<span class="kw plain">Checking</span>}
               >
                 <span
-                  class={`kw ${split().passes ? "acc" : "warn"}`}
+                  class={`kw flat ${split().passes ? "acc" : "warn"}`}
                   data-tip={
                     split().passes
                       ? "Both premises can still be proved, as far as linlog's quick test sees."
