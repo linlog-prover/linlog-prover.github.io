@@ -921,8 +921,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         {(split) => (
           <div class="cluster pop split" ref={popover} role="dialog" aria-label="Split">
             <p class="pop-h">
-              <span class="kw-label">Split</span>
-              <span class="m">{split().rule}</span>
+              <span class="kw-label">
+                Split for <span class="m">{split().rule}</span>
+              </span>
             </p>
             <p class="sub">Click the formulas that go to the left premise.</p>
             <div class="split-pre" data-fails={split().passes === false ? "" : undefined}>
