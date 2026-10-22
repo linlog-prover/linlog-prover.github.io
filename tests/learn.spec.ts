@@ -96,7 +96,7 @@ test("About says what the page is, and every licence it lists is served", async 
     .evaluateAll((links) =>
       links.map((a) => a.getAttribute("href") ?? "").filter((href) => href.startsWith("/")),
     );
-  expect(local.length).toBe(9);
+  expect(local.length).toBe(10);
   for (const href of local) {
     const response = await request.get(href);
     expect(response.status(), href).toBe(200);

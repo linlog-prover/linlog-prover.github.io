@@ -28,7 +28,7 @@ export const MODES: readonly Mode[] = [
 ];
 
 /** A math font linlog lays its drawings out in, by the name `styles.svg.font` takes. */
-export type MathFont = "euler" | "stix-two" | "garamond" | "asana";
+export type MathFont = "euler" | "stix-two" | "garamond" | "asana" | "new-computer-modern";
 
 /** linlog's math fonts, Euler Math (the page's own) first, each with its name and its look. */
 export const MATH_FONTS: readonly { key: MathFont; name: string; look: string }[] = [
@@ -36,6 +36,11 @@ export const MATH_FONTS: readonly { key: MathFont; name: string; look: string }[
   { key: "stix-two", name: "STIX Two Math", look: "In the style of Times" },
   { key: "garamond", name: "Garamond-Math", look: "In the style of Garamond" },
   { key: "asana", name: "Asana Math", look: "In the style of Palatino" },
+  {
+    key: "new-computer-modern",
+    name: "New Computer Modern Math",
+    look: "The Computer Modern of TeX",
+  },
 ];
 
 /** A sequent's JSON, as `seq json` writes it: opaque to the page but its level. */

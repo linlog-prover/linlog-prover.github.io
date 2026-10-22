@@ -844,6 +844,11 @@ const LICENCES: readonly (readonly [string, string, string])[] = [
   ["STIX Two Math, a font of the exports", "SIL OFL 1.1", "/fonts/STIXTwoMath-OFL.txt"],
   ["Garamond-Math, a font of the exports", "SIL OFL 1.1", "/fonts/Garamond-Math-OFL.txt"],
   ["Asana Math, a font of the exports", "SIL OFL 1.1", "/fonts/Asana-Math-OFL.txt"],
+  [
+    "New Computer Modern Math, a font of the exports",
+    "GUST Font License (LPPL 1.3c)",
+    "/fonts/NewCMMath-LICENSE.txt",
+  ],
   ["Figtree, the text's font", "SIL OFL 1.1", "/fonts/Figtree-OFL.txt"],
   ["Space Mono, the field's font", "SIL OFL 1.1", "/fonts/SpaceMono-OFL.txt"],
   ["The JavaScript's packages, Lucide's icons among them", "notices", "/licenses/bundle.txt"],

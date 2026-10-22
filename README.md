@@ -26,7 +26,7 @@ sent to a server.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
   a refuted goal has no proof), the drawings set in a math font chosen in the export menu
-  (Euler Math, STIX Two Math, Garamond-Math or Asana Math); the proof in the link's fragment; every open proof saved
+  (Euler Math, STIX Two Math, Garamond-Math, Asana Math or New Computer Modern Math); the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
   linlog writes them; everything by keyboard (`?` lists the keys); a menu, sheet or popover
   closed by Escape or by a press outside it; light and dark. On a
@@ -66,7 +66,8 @@ The code is licensed under the [EUPL-1.2](LICENSE). The written content (explana
 tutorials, worked examples and exercises, under `src/content/`) is licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as the pages that carry it say.
 The fonts are under the SIL Open Font License 1.1: Euler Math, STIX Two Math,
-Garamond-Math and Asana Math (from linlog), Figtree and Space Mono (from Fontsource), each
-served beside its licence under `/fonts/`. The site
+Garamond-Math and Asana Math (from linlog), Figtree and Space Mono (from Fontsource); New
+Computer Modern Math (from linlog) is under the GUST Font License, which is the LaTeX
+Project Public License 1.3c. Each is served beside its licence under `/fonts/`. The site
 serves the notices of the npm packages in its bundle (`/licenses/bundle.txt`) and of the
 Rust crates in linlog's module (`/licenses/THIRD-PARTY-NOTICES.txt`).

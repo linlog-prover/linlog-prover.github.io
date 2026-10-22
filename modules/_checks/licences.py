@@ -11,9 +11,11 @@
 # - licenses/THIRD-PARTY-NOTICES.txt is linlog-web's, the Rust crates inside
 #   the module, byte for byte, and licenses/LICENSE.txt this repository's;
 # - every font file of the site is under fonts/, beside its family's
-#   <Family>-OFL.txt, an SIL Open Font License text, linlog's math fonts'
-#   (Euler Math, STIX Two Math, Garamond-Math, Asana Math) being the
-#   licences linlog keeps beside them, byte for byte;
+#   <Family>-OFL.txt, an SIL Open Font License text, or New Computer Modern
+#   Math's <Family>-LICENSE.txt, the GUST Font License's, linlog's math
+#   fonts' (Euler Math, STIX Two Math, Garamond-Math, Asana Math, New
+#   Computer Modern Math) being the licences linlog keeps beside them, and
+#   their files linlog's, byte for byte;
 # - every page that carries written content (an element marked
 #   data-written) says that it is under CC BY 4.0, with a link to the
 #   licence, and the prover's page is one of them.
@@ -77,13 +79,17 @@ if (
 ):
     problems.append("licenses/LICENSE.txt is not the repository's LICENSE")
 
+# Each family by its files' prefix: its name, the licence file beside it and
+# a phrase that licence's text holds.
+OFL = "sil open font license"
 families = {
-    "Euler-Math": "Euler-Math",
-    "STIXTwoMath-": "STIXTwoMath",
-    "Garamond-Math": "Garamond-Math",
-    "Asana-Math": "Asana-Math",
-    "figtree-": "Figtree",
-    "space-mono-": "SpaceMono",
+    "Euler-Math": ("Euler-Math", "OFL", OFL),
+    "STIXTwoMath-": ("STIXTwoMath", "OFL", OFL),
+    "Garamond-Math": ("Garamond-Math", "OFL", OFL),
+    "Asana-Math": ("Asana-Math", "OFL", OFL),
+    "NewCMMath-": ("NewCMMath", "LICENSE", "gust font license"),
+    "figtree-": ("Figtree", "OFL", OFL),
+    "space-mono-": ("SpaceMono", "OFL", OFL),
 }
 for path in sorted(p for p in site.rglob("*") if p.suffix in FONT_FILES):
     name = path.relative_to(site)
@@ -96,22 +102,34 @@ for path in sorted(p for p in site.rglob("*") if p.suffix in FONT_FILES):
     if family is None:
         problems.append(f"{name}: a font of no family whose licence is known here")
         continue
-    beside = path.parent / f"{family}-OFL.txt"
-    if (
-        not beside.is_file()
-        or "sil open font license" not in beside.read_text().lower()
-    ):
-        problems.append(f"{name}: no OFL text beside it ({beside.name})")
+    family, kind, phrase = family
+    beside = path.parent / f"{family}-{kind}.txt"
+    if not beside.is_file() or phrase not in beside.read_text().lower():
+        problems.append(f"{name}: no licence text beside it ({beside.name})")
 # linlog's math fonts, each served with the licence linlog keeps beside it.
 for served, source in [
     ("Euler-Math-OFL.txt", "OFL.txt"),
     ("STIXTwoMath-OFL.txt", "STIXTwoMath-Regular-OFL.txt"),
     ("Garamond-Math-OFL.txt", "Garamond-Math-OFL.txt"),
     ("Asana-Math-OFL.txt", "Asana-Math-OFL.txt"),
+    ("NewCMMath-LICENSE.txt", "NewCMMath-Book-LICENSE.txt"),
 ]:
     path = site / "fonts" / served
     if not path.is_file() or path.read_bytes() != (fonts / source).read_bytes():
         problems.append(f"fonts/{served} is not linlog's {source}")
+# linlog's math fonts are served unmodified, byte for byte linlog's files: a
+# font kept under its name must be (the OFL's Reserved Font Names, the
+# LPPL's clause 6 for New Computer Modern Math).
+for prefix, source in [
+    ("Euler-Math", "Euler-Math.otf"),
+    ("STIXTwoMath-", "STIXTwoMath-Regular.otf"),
+    ("Garamond-Math", "Garamond-Math.otf"),
+    ("Asana-Math", "Asana-Math.otf"),
+    ("NewCMMath-", "NewCMMath-Book.otf"),
+]:
+    served = [p for p in (site / "fonts").glob(f"{prefix}*") if p.suffix in FONT_FILES]
+    if len(served) != 1 or served[0].read_bytes() != (fonts / source).read_bytes():
+        problems.append(f"fonts/{prefix}*: not linlog's {source}, unmodified, once")
 
 
 class Written(html.parser.HTMLParser):
@@ -149,5 +167,5 @@ if problems:
     sys.exit("\n".join(problems))
 print(
     f"the bundle's {len(entries)} notices, the crates' notices and the code's licence are served, "
-    f"every font sits beside its OFL, and {len(carrying)} pages of written content say CC BY 4.0"
+    f"every font sits beside its licence, and {len(carrying)} pages of written content say CC BY 4.0"
 )

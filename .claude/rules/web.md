@@ -168,17 +168,19 @@ the page reads.
   EUPL. The upload to Pages drops dot-files, so nothing is under `.vite/`.
 - **Fonts live under `/fonts/`** beside `<Family>-OFL.txt`: `assetFileNames` sends them
   there, but only for what the server build emits (the stylesheet's fonts, and linlog's
-  four math fonts because `index.astro` imports their URLs and passes them to the island
+  five math fonts because `index.astro` imports their URLs and passes them to the island
   as `fonts`); Astro's client build names its own assets, so a font imported from the
   island would land in `/_astro/` and fail the build. A new family is a line of `FONTS`
-  and of the check (`families` and the served licences compared with linlog's).
+  and of the check (`families` and the served licences compared with linlog's). A licence
+  that is not the OFL is served as `<Family>-LICENSE.txt` (`ofl: false`): New Computer
+  Modern Math's, the GUST Font License's, with the LPPL's clause 6 notice linlog wrote.
 - **The exports' math font** is `Settings.font` (`styles.svg.font`, a `MathFont` name, kept
   in the browser), chosen in the export menu (`menuitemradio`s in a fieldset, `MATH_FONTS`
   in `src/lib/linlog.ts`), and sent only with the exports' settings: the page's own drawing
   stays in Euler Math (D53). `font(name)` in `App.tsx` fetches a font's bytes once, when an
   export first needs them (Euler Math at the start, for the drawing); `render` gets that
-  file and no other. The service worker caches the three export fonts with every other file
-  (about 2 MB), so an export in them works offline too.
+  file and no other. The service worker caches the four export fonts with every other file
+  (about 3.4 MB), so an export in them works offline too.
 
 ## The written content (`src/content/`, CC BY 4.0)
 

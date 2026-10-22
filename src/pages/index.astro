@@ -5,7 +5,7 @@
 // The one page: the prover, one Solid island rendered in the browser alone,
 // since everything on it is the prover's and runs on linlog's module there.
 // Without a script the page says what it is. linlog's math fonts, Euler
-// Math, which the island loads for its drawings and exports, and the three
+// Math, which the island loads for its drawings and exports, and the four
 // others an export may be set in, are imported here, so that they are built
 // as the other fonts are, under /fonts/ (astro.config.ts).
 //
@@ -17,6 +17,7 @@
 import asana from "linlog-fonts/Asana-Math.otf?url";
 import euler from "linlog-fonts/Euler-Math.otf?url";
 import garamond from "linlog-fonts/Garamond-Math.otf?url";
+import newcm from "linlog-fonts/NewCMMath-Book.otf?url";
 import stix from "linlog-fonts/STIXTwoMath-Regular.otf?url";
 import { getCollection, render } from "astro:content";
 import App from "../islands/App";
@@ -61,7 +62,7 @@ const rendered = await Promise.all(
     <h1 class="sr-only">linlog: linear logic, proved in the browser</h1>
     <App
       client:only="solid-js"
-      fonts={{ euler, "stix-two": stix, garamond, asana }}
+      fonts={{ euler, "stix-two": stix, garamond, asana, "new-computer-modern": newcm }}
       examples={exampleData}
       stops={stopData}
     >

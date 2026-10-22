@@ -16,7 +16,8 @@
  * - `/licenses/LICENSE.txt`: the EUPL-1.2, the licence of linlog and of
  *   this site's code.
  * - `/fonts/<Family>-OFL.txt`: each font's licence beside its files, which
- *   astro.config.ts puts under /fonts/.
+ *   astro.config.ts puts under /fonts/; `<Family>-LICENSE.txt` for a font
+ *   whose licence is not the OFL (New Computer Modern Math's).
  *
  * A source that is missing fails the build. The `licences` flake check
  * reads the result apart from this code.
@@ -32,8 +33,11 @@ export const LICENCES = {
   code: "licenses/LICENSE.txt",
 } as const;
 
-/** Each font family's files (by their name's start) and its licence's source, from the project's root. */
-export const FONTS: readonly { family: string; files: string; licence: string }[] = [
+/**
+ * Each font family's files (by their name's start), its licence's source from the project's
+ * root, and whether that licence is the OFL.
+ */
+export const FONTS: readonly { family: string; files: string; licence: string; ofl?: false }[] = [
   { family: "Euler-Math", files: "Euler-Math", licence: ".cache/linlog-fonts/OFL.txt" },
   {
     family: "STIXTwoMath",
@@ -47,6 +51,12 @@ export const FONTS: readonly { family: string; files: string; licence: string }[
   },
   { family: "Asana-Math", files: "Asana-Math", licence: ".cache/linlog-fonts/Asana-Math-OFL.txt" },
   {
+    family: "NewCMMath",
+    files: "NewCMMath-",
+    licence: ".cache/linlog-fonts/NewCMMath-Book-LICENSE.txt",
+    ofl: false,
+  },
+  {
     family: "Figtree",
     files: "figtree-",
     licence: "node_modules/@fontsource-variable/figtree/LICENSE",
@@ -59,7 +69,8 @@ export const FONTS: readonly { family: string; files: string; licence: string }[
 ];
 
 /** The licence file served beside a family's fonts. */
-export const fontLicence = (family: string) => `fonts/${family}-OFL.txt`;
+export const fontLicence = (font: (typeof FONTS)[number]) =>
+  `fonts/${font.family}-${font.ofl === false ? "LICENSE" : "OFL"}.txt`;
 
 export function licences(): AstroIntegration {
   return {
@@ -87,7 +98,7 @@ export function licences(): AstroIntegration {
           if (!fonts.some((file) => file.startsWith(font.files))) {
             throw new Error(`no file of ${font.family} under /fonts/, where its licence goes`);
           }
-          await copyFile(new URL(font.licence, root), new URL(fontLicence(font.family), dir));
+          await copyFile(new URL(font.licence, root), new URL(fontLicence(font), dir));
         }
         logger.info(`the licences of the bundle, the crates and ${FONTS.length} fonts are served`);
       },
