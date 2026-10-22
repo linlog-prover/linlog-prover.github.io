@@ -87,6 +87,18 @@ the page reads.
 - The split chooser sits under the goal's row, never beside a formula of it (the
   formulas are what it is clicked on); on a stage under 640 px both popovers are a sheet
   at its bottom.
+- **Zoom is the stage's on the stage and the browser's everywhere else.** The stage keeps
+  `touch-action: none`, so the browser makes no gesture there and the stage's pointers do:
+  one on the field pans, a second finger (wherever it lands, a formula's button too) makes
+  a pinch about the two fingers' midpoint (`pinch`), and ctrl with the wheel (a trackpad's
+  pinch in Chromium and Firefox) zooms about the pointer; Safari's trackpad pinch arrives as
+  `gesturestart`/`gesturechange`, taken only while no touch pointer is down (on iOS the
+  pointers make the pinch). Nothing else on the page sets a `touch-action` or cancels ctrl
+  with the wheel or ctrl with plus or minus, and the viewport allows zoom (WCAG 1.4.4):
+  `tests/zoom.spec.ts` checks every element outside the stage. Chromium's own pinch needs
+  the fingers to spread past its slop: the test's page pinch goes from 20 to 100 pixels
+  either side (20 to 60 zoomed nothing), and CDP's `Input.synthesizePinchGesture` zooms
+  nothing in this Chromium at all.
 - Solid's narrowed accessor in `<Show>{(x) => …}` goes stale once its condition is false:
   read it before the handler changes what the condition reads (the restart warning).
 
@@ -96,6 +108,17 @@ the page reads.
   Euler Math): `A⊥` for `~A` and `A^`, which linlog's parser does not read, so the link
   keeps `pretty`'s text, which it does.
 
+- **Light dismiss** (`App.tsx`, one capture `pointerdown` on the document): a press outside
+  what is open closes it as Escape does: the menu or pane (`ui.menu`, inside: `.menu`, the
+  bands' popovers `.status-pop`/`.calc-pop`, and any `[aria-expanded=true]` toggle but a
+  formula's), the restart warning (inside: it and the calculus's cluster), and the rule
+  popover or split chooser (inside: the stage's `.pop` and every formula's button, by which
+  a rule or a side is chosen); the tour's caption is inside everything. A press on the stage
+  that closes something does nothing else: its `pointerdown` stops there (no pan) and its
+  `click` is swallowed (no formula picked, no stage button pressed); a press on a band's
+  button closes and acts. A toggle must carry `aria-expanded`, or its own press would close
+  its menu before its click opens it again. On a phone some sheets (About) cover the whole
+  stage, so outside is the bands; `tests/dismiss.spec.ts` presses there then.
 - **One action that changes a proof at a time** (`guard`): each reads the session, waits on
   the worker and shows the answer, so a second begun meanwhile would build on a session
   the first replaces. An action asked for while one runs does nothing; the bottom band's
@@ -144,10 +167,18 @@ the page reads.
   `/licenses/THIRD-PARTY-NOTICES.txt` the Rust crates' (linlog-web's), `LICENSE.txt` the
   EUPL. The upload to Pages drops dot-files, so nothing is under `.vite/`.
 - **Fonts live under `/fonts/`** beside `<Family>-OFL.txt`: `assetFileNames` sends them
-  there, but only for what the server build emits (the stylesheet's fonts, and Euler Math
-  because `index.astro` imports its URL and passes it to the island as `font`); Astro's
-  client build names its own assets, so a font imported from the island would land in
-  `/_astro/` and fail the build. A new family is a line of `FONTS` and of the check.
+  there, but only for what the server build emits (the stylesheet's fonts, and linlog's
+  four math fonts because `index.astro` imports their URLs and passes them to the island
+  as `fonts`); Astro's client build names its own assets, so a font imported from the
+  island would land in `/_astro/` and fail the build. A new family is a line of `FONTS`
+  and of the check (`families` and the served licences compared with linlog's).
+- **The exports' math font** is `Settings.font` (`styles.svg.font`, a `MathFont` name, kept
+  in the browser), chosen in the export menu (`menuitemradio`s in a fieldset, `MATH_FONTS`
+  in `src/lib/linlog.ts`), and sent only with the exports' settings: the page's own drawing
+  stays in Euler Math (D53). `font(name)` in `App.tsx` fetches a font's bytes once, when an
+  export first needs them (Euler Math at the start, for the drawing); `render` gets that
+  file and no other. The service worker caches the three export fonts with every other file
+  (about 2 MB), so an export in them works offline too.
 
 ## The written content (`src/content/`, CC BY 4.0)
 
@@ -171,6 +202,10 @@ the page reads.
   `linlog prove` before it is used, and each provable one's session is written by `linlog
   interact` from the steps linlog's own hints give (`apply` per step, then `save` and
   `proof`, exit 0), so that Watch plays it step by step rather than one search's graft.
+  Every lesson from the second ends with harder problems (difficulty 3: at least two
+  provable, `examples.test.ts`, beside a near miss that is not, which keeps the mix), their
+  `order` past 100 (`100 + 10 · lesson + k`) so that they follow the lesson's earlier ones
+  without renumbering them.
 - **Watch** opens an example's proof taken back to the sequent with each step alone on the
   redo stack, so Redo plays it; an example opens as a proof of its own, in place of the
   page's empty one only, so it replaces no work and needs no warning.

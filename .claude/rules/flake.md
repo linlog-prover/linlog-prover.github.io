@@ -20,7 +20,7 @@ never through `specialArgs`. The scheme is the author's learning sites'
 (`~/Projects/own/website-learn/modules/`); take a fix from there rather than reinventing it.
 
 - **linlog is an input, never built here.** `linlog.nix` takes the package `linlog-web`
-  and the font `cli/fonts/Euler-Math.otf` (with its `OFL.txt`) from it. nixpkgs follows
+  and every file of `cli/fonts/` (the four math fonts and their licences) from it. nixpkgs follows
   linlog's (`nixpkgs.follows = "linlog/nixpkgs"`): one package set for the bindings and the
   site, so an update of linlog moves both, and Node.js and playwright-driver are whatever
   linlog's nixpkgs has. While a change of linlog is under way, build against the workspace

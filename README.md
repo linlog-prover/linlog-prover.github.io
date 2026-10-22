@@ -11,8 +11,10 @@ sent to a server.
 - A sequent typed in the field (ASCII such as `A * B |- B * A`, or the signs `⊗ ⅋ ⊸ ⊕ ⊢`),
   proved in classical linear logic or, by the switches on the stage, intuitionistic, with
   Mix or affine weakening; the fragment linlog detects is shown beside it.
-- The derivation drawn as linlog draws it, under a camera that zooms and pans; a click on a
-  formula of an open goal lists the rules linlog gives for it; a split asks which formulas
+- The derivation drawn as linlog draws it, under a camera that zooms and pans: a pinch of
+  two fingers, a trackpad's pinch or ctrl with the wheel zooms the drawing about where it
+  happens, one finger or the mouse pans it, and outside the drawing the browser's own zoom
+  is left alone; a click on a formula of an open goal lists the rules linlog gives for it; a split asks which formulas
   go left and says whether it can still close; a refused step says why, at the goal.
 - Undo on the active goal's branch, redo, and a list of every step to go back to; a goal
   closed by linlog's search, or every goal at once, within a work budget; the verdicts
@@ -23,13 +25,15 @@ sent to a server.
   Learn's reference; Settings can force an engine, offering those that take the sequent.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
-  a refuted goal has no proof); the proof in the link's fragment; every open proof saved
+  a refuted goal has no proof), the drawings set in a math font chosen in the export menu
+  (Euler Math, STIX Two Math, Garamond-Math or Asana Math); the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
-  linlog writes them; everything by keyboard (`?` lists the keys); light and dark. On a
+  linlog writes them; everything by keyboard (`?` lists the keys); a menu, sheet or popover
+  closed by Escape or by a press outside it; light and dark. On a
   phone every control is at least 44 by 44 pixels, and the rarer actions and the
   calculus's switches are under More.
 - Learn, a frame around the page with the tutorial's places, practice along the lessons
-  (52 sequents, each decided by linlog, provable and unprovable mixed, graded by
+  (73 sequents, each decided by linlog, provable and unprovable mixed, graded by
   difficulty; each opened as a proof, its answer kept until asked, and a provable one's
   proof watched step by step) and a reference of the connectives and of the engines with
   their literature; a tour of the page that proves a sequent as it goes; About, with every
@@ -61,7 +65,8 @@ since Pages sets no header.
 The code is licensed under the [EUPL-1.2](LICENSE). The written content (explanations,
 tutorials, worked examples and exercises, under `src/content/`) is licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as the pages that carry it say.
-The fonts are under the SIL Open Font License 1.1: Euler Math (from linlog), Figtree and
-Space Mono (from Fontsource), each served beside its licence under `/fonts/`. The site
+The fonts are under the SIL Open Font License 1.1: Euler Math, STIX Two Math,
+Garamond-Math and Asana Math (from linlog), Figtree and Space Mono (from Fontsource), each
+served beside its licence under `/fonts/`. The site
 serves the notices of the npm packages in its bundle (`/licenses/bundle.txt`) and of the
 Rust crates in linlog's module (`/licenses/THIRD-PARTY-NOTICES.txt`).
