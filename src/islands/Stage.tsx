@@ -366,6 +366,13 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     move({ k, x: px - ((px - c.x) * k) / c.k, y: py - ((py - c.y) * k) / c.k }, !at);
   }
 
+  /** Zooms by `by` about the point `from` of the stage, which then lies at `to`: a pinch. */
+  function pinch(by: number, from: { x: number; y: number }, to: { x: number; y: number }) {
+    const c = camera();
+    const k = Math.max(0.2, Math.min(4, c.k * by));
+    move({ k, x: to.x - ((from.x - c.x) * k) / c.k, y: to.y - ((from.y - c.y) * k) / c.k });
+  }
+
   createEffect(() => {
     const c = camera();
     world.style.transform = `translate(${c.x}px, ${c.y}px) scale(${c.k})`;
@@ -442,24 +449,63 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     popover.style.top = `${Math.max(gap, Math.min(top, s.height - popover.offsetHeight - gap))}px`;
   });
 
-  // Panning by dragging the field, zooming with ctrl and the wheel, and both by buttons and keys.
+  // Panning by dragging the field, zooming by a pinch (two fingers, or a trackpad's pinch, which
+  // browsers send as ctrl and the wheel or, in Safari, as gesture events) and by ctrl and the
+  // wheel about where it happens, and both by buttons and keys. The stage takes no gesture of the
+  // browser's (touch-action: none), so a pinch here zooms the drawing, never the page; everywhere
+  // else the browser's own zoom acts, and ctrl with plus or minus is always the browser's.
   onMount(() => {
-    let drag: { x: number; y: number; id: number } | null = null;
+    // The pointers down on the stage: one on the field pans; a second finger, wherever it lands,
+    // makes a pinch of the two.
+    const pointers = new Map<number, { x: number; y: number; pans: boolean }>();
     const down = (event: PointerEvent) => {
-      if ((event.target as Element).closest("button, input, .dock, .pop, .cluster")) return;
-      drag = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      const control = (event.target as Element).closest("button, input, .dock, .pop, .cluster");
+      if (control && (event.pointerType !== "touch" || pointers.size === 0)) {
+        if (event.pointerType === "touch")
+          pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, pans: false });
+        return;
+      }
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, pans: true });
       stage.setPointerCapture(event.pointerId);
       stage.dataset["panning"] = "";
     };
     const moved = (event: PointerEvent) => {
-      if (!drag || event.pointerId !== drag.id) return;
-      const c = camera();
-      move({ ...c, x: c.x + event.clientX - drag.x, y: c.y + event.clientY - drag.y });
-      drag = { ...drag, x: event.clientX, y: event.clientY };
+      const was = pointers.get(event.pointerId);
+      if (!was) return;
+      const now = { ...was, x: event.clientX, y: event.clientY };
+      const other = [...pointers].find(([id]) => id !== event.pointerId)?.[1];
+      pointers.set(event.pointerId, now);
+      if (pointers.size === 2 && other) {
+        const s = stage.getBoundingClientRect();
+        const from = { x: (was.x + other.x) / 2 - s.left, y: (was.y + other.y) / 2 - s.top };
+        const to = { x: (now.x + other.x) / 2 - s.left, y: (now.y + other.y) / 2 - s.top };
+        const apart = Math.hypot(was.x - other.x, was.y - other.y);
+        if (apart > 0) pinch(Math.hypot(now.x - other.x, now.y - other.y) / apart, from, to);
+      } else if (pointers.size === 1 && was.pans) {
+        const c = camera();
+        move({ ...c, x: c.x + now.x - was.x, y: c.y + now.y - was.y });
+      }
     };
-    const up = () => {
-      drag = null;
-      delete stage.dataset["panning"];
+    const up = (event: PointerEvent) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) delete stage.dataset["panning"];
+    };
+    // Safari's pinch on a trackpad: the scale since the gesture began. On a touch screen the
+    // pointers make the pinch, so their gesture events are only kept from the page.
+    let scaled = 1;
+    const gesture = (event: Event) => {
+      event.preventDefault();
+      if (pointers.size > 0) return;
+      const { scale, clientX, clientY } = event as Event & {
+        scale: number;
+        clientX: number;
+        clientY: number;
+      };
+      if (event.type === "gesturestart") scaled = 1;
+      const s = stage.getBoundingClientRect();
+      const at = { x: clientX - s.left, y: clientY - s.top };
+      pinch(scale / scaled, at, at);
+      scaled = scale;
     };
     const wheel = (event: WheelEvent) => {
       if (!host.firstChild) return;
@@ -483,6 +529,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     stage.addEventListener("pointerup", up);
     stage.addEventListener("pointercancel", up);
     stage.addEventListener("wheel", wheel, { passive: false });
+    for (const type of ["gesturestart", "gesturechange"]) stage.addEventListener(type, gesture);
     resized.observe(stage);
     const keys = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
