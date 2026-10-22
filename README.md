@@ -17,15 +17,22 @@ sent to a server.
 - Undo on the active goal's branch, redo, and a list of every step to go back to; a goal
   closed by linlog's search, or every goal at once, within a work budget; the verdicts
   three-valued (proved and checked, unprovable with the reason and a checked refutation,
-  or unknown when the search gave up), and a four-rung hint ladder from the search.
+  the inverse method's saturated set among them, or unknown when the search gave up), and
+  a four-rung hint ladder from the search. Every search names the engine that did its
+  work beside that work, with the engine's source in the literature on hover and in
+  Learn's reference; Settings can force an engine, offering those that take the sequent.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
   a refuted goal has no proof); the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
-  linlog writes them; everything by keyboard (`?` lists the keys); light and dark.
-- Learn, a frame around the page with the tutorial's places, sequents to practise on
-  (each opened as a proof, or its proof watched step by step) and a reference of the
-  connectives; a tour of the page that proves a sequent as it goes; About, with every
+  linlog writes them; everything by keyboard (`?` lists the keys); light and dark. On a
+  phone every control is at least 44 by 44 pixels, and the rarer actions and the
+  calculus's switches are under More.
+- Learn, a frame around the page with the tutorial's places, practice along the lessons
+  (52 sequents, each decided by linlog, provable and unprovable mixed, graded by
+  difficulty; each opened as a proof, its answer kept until asked, and a provable one's
+  proof watched step by step) and a reference of the connectives and of the engines with
+  their literature; a tour of the page that proves a sequent as it goes; About, with every
   licence the site serves.
 - After one visit the page works with no network, and it can be installed as an app.
   No tracking: GitHub, which serves the site, logs visitors' IP addresses, as its privacy

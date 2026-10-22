@@ -204,8 +204,17 @@ export default function App(props: {
   }
 
   // The one hover rule: any element with a tip shows it on hover and on focus, its key after the words.
+  // A finger neither hovers nor means the focus a tap leaves: no tip follows a touch.
   onMount(() => {
+    let touched = false;
+    const pointer = (event: PointerEvent) => {
+      touched = event.pointerType === "touch";
+    };
+    const typed = () => {
+      touched = false;
+    };
     const show = (event: Event) => {
+      if (touched || (event instanceof PointerEvent && event.pointerType === "touch")) return;
       const element = (event.target as Element | null)?.closest?.("[data-tip]");
       if (!element) return;
       const r = element.getBoundingClientRect();
@@ -218,11 +227,15 @@ export default function App(props: {
       });
     };
     const hide = () => setTip(null);
+    document.addEventListener("pointerdown", pointer, true);
+    document.addEventListener("keydown", typed, true);
     document.addEventListener("pointerover", show);
     document.addEventListener("focusin", show);
     document.addEventListener("pointerout", hide);
     document.addEventListener("focusout", hide);
     onCleanup(() => {
+      document.removeEventListener("pointerdown", pointer, true);
+      document.removeEventListener("keydown", typed, true);
       document.removeEventListener("pointerover", show);
       document.removeEventListener("focusin", show);
       document.removeEventListener("pointerout", hide);

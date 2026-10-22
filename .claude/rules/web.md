@@ -165,9 +165,29 @@ the page reads.
   `proof` (exit 0). `src/content/examples.test.ts` holds every example to linlog's verdict
   and every session to its sequent, mode and a finished proof. Learn's lessons, when
   written, prove or refute every sequent with the command first.
+- **The practice set** is along the lessons of `LESSONS` (`lesson` in each example), easiest
+  first, provable and unprovable mixed, never three alike in a row (`examples.test.ts`); a
+  card keeps its verdict and explanation under "Answer". Each sequent is decided with
+  `linlog prove` before it is used, and each provable one's session is written by `linlog
+  interact` from the steps linlog's own hints give (`apply` per step, then `save` and
+  `proof`, exit 0), so that Watch plays it step by step rather than one search's graft.
 - **Watch** opens an example's proof taken back to the sequent with each step alone on the
   redo stack, so Redo plays it; an example opens as a proof of its own, in place of the
   page's empty one only, so it replaces no work and needs no warning.
+
+## The engines (`src/lib/engines.ts`)
+
+- An outcome names its engine (`engine`), but a classical refutation is the classical
+  refuter's work (`engineOf`). The chip beside a note or a hint, the label beside a graft's
+  rule (`text.engine` after the rule label, from `Proof.engines`, a goal's path to the
+  engine, kept in the shelf), and the step list name it; the hover gives the source, a
+  press opens Learn's reference at `#engine-<key>` (`ui.spot`). The references in
+  `texts/reference.md` were checked against the works (2026-10-22); change one only from
+  the work itself.
+- **Settings' engine** is `search.engine` in every search's settings. Which engines take a
+  sequent is asked of linlog with the bindings as they are: `prove` forced to each engine
+  with a budget of one unit refuses before it searches (`engine_refused`, with `because`)
+  where the engine does not take it, the same test a search does before it starts.
 
 ## Learn, the tour, About
 
@@ -218,6 +238,24 @@ the page reads.
   `tokens.css`, never a `style` attribute in markup (the `no-style-attributes` check):
   placement goes through the CSSOM (`el.style.left = …`) in a ref or an effect.
 - No `!important` (Biome's rule): reduced motion zeroes the duration tokens instead.
+- **No raw value outside the tokens** (`src/styles/tokens.test.ts`): every length, colour,
+  duration, weight, opacity and layer in `app.css` is a `var(--…)`; allowed bare are 0, 1,
+  `1fr`, `50%`/`100%`, `100vw`/`100vh`, and integers inside `calc()` as arithmetic over
+  tokens. The island sizes no icon (`size={…}` is refused: `button svg.lucide` takes
+  `--size-icon`) and writes no length in a string; a placement in TypeScript reads its
+  offsets with `token("--spacing-…")` (`ui.tsx`). One breakpoint, 640 px, in every media
+  query and in `phone()`; the test holds them equal.
+- **Every control is one of two heights**, `--size-control` and `--size-control-small`,
+  both 44 px under the phone's media query in `tokens.css`, and shares the states of the
+  grammar's one rule in `app.css` (hover, `:active`, focus ring, disabled).
+  `tests/targets.spec.ts` measures every visible control in every state at both widths
+  (44 on a phone, 24 on a desktop): a new control, popover or state gets a step in its
+  walk. A formula's button covers half the gap to its neighbours and is at least a
+  control's height on screen, and `fitView` never zooms out below the size at which the
+  active goal's formulas are a control wide (`floor`).
+- **On a phone** the bottom band keeps undo, redo, close all, hint, export and Learn;
+  `wide-only` actions move to More's sheet with the calculus's cluster (`Calculus
+  inSheet`). Tips follow a mouse or a keyboard, never a touch (`App.tsx`).
 
 ## Tests
 
