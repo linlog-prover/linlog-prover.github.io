@@ -380,6 +380,9 @@ button svg.lucide {
   border: var(--line) solid var(--color-line);
   border-radius: var(--radius-control);
 }
+.field:focus-visible {
+  outline-offset: calc(-1 * var(--line));
+}
 .field[aria-invalid="true"] {
   border-color: var(--color-bad);
 }
@@ -430,6 +433,17 @@ button svg.lucide {
 }
 .group + .group {
   border-left: var(--line) solid var(--color-edge);
+}
+/* With Learn on, every label shows: the band packs tighter to keep one row. */
+.app[data-learn] .band.bottom {
+  gap: 0;
+  padding-inline: var(--spacing-1);
+}
+.app[data-learn] .group {
+  padding: 0 var(--spacing-0-5);
+}
+.app[data-learn] .act {
+  padding: 0 var(--spacing-1-5);
 }
 .act .k {
   margin-left: var(--spacing-0-5);
@@ -583,11 +597,7 @@ button svg.lucide {
   padding: var(--spacing-4);
 }
 .empty p {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  flex-wrap: wrap;
-  justify-content: center;
+  margin: 0;
 }
 .banner,
 .done {
@@ -598,6 +608,15 @@ button svg.lucide {
 }
 .done {
   cursor: default;
+}
+/* Over the dotted field a keyword is laid on the panel, so no dot shows through. */
+.banner,
+.done {
+  background-color: var(--color-panel);
+  background-image: linear-gradient(var(--color-ok-wash), var(--color-ok-wash));
+}
+.banner.warn {
+  background-image: linear-gradient(var(--color-warn-wash), var(--color-warn-wash));
 }
 
 /* The calculus's cluster. */
@@ -622,6 +641,7 @@ button svg.lucide {
 }
 .seg {
   display: inline-flex;
+  width: fit-content;
   gap: var(--spacing-0-5);
   padding: var(--spacing-0-5);
   border: var(--line) solid var(--color-edge);
@@ -818,8 +838,8 @@ button svg.lucide {
   font: var(--text-math-large) / var(--leading-none) var(--font-math);
 }
 .rd {
-  font: var(--font-weight-normal) var(--text-label) / var(--leading-none) var(--font-text);
-  color: var(--color-faint);
+  font: var(--font-weight-normal) var(--text-small) / var(--leading-none) var(--font-text);
+  color: var(--color-dim);
 }
 .split-pre {
   margin: var(--spacing-2) 0;
@@ -896,7 +916,10 @@ button svg.lucide {
 }
 .menu .h {
   display: block;
-  margin: var(--spacing-1) var(--spacing-1-5) var(--spacing-2);
+  margin: var(--spacing-2) 0 var(--spacing-1);
+}
+.menu .h:first-child {
+  margin-top: var(--spacing-1);
 }
 .mlist {
   list-style: none;
@@ -996,6 +1019,8 @@ button svg.lucide {
   gap: var(--spacing-0-5);
 }
 .choices .seg-b {
+  position: relative;
+  cursor: pointer;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--spacing-2);
@@ -1003,6 +1028,29 @@ button svg.lucide {
   text-align: left;
   padding: var(--spacing-1) var(--spacing-2);
   min-height: var(--size-control);
+}
+.choices input {
+  position: absolute;
+  inset: calc(-1 * var(--line));
+  width: calc(100% + 2 * var(--line));
+  height: calc(100% + 2 * var(--line));
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.choices .seg-b:has(input:checked) {
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border-color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+.choices .seg-b:has(input:disabled) {
+  opacity: var(--opacity-disabled);
+  cursor: help;
+}
+.choices .seg-b:has(input:focus-visible) {
+  outline: var(--line-strong) solid var(--color-accent);
+  outline-offset: var(--spacing-0-5);
 }
 .choices .why {
   font-size: var(--text-label);
@@ -1284,6 +1332,9 @@ button svg.lucide {
   outline: var(--line-strong) solid var(--color-accent);
   outline-offset: var(--spacing-1);
 }
+.about .licences {
+  gap: 0;
+}
 .about .licences li {
   font-size: var(--text-small);
 }
@@ -1336,6 +1387,10 @@ fieldset {
   }
   .phone-only {
     display: revert;
+  }
+  /* The field takes what the row's five other controls leave. */
+  .field {
+    width: calc(100vw - 5 * var(--size-control) - var(--spacing-7));
   }
   .menu {
     bottom: var(--size-band);

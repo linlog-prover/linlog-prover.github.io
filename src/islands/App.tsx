@@ -258,7 +258,9 @@ export default function App(props: {
   onMount(() => {
     const keys = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-      if ((event.target as Element).closest("input, textarea, select")) return;
+      // In a field the keys are the field's; Escape still closes a menu around it.
+      if (event.key !== "Escape" && (event.target as Element).closest("input, textarea, select"))
+        return;
       const goal = prover.activeGoal();
       const act: Record<string, () => void> = {
         u: () => void prover.undo(),

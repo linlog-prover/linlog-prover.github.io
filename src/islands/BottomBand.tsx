@@ -394,6 +394,8 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
     detail: string;
     act: () => Promise<void>;
     off?: () => string | null;
+    /** Where the item cannot apply at all: a refuted goal's certificate on a finished proof. */
+    hidden?: () => boolean;
   }[] = [
     {
       label: "SVG",
@@ -438,6 +440,7 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
           await props.prover.api.certificate(outcome() as Outcome, exportSettings()),
           "text/plain",
         ),
+      hidden: complete,
       off: () => {
         const kind = outcome()?.refutation?.kind;
         if (!outcome()) return "Close a goal the search refutes first";
@@ -470,7 +473,7 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
     <div class="cluster menu export" role="menu" aria-label="Export">
       <p class="kw-label h">Export {net() ? "the net" : "the derivation"}</p>
       <ul class="mlist">
-        <For each={items}>
+        <For each={items.filter((item) => !item.hidden?.())}>
           {(item) => (
             <li>
               <button
@@ -579,7 +582,7 @@ function SettingsPanel(props: {
     <div class="cluster menu" role="dialog" aria-label="Settings">
       <p class="kw-label h">Settings</p>
       <div class="form">
-        <label class="lbl">
+        <label class="lbl col">
           <span>Budget</span>
           <input
             class="num-in"
@@ -598,7 +601,7 @@ function SettingsPanel(props: {
           {Math.round(props.prover.settings().budget / 68e6) || "under one"} second
           {props.prover.settings().budget >= 1.36e8 ? "s" : ""} here.
         </p>
-        <fieldset class="lbl">
+        <fieldset class="lbl col">
           <legend>Theme</legend>
           <fieldset class="seg" aria-label="Theme">
             <For each={["system", "light", "dark"] as const}>
@@ -618,7 +621,7 @@ function SettingsPanel(props: {
             </For>
           </fieldset>
         </fieldset>
-        <fieldset class="lbl">
+        <fieldset class="lbl col">
           <legend>Net drawing</legend>
           <fieldset class="seg" aria-label="Net drawing">
             <For each={["formulas", "compact"] as const}>
@@ -641,7 +644,7 @@ function SettingsPanel(props: {
           </fieldset>
         </fieldset>
         <EngineChoice prover={props.prover} />
-        <label class="sw">
+        <label class="sw wide-only">
           <input
             type="checkbox"
             checked={props.prover.settings().showKeys}
@@ -674,35 +677,37 @@ function EngineChoice(props: { prover: Prover }) {
     <fieldset class="lbl col">
       <legend>Engine</legend>
       <div class="choices" role="radiogroup" aria-label="Engine">
-        <button
-          type="button"
+        <label
           class="seg-b"
-          role="radio"
-          aria-checked={engine() === null}
           data-tip="linlog chooses the engine by the sequent's fragment and mode"
-          onClick={() => props.prover.setSettings({ engine: null })}
         >
+          <input
+            type="radio"
+            name="engine"
+            checked={engine() === null}
+            onChange={() => props.prover.setSettings({ engine: null })}
+          />
           <span>Automatic</span>
           <span class="why">
             {listed()?.automatic ? `here the ${engineName(listed()?.automatic ?? "")}` : ""}
           </span>
-        </button>
+        </label>
         <For each={listed()?.engines ?? []}>
           {(e) => (
-            <button
-              type="button"
+            <label
               class="seg-b"
-              role="radio"
-              aria-checked={engine() === e.engine}
-              aria-disabled={e.refused ? "true" : undefined}
               data-tip={e.refused ? notTaken(e.refused).sentence : engineTip(e.engine)}
-              onClick={() => {
-                if (!e.refused) props.prover.setSettings({ engine: e.engine });
-              }}
             >
+              <input
+                type="radio"
+                name="engine"
+                checked={engine() === e.engine}
+                disabled={e.refused !== null}
+                onChange={() => props.prover.setSettings({ engine: e.engine })}
+              />
               <span>{engineLabel(e.engine)}</span>
               <span class="why">{e.refused ? notTaken(e.refused).keyword : ""}</span>
-            </button>
+            </label>
           )}
         </For>
       </div>

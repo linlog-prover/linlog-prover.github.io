@@ -65,21 +65,13 @@ test("Settings forces an engine: those that take the sequent, the others greyed 
   await start(page, "A * B |- B * A");
   await page.locator("footer").getByRole("button", { name: "Settings" }).click();
   const engines = page.getByRole("radiogroup", { name: "Engine" });
-  await expect(engines.getByRole("radio", { name: /^Automatic/ })).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
-  await expect(engines.getByRole("radio", { name: /^Automatic/ })).toContainText(
-    "here the focused search",
-  );
+  await expect(engines.getByRole("radio", { name: /^Automatic/ })).toBeChecked();
+  await expect(engines.getByText("here the focused search")).toBeVisible();
   const twoSided = engines.getByRole("radio", { name: /^Two-sided focused search/ });
-  await expect(twoSided).toHaveAttribute("aria-disabled", "true");
-  await expect(twoSided).toContainText("not in classical mode");
-  await engines.getByRole("radio", { name: /^Proof-net search/ }).click();
-  await expect(engines.getByRole("radio", { name: /^Proof-net search/ })).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
+  await expect(twoSided).toBeDisabled();
+  await expect(twoSided).toHaveAccessibleName(/not in classical mode/);
+  await engines.getByRole("radio", { name: /^Proof-net search/ }).check();
+  await expect(engines.getByRole("radio", { name: /^Proof-net search/ })).toBeChecked();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Close goal" }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();

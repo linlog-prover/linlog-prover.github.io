@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 const css = (name: string) => readFileSync(new URL(`./${name}`, import.meta.url), "utf8");
 
 /** The raw values in one declaration's value, every `var(…)` set aside. */
-export function raw(value: string): string[] {
+function raw(value: string): string[] {
   const found: string[] = [];
   const bare = value.replace(/var\(--[\w-]+\)/g, "");
   for (const colour of bare.match(

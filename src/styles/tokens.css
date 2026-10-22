@@ -67,7 +67,7 @@
 
   /* The floating clusters, a little translucent over the field, and the
      hairline of light along their top edge. */
-  --color-glass: light-dark(rgb(251 252 254 / 0.88), rgb(21 28 48 / 0.84));
+  --color-glass: light-dark(rgb(251 252 254 / 0.96), rgb(21 28 48 / 0.95));
   --color-sheen: light-dark(rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.06));
 
   --font-*: initial;
@@ -195,8 +195,7 @@
     --size-switch-height: 24px;
     --size-knob: 16px;
     --size-band: 52px;
-    --size-field-share: 34vw;
-    --size-tab: 40vw;
+    --size-tab: 30vw;
   }
 }
 

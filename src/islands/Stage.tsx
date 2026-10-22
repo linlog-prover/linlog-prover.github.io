@@ -72,6 +72,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   let shownProof: string | undefined;
   /** What the stage drew last: the tree, or the net in one of its drawings. */
   let shownKind: string | undefined;
+  /** Whether the proof drawn last was finished. */
+  let shownComplete = false;
 
   const view = () => proof()?.view ?? null;
   const active = () => prover().activeGoal();
@@ -132,7 +134,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         // A net is drawn larger than its derivation, and the compact net
         // smaller than the one with its formulas: each is fitted afresh.
         const kind = net ? `net-${netDrawing}` : "tree";
-        const fresh = shownProof !== props.prover.store.active || shownKind !== kind;
+        // A proof just finished is fitted whole, since nothing is left to work on.
+        const fresh =
+          shownProof !== props.prover.store.active ||
+          shownKind !== kind ||
+          (v.complete && !shownComplete);
+        shownComplete = v.complete;
         shownProof = props.prover.store.active ?? undefined;
         shownKind = kind;
         if (fresh) fitView();
@@ -228,10 +235,15 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       });
       const sorted = [...boxes].sort((a, b) => a.left - b.left);
       sorted.forEach((box, i) => {
+        // Half a comma's gap to a neighbour; across a wider one (the ⊢
+        // between the sides) no further than the padding.
         const before = sorted[i - 1];
         const after = sorted[i + 1];
-        const left = before ? (before.right + box.left) / 2 : box.left - pad;
-        const right = after ? (box.right + after.left) / 2 : box.right + pad;
+        const near = (gap: number) => gap <= box.height / 2;
+        const left =
+          before && near(box.left - before.right) ? (before.right + box.left) / 2 : box.left - pad;
+        const right =
+          after && near(after.left - box.right) ? (box.right + after.left) / 2 : box.right + pad;
         const h = Math.max(box.height + 2 * pad, least);
         found.push({
           goal: goal.goal,
@@ -271,9 +283,16 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     ),
   );
 
+  /** The drawing's size, with the engines' labels that stand out past its right edge. */
   const natural = () => {
     const svg = host.querySelector("svg");
-    return svg ? { w: svg.width.baseVal.value, h: svg.height.baseVal.value } : { w: 0, h: 0 };
+    if (!svg) return { w: 0, h: 0 };
+    const left = host.getBoundingClientRect().left;
+    const k = camera().k;
+    const labels = [...host.querySelectorAll("text.engine")].map(
+      (label) => (label.getBoundingClientRect().right - left) / k,
+    );
+    return { w: Math.max(svg.width.baseVal.value, ...labels), h: svg.height.baseVal.value };
   };
 
   function move(next: Camera, smooth = false) {
@@ -316,7 +335,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   /** The bottom of what floats at the stage's top (the calculus), in the stage's pixels. */
   function hudBottom(): number {
     const calc = stage.querySelector<HTMLElement>(".calc");
-    return calc && calc.offsetParent ? calc.offsetTop + calc.offsetHeight : 0;
+    return calc?.offsetParent ? calc.offsetTop + calc.offsetHeight : 0;
   }
 
   /** Pans so that the active goal is in view (the other goals stay, dimmed). */
@@ -450,6 +469,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       }
     };
     const resized = new ResizeObserver(() => setDrawn((n) => n + 1));
+    // The dock grows when its note or hint wraps: place it again.
+    if (dock) resized.observe(dock);
     stage.addEventListener("pointerdown", down);
     stage.addEventListener("pointermove", moved);
     stage.addEventListener("pointerup", up);
@@ -734,6 +755,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             >
               Practice
             </button>
+            .
           </p>
         </div>
       </Show>
@@ -929,7 +951,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 fallback={<span class="kw plain">Checking</span>}
               >
                 <span
-                  class={`kw ${split().passes ? "ok" : "warn"}`}
+                  class={`kw ${split().passes ? "acc" : "warn"}`}
                   data-tip={
                     split().passes
                       ? "Both premises can still be proved, as far as linlog's quick test sees."
