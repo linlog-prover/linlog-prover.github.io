@@ -31,6 +31,8 @@ export interface StoredProof {
   readonly redo: readonly (readonly Action[])[];
   /** The engine of each search that closed a goal, by the goal's path joined with dots. */
   readonly engines?: Readonly<Record<string, string>>;
+  /** The tab and goal the proof was opened from, by the tab's id and the goal's path. */
+  readonly origin?: { readonly from: string; readonly path: readonly number[] } | null;
   /** When it was saved, in milliseconds since the epoch: the later copy of a proof wins. */
   readonly saved: number;
 }

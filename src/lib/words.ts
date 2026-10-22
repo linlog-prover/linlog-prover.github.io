@@ -137,6 +137,34 @@ export function inputProblem(failed: Failure): Said {
   return { keyword: "Not read", sentence: failed.message };
 }
 
+/** Why a goal was not filled from another tab's proof, as the goal's note says it. */
+export function fillRefusal(failed: Failure, tab: number): Said {
+  const details = failed.details ?? {};
+  const listed = (key: string) =>
+    Array.isArray(details[key]) && (details[key] as string[]).length
+      ? (details[key] as string[]).join(", ")
+      : "nothing";
+  switch (failed.code) {
+    case "invalid_proof":
+      return {
+        keyword: "Not filled: not a proof in this calculus",
+        sentence: `linlog's checker refused tab ${tab}'s proof here: ${failed.message}. It holds in its own tab's calculus, which allows a rule this one does not.`,
+      };
+    case "sequent_mismatch":
+      return {
+        keyword: "Not filled: other formulas",
+        sentence: `Tab ${tab}'s proof concludes ${listed("proof")} where this goal holds ${listed("goal")}.`,
+      };
+    case "open_goals":
+      return {
+        keyword: "Not filled: that proof is not finished",
+        sentence: `Tab ${tab} still has open goals; finish its proof first.`,
+      };
+    default:
+      return { keyword: "Not filled", sentence: failed.message };
+  }
+}
+
 const atom = (outcome: Outcome, index: unknown) => {
   const atoms = (outcome["sequent"] as { atoms?: string[] } | undefined)?.atoms ?? [];
   return typeof index === "number" ? (atoms[index] ?? `atom ${index + 1}`) : "an atom";

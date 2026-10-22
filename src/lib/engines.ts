@@ -84,8 +84,17 @@ export function engineOf(outcome: Outcome | undefined | null): string | undefine
   return outcome.engine;
 }
 
+/** The key under which a proof filled in from another tab is named, as an engine's is: `tab:<its number>`. */
+export const fromTab = (tab: number) => `tab:${tab}`;
+
+/** The tab a key names, for a proof filled in from it, or null for an engine's. */
+const tabOf = (key: string): string | null => (key.startsWith("tab:") ? key.slice(4) : null);
+
 /** An engine's hover: its name, what it does and its source. */
 export function engineTip(key: string): string {
+  const tab = tabOf(key);
+  if (tab !== null)
+    return `Filled in from the finished proof in tab ${tab}, checked again in this proof's calculus.`;
   const engine = ENGINES[key];
   if (!engine) return `The engine ${key}`;
   return `The ${engine.name} ${engine.does}. Source: ${engine.source}; Learn's reference has it in full.`;
@@ -97,7 +106,9 @@ export function engineLabel(key: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
-/** An engine's name inside a sentence. */
+/** An engine's name inside a sentence; for a filled-in proof, the tab it came from. */
 export function engineName(key: string): string {
+  const tab = tabOf(key);
+  if (tab !== null) return `proof from tab ${tab}`;
   return ENGINES[key]?.name ?? key;
 }

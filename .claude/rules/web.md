@@ -215,6 +215,16 @@ the page reads.
   provable, `examples.test.ts`, beside a near miss that is not, which keeps the mix), their
   `order` past 100 (`100 + 10 · lesson + k`) so that they follow the lesson's earlier ones
   without renumbering them.
+- **A goal opens in a new tab** (`openGoal`, the dock's arrow): its formulas as the field
+  reads them (`sequentText`, two-sided where they have sides), in the same calculus, the new
+  proof's `origin` the tab and the goal's path (kept in the shelf). **A goal is filled from
+  a tab** (`fill`, the dock's "Fill from tab N") when that tab's proof is finished and its
+  sequent has the goal's formulas in any order (`fillable`: `keyOf` of each, the other
+  tab's from a `start` of its sequent, cached by mode and sequent); linlog's `fill` carries
+  the proof over and checks it in the goal's calculus, and a refusal is the goal's note
+  (`fillRefusal`). The graft is named like a search's, `engines[path] = "tab:N"` (the
+  drawing's label, the step list), and replays from its own inferences, never by the search
+  (`own` on its action, set by `actionsFor` from that name), so undo elsewhere keeps it.
 - **Watch** opens an example's proof taken back to the sequent with each step alone on the
   redo stack, so Redo plays it; an example opens as a proof of its own, in place of the
   page's empty one only, so it replaces no work and needs no warning.

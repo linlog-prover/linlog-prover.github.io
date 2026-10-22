@@ -15,17 +15,19 @@ import {
   type Engines,
   failure,
   type Failure,
+  type GoalFormula,
   MATH_FONTS,
   type MathFont,
   type Mode,
   type Outcome,
   type Played,
+  type SequentDoc,
   type SessionDoc,
   type StepForm,
   type View,
 } from "../lib/linlog";
 import type { Example } from "../lib/content";
-import { ENGINE_ORDER, engineName, engineOf } from "../lib/engines";
+import { ENGINE_ORDER, engineName, engineOf, fromTab } from "../lib/engines";
 import { Cancelled } from "../lib/protocol";
 import {
   type Shelf,
@@ -44,7 +46,7 @@ import {
   retract,
   within,
 } from "../lib/steps";
-import { inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
+import { fillRefusal, inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
 
 /** A note at a goal: a refusal, or what a search answered there. */
 export interface Note {
@@ -81,6 +83,8 @@ export interface Proof {
   banner: Said | null;
   /** The engine of each search that closed a goal, by the goal's path joined with dots. */
   engines: Record<string, string>;
+  /** The tab and goal the proof was opened from ("Open in a new tab"), or null. */
+  origin: { readonly from: string; readonly path: Path } | null;
 }
 
 /** The visitor's settings, kept in the browser. */
@@ -165,7 +169,22 @@ const blank = (mode: Mode): Proof => ({
   typed: null,
   banner: null,
   engines: {},
+  origin: null,
 });
+
+/** A goal's formulas as a key, equal for the same formulas in any order: how two tabs' sequents are compared. */
+const keyOf = (formulas: readonly GoalFormula[]) =>
+  formulas
+    .map((f) => `${f.side ?? ""}:${f.text}`)
+    .sort()
+    .join("\n");
+
+/** A goal's sequent as the sequent field reads it: two-sided where the formulas have sides. */
+const sequentText = (formulas: readonly GoalFormula[]) => {
+  const left = formulas.filter((f) => f.side === "input").map((f) => f.text);
+  const right = formulas.filter((f) => f.side !== "input").map((f) => f.text);
+  return `${left.join(", ")}${left.length ? " " : ""}|- ${right.join(", ")}`;
+};
 
 /** A goal's path as the key of `Proof.engines`. */
 export const pathKey = (path: Path) => path.join(".");
@@ -226,6 +245,31 @@ export function createProver(say: (text: string) => void = () => undefined) {
   const current = () => store.proofs.find((p) => p.id === store.active);
   const index = (id: string) => store.proofs.findIndex((p) => p.id === id);
 
+  /** A proof's actions, a proof filled in from another tab replayed from its own inferences. */
+  const actionsFor = (p: Proof, list: readonly Action[]): Action[] =>
+    list.map((a) =>
+      a.kind === "close" && p.engines[pathKey(a.path)]?.startsWith("tab:")
+        ? { ...a, own: true }
+        : a,
+    );
+
+  /** Each finished tab's sequent as a key, by its mode and sequent document. */
+  const keys = new Map<string, string>();
+  const sequentKey = async (q: Proof): Promise<string | null> => {
+    if (!q.session) return null;
+    const at = `${q.mode}\n${JSON.stringify(q.session.sequent)}`;
+    const known = keys.get(at);
+    if (known !== undefined) return known;
+    const started = await attempt(() =>
+      api.start(q.session?.sequent as SequentDoc, q.mode, json()),
+    );
+    const root = started.ok ? started.value.view.goals[0] : undefined;
+    if (!root) return null;
+    const key = keyOf(root.formulas);
+    keys.set(at, key);
+    return key;
+  };
+
   const update = (id: string, change: (p: Proof) => void) => {
     const at = index(id);
     if (at >= 0) setStore("proofs", at, produce(change));
@@ -282,6 +326,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
             session: p.session,
             redo: p.redo,
             engines: p.engines,
+            origin: p.origin,
             saved: Date.now(),
           }),
         ),
@@ -329,6 +374,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
             session: stored.session,
             redo: stored.redo.map((r) => [...r]),
             engines: { ...(stored.engines ?? {}) },
+            origin: stored.origin ?? null,
             editing: !stored.session,
           };
           setStore("proofs", (all) => [...all.filter((p) => p.session || p.input.trim()), proof]);
@@ -611,7 +657,12 @@ export function createProver(say: (text: string) => void = () => undefined) {
     undo: guard(async () => {
       const p = current();
       if (!p?.session) return;
-      const back = retract(p.session, p.view?.complete ? undefined : activeGoal(p));
+      const retracted = retract(p.session, p.view?.complete ? undefined : activeGoal(p));
+      const back = retracted && {
+        ...retracted,
+        kept: actionsFor(p, retracted.kept),
+        removed: actionsFor(p, retracted.removed),
+      };
       if (!back) {
         update(p.id, (q) => {
           q.note = {
@@ -638,7 +689,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     backTo: guard(async (count: number) => {
       const p = current();
       if (!p?.session) return;
-      const all = actionsOf(p.session);
+      const all = actionsFor(p, actionsOf(p.session));
       if (count >= all.length) return;
       const result = await attempt(() =>
         api.replay(p.session as SessionDoc, all.slice(0, count), json()),
@@ -685,6 +736,69 @@ export function createProver(say: (text: string) => void = () => undefined) {
         };
       });
     },
+
+    /**
+     * Opens a goal as a proof of its own in a new tab, in the same calculus; the new proof
+     * remembers the tab and goal it came from.
+     */
+    openGoal: guard(async (goal: number) => {
+      const p = current();
+      const g = p?.view?.goals.find((x) => x.goal === goal);
+      if (!p?.session || !g) return;
+      const opened = await actions.open(sequentText(g.formulas), p.mode);
+      if ("problem" in opened) return;
+      const q = current();
+      if (q && q.id !== p.id)
+        update(q.id, (x) => (x.origin = { from: p.id, path: pathOf(p, goal) }));
+      say(`Goal ${goal + 1} opened in tab ${index(q?.id ?? "") + 1}.`);
+      save();
+    }),
+
+    /** The other tabs whose finished proof is of a goal's formulas in any order, by id and number. */
+    async fillable(goal: number): Promise<{ id: string; tab: number }[]> {
+      const p = current();
+      const g = p?.view?.goals.find((x) => x.goal === goal);
+      if (!p || !g) return [];
+      const want = keyOf(g.formulas);
+      const found: { id: string; tab: number }[] = [];
+      for (const [i, q] of store.proofs.entries()) {
+        if (q.id === p.id || !q.view?.complete) continue;
+        if ((await sequentKey(q)) === want) found.push({ id: q.id, tab: i + 1 });
+      }
+      return found;
+    },
+
+    /**
+     * Fills a goal with the finished proof of another tab of the same formulas, as one step
+     * named with that tab; linlog checks it in this proof's calculus, and a refusal is said at
+     * the goal.
+     */
+    fill: guard(async (goal: number, from: string) => {
+      const p = current();
+      const q = store.proofs.find((x) => x.id === from);
+      if (!p?.session || !q?.session) return;
+      const path = pathOf(p, goal);
+      const result = await attempt(() =>
+        api.fill(p.session as SessionDoc, goal, q.session as SessionDoc, json()),
+      );
+      const tab = index(from) + 1;
+      if (!result.ok) {
+        if (result.failed)
+          update(p.id, (x) => {
+            x.note = { path, said: fillRefusal(result.failed as Failure, tab), tone: "bad" };
+          });
+        return;
+      }
+      update(p.id, (x) => {
+        x.redo = [];
+        x.engines = { ...x.engines, [pathKey(path)]: fromTab(tab) };
+      });
+      show(p.id, result.value, result.value.view.goals[0]?.goal);
+      say(
+        `Goal ${goal + 1} filled from tab ${tab}${result.value.view.complete ? ": the proof is finished" : ""}.`,
+      );
+      save();
+    }),
 
     /** Closes a goal by the search, within the budget (times `factor`). */
     close: guard(async (goal: number, factor: number = 1) => {

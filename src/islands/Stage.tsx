@@ -10,10 +10,18 @@
  * the hint), the rule popover and the split chooser.
  */
 
-import { ChevronLeft, ChevronRight, Maximize, ZoomIn, ZoomOut } from "lucide-solid";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Maximize,
+  SquareArrowOutUpRight,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-solid";
 import {
   createEffect,
   createMemo,
+  createResource,
   createSignal,
   For,
   on,
@@ -64,6 +72,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   let popover: HTMLDivElement | undefined;
   const [hits, setHits] = createSignal<Hit[]>([]);
   const [camera, setCamera] = createSignal<Camera>({ x: 0, y: 0, k: 1 });
+
   /** Whether the visitor zoomed since the drawing was last fitted: then their zoom stands. */
   let byHand = false;
   const [problem, setProblem] = createSignal<string | null>(null);
@@ -79,6 +88,15 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
 
   const view = () => proof()?.view ?? null;
   const active = () => prover().activeGoal();
+  // The other tabs a goal may be filled from: asked again as the goal or the tabs change.
+  const [fills] = createResource(
+    () =>
+      [
+        active(),
+        props.prover.store.proofs.map((p) => `${p.id}:${p.view?.complete ?? false}`).join(),
+      ] as const,
+    ([goal]) => (goal === undefined ? [] : props.prover.fillable(goal)),
+  );
   const openCount = () => view()?.goals.length ?? 0;
   const formulasOf = (goal: number) => view()?.goals.find((g) => g.goal === goal)?.formulas ?? [];
 
@@ -890,8 +908,39 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
               >
                 Close goal
               </button>
+              <button
+                type="button"
+                class="btn btn-s icon"
+                aria-label="Open this goal in a new tab"
+                data-tip="Open this goal in a new tab, as a proof of its own"
+                onClick={() => {
+                  const goal = active();
+                  if (goal !== undefined) void props.prover.openGoal(goal);
+                }}
+              >
+                <SquareArrowOutUpRight aria-hidden="true" />
+              </button>
             </Show>
           </div>
+          <Show when={!props.prover.busy() && (fills() ?? []).length > 0}>
+            <div class="cluster dline">
+              <For each={fills()}>
+                {(f) => (
+                  <button
+                    type="button"
+                    class="btn btn-s"
+                    data-tip={`Tab ${f.tab} holds a finished proof of this goal's formulas: graft it here as one step`}
+                    onClick={() => {
+                      const goal = active();
+                      if (goal !== undefined) void props.prover.fill(goal, f.id);
+                    }}
+                  >
+                    Fill from tab {f.tab}
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
           <Show when={note()}>
             {(n) => (
               <div class="cluster dline">

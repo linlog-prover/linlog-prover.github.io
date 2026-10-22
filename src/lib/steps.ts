@@ -38,6 +38,8 @@ export type Action =
       readonly kind: "close";
       /** The graft's inferences as steps, from its root up. */
       readonly graft: readonly Action[];
+      /** A graft that was no search's (a proof filled in from another tab): replayed from its inferences alone. */
+      readonly own?: boolean;
     };
 
 /** Every expanded and open inference's path, by its number. */
@@ -251,7 +253,8 @@ const same = (a: readonly (readonly number[])[], b: readonly (readonly number[])
  * (deterministic: one thread, bounded by work, not time), and where the
  * search no longer closes the goal within these settings (it closed it under
  * a larger budget), through its own inferences as steps, which keep it
- * closed though no longer set apart as the search's. A goal that cannot be
+ * closed though no longer set apart as the search's; a graft of its own (a
+ * proof filled in from another tab) replays from its inferences alone. A goal that cannot be
  * expanded again is reported by its path, and the actions under it left out.
  */
 export function play(
@@ -291,13 +294,13 @@ export function play(
       continue;
     }
     try {
-      const closed = JSON.parse(
-        prover.close(JSON.stringify(played.session), goal, settings),
-      ) as Played & {
-        outcome: { verdict: string };
-        refused: unknown;
-      };
-      if (closed.outcome.verdict === "proved" && !closed.refused) {
+      const closed = action.own
+        ? undefined
+        : (JSON.parse(prover.close(JSON.stringify(played.session), goal, settings)) as Played & {
+            outcome: { verdict: string };
+            refused: unknown;
+          });
+      if (closed?.outcome.verdict === "proved" && !closed.refused) {
         played = closed;
         continue;
       }

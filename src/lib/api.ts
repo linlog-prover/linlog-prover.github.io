@@ -69,6 +69,8 @@ export function createApi(changed: (pending: number) => void) {
       ),
     close: (session: SessionDoc, goal: number, settings: string) =>
       json<Closed>("close", doc(session), goal, settings),
+    fill: (session: SessionDoc, goal: number, source: SessionDoc, settings: string) =>
+      json<Played & { filled: number }>("fill", doc(session), goal, doc(source), settings),
     closeAll: (session: SessionDoc, settings: string) =>
       json<ClosedAll>("close_all", doc(session), settings),
     hint: (session: SessionDoc, goal: number, settings: string) =>

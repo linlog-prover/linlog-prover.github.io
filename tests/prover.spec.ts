@@ -598,3 +598,61 @@ test("an action asked for while a search runs waits, and loses neither result", 
   await page.locator("footer").getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("button", { name: /^\?\(A⊥ ⊕ B⊥\) ⅋ \?\(A⊥ ⊕ B⊥\)/ })).toBeVisible();
 });
+
+test("a goal opens in a new tab of its sequent, in the same calculus, which remembers where it came from", async ({
+  page,
+}) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await page.getByRole("button", { name: "Open this goal in a new tab" }).click();
+  await expect(page.locator(".ptab")).toHaveCount(2);
+  await expect(page.locator(".ptab[aria-current=true] .pt-go .m")).toHaveText("⊢ A⊥, B⊥, B ⊗ A");
+  await expect(page.locator(".ptab[aria-current=true] .pt-mark")).toContainText("LL");
+  await expect(page.getByRole("button", { name: /^B ⊗ A, formula/ })).toBeVisible();
+  const origin = await page.evaluate(() => {
+    for (const key of Object.keys(localStorage).filter((k) => k.startsWith("linlog-proofs:"))) {
+      const shelf = JSON.parse(localStorage.getItem(key) ?? "{}");
+      const proof = shelf.proofs?.find((p: { origin?: unknown }) => p.origin);
+      if (proof) return { origin: proof.origin, from: shelf.proofs[0].id };
+    }
+    return null;
+  });
+  expect(origin?.origin).toEqual({ from: origin?.from, path: [0] });
+});
+
+test("a goal is filled from another tab's finished proof as one step named with the tab, undone as one, and a proof of another calculus is refused at the goal", async ({
+  page,
+}) => {
+  await start(page, "A * B |- B * A");
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await expect(page.getByRole("button", { name: /^Fill from tab/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Open this goal in a new tab" }).click();
+  await page.locator("footer").getByRole("button", { name: "Close all" }).click();
+  await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
+  await page.locator(".ptab").first().locator(".pt-go").click();
+  await page.getByRole("button", { name: "Fill from tab 2" }).click();
+  await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
+  await expect(page.locator(".drawing svg text.engine")).toHaveText(["Proof from tab 2"]);
+  await page.getByRole("button", { name: "Steps" }).click();
+  await expect(page.getByRole("dialog", { name: "Steps" })).toContainText(
+    "The proof from tab 2 closed goal",
+  );
+  await page.keyboard.press("Escape");
+  await page.locator("footer").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^B ⊗ A, formula/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Fill from tab 2" })).toBeVisible();
+
+  // A proof under Mix, offered for the same formulas, is refused in classical logic.
+  await start(page, "|- A, ~A, B, ~B", false);
+  await start(page, "|- A, ~A, B, ~B", false);
+  await page.locator(".calc label.sw", { hasText: "Mix" }).click();
+  await expect(page.locator(".ptab[aria-current=true] .pt-mark")).toContainText("LL+mix");
+  await page.locator("footer").getByRole("button", { name: "Close all" }).click();
+  await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
+  await page.locator(".ptab").nth(2).locator(".pt-go").click();
+  await page.getByRole("button", { name: "Fill from tab 4" }).click();
+  await expect(page.locator(".dline .kw.bad")).toHaveText(
+    "Not filled: not a proof in this calculus",
+  );
+  await expect(page.getByRole("button", { name: /^A, formula/ })).toBeVisible();
+});

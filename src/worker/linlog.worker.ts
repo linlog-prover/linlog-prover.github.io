@@ -27,6 +27,7 @@ const calls = {
   undo: linlog.undo,
   close: linlog.close,
   close_all: linlog.close_all,
+  fill: linlog.fill,
   hint: linlog.hint,
   proof: linlog.proof,
   prove: linlog.prove,
