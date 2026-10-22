@@ -4,7 +4,8 @@
 /**
  * The written content, under CC BY 4.0, in src/content/:
  *   examples  examples/<id>.md, a sequent to prove, with its mode, how hard
- *             it is and whether it has a proof; a provable one has its proof
+ *             it is, whether it has a proof and the lesson whose practice it
+ *             is (the order within a lesson mixes provable and not); a provable one has its proof
  *             beside it as examples/<id>.session.json, linlog's session
  *             document as `linlog interact` saved it, which the page replays.
  *             src/content/examples.test.ts holds every entry to linlog's
@@ -40,6 +41,8 @@ const examples = defineCollection({
     mode: z.enum(MODES),
     difficulty: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     verdict: z.enum(["provable", "unprovable"]),
+    /** The lesson of the progression whose practice it is, from 1. */
+    lesson: z.number().int().min(1),
     order: z.number().int(),
   }),
 });

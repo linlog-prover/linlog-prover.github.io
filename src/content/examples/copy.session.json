@@ -16,5 +16,5 @@
     { "sequent": [0, 5], "rule": "?d", "principal": 0, "premises": [6] },
     { "sequent": [1, 5], "rule": "ax" }
   ],
-  "history": [0, 1, 2, 4, 3, 5, 6]
+  "history": [0, 1, 2, 3, 4, 5, 6]
 }

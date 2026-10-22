@@ -19,6 +19,8 @@ export interface Example {
   readonly mode: Mode;
   readonly difficulty: 1 | 2 | 3;
   readonly verdict: "provable" | "unprovable";
+  /** The lesson of the progression whose practice it is, from 1. */
+  readonly lesson: number;
   /** Its proof, linlog's session document as text, for a provable one. */
   readonly session: string | null;
 }

@@ -4,8 +4,7 @@ sequent: "!A |- A * !A"
 mode: classical
 difficulty: 3
 verdict: provable
-order: 7
+lesson: 5
+order: 31
 ---
-`!A` may be copied (`?c` on its dual), one copy derelicted to `A` (`?d`), the
-other kept behind `!`, whose promotion needs every other formula of its goal
-under `?`.
+`!A` may be copied (`?c` on its dual), one copy derelicted to `A` (`?d`), the other kept behind `!`, whose promotion needs every other formula of its goal under `?`.

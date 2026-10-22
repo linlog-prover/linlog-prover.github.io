@@ -21,12 +21,27 @@ const entries = readdirSync(here)
       sequent: field("sequent"),
       mode: field("mode"),
       verdict: field("verdict"),
+      lesson: Number(field("lesson")),
+      order: Number(field("order")),
     };
   });
 
 describe("the examples", () => {
   it("are there", () => {
     expect(entries.length).toBeGreaterThan(5);
+  });
+
+  it("mix provable and unprovable sequents within every lesson, never three alike in a row", () => {
+    const lessons = new Set(entries.map((e) => e.lesson));
+    for (const lesson of lessons) {
+      const verdicts = entries
+        .filter((e) => e.lesson === lesson)
+        .sort((a, b) => a.order - b.order)
+        .map((e) => e.verdict);
+      expect(new Set(verdicts).size, `lesson ${lesson}`).toBe(2);
+      const runs = verdicts.filter((v, i) => v === verdicts[i + 1] && v === verdicts[i + 2]);
+      expect(runs, `lesson ${lesson}`).toEqual([]);
+    }
   });
 
   for (const example of entries) {

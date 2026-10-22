@@ -26,6 +26,7 @@ export const TOUR_EXAMPLE: Example = {
   mode: "classical",
   difficulty: 1,
   verdict: "provable",
+  lesson: 2,
   session: null,
 };
 
@@ -150,7 +151,7 @@ export function Tour(props: { prover: Prover; ui: Ui; stops: readonly Stop[] }) 
               </span>
             </span>
             <button type="button" class="btn icon" aria-label="End the tour" onClick={end}>
-              <X size={14} aria-hidden="true" />
+              <X aria-hidden="true" />
             </button>
           </p>
           <Show keyed when={s().id}>

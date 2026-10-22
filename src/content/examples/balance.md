@@ -2,9 +2,9 @@
 title: A resource left over
 sequent: "A * B |- A"
 mode: classical
-difficulty: 2
+difficulty: 1
 verdict: unprovable
-order: 8
+lesson: 7
+order: 41
 ---
-No proof: `B` has no dual to meet in an axiom, and linear logic throws nothing
-away. linlog's refutation counts the atoms.
+`B` has no dual to meet, and linear logic throws nothing away; linlog's refutation counts the atoms.

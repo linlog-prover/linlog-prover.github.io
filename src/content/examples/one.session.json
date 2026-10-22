@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "sequent": { "terms": ["1"], "roots": [0], "atoms": [], "antecedents": 0 },
+  "mode": "classical",
+  "inferences": [{ "sequent": [0], "rule": "1", "principal": 0 }],
+  "history": [0]
+}

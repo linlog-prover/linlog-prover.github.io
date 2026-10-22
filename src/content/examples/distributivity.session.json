@@ -23,13 +23,13 @@
     { "sequent": [0, 5], "rule": "⅋", "principal": 0, "premises": [1] },
     { "sequent": [1, 2, 5], "rule": "&", "principal": 1, "premises": [2, 3] },
     { "sequent": [1, 3, 5], "rule": "⊕₁", "principal": 2, "premises": [4] },
-    { "sequent": [1, 4, 5], "rule": "⊕₂", "principal": 2, "premises": [7] },
-    { "sequent": [1, 3, 6], "rule": "⊗", "principal": 2, "premises": [5, 6] },
+    { "sequent": [1, 4, 5], "rule": "⊕₂", "principal": 2, "premises": [5] },
+    { "sequent": [1, 3, 6], "rule": "⊗", "principal": 2, "premises": [6, 7] },
+    { "sequent": [1, 4, 9], "rule": "⊗", "principal": 2, "premises": [8, 9] },
     { "sequent": [1, 7], "rule": "ax" },
     { "sequent": [3, 8], "rule": "ax" },
-    { "sequent": [1, 4, 9], "rule": "⊗", "principal": 2, "premises": [8, 9] },
     { "sequent": [1, 10], "rule": "ax" },
     { "sequent": [4, 11], "rule": "ax" }
   ],
-  "history": [0, 1, 2, 4, 5, 6, 3, 7, 8, 9]
+  "history": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
