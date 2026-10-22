@@ -21,7 +21,7 @@ test("a search names its engine beside its work, with its source on hover and in
   await start(page, "A & B |- A * B");
   await page.getByRole("button", { name: "Close goal" }).click();
   const chip = page.locator(".dline").getByRole("button", { name: /^By the focused search/ });
-  await expect(chip).toHaveText("focused search");
+  await expect(chip).toHaveText("Focused search");
   await chip.hover();
   await expect(page.getByRole("tooltip")).toContainText("Andreoli 1992");
   await chip.click();
@@ -39,9 +39,9 @@ test("a search names its engine beside its work, with its source on hover and in
   // A graft is marked with its engine beside its rule; the hint names its own.
   await start(page, "A * B |- B * A", false);
   await page.locator("footer").getByRole("button", { name: "Hint" }).click();
-  await expect(page.locator(".dline.hint .kw.engine")).toHaveText("focused search");
+  await expect(page.locator(".dline.hint .kw.engine")).toHaveText("Focused search");
   await page.getByRole("button", { name: "Close goal" }).click();
-  await expect(page.locator(".drawing svg text.engine")).toHaveText("focused search");
+  await expect(page.locator(".drawing svg text.engine")).toHaveText("Focused search");
 });
 
 test("a saturation refutation is shown checked, by the inverse method", async ({ page }) => {
@@ -50,7 +50,7 @@ test("a saturation refutation is shown checked, by the inverse method", async ({
   await page.getByRole("button", { name: "Close goal" }).click();
   const note = page.locator(".dline");
   await expect(note.locator(".kw.bad")).toHaveText("Unprovable, checked: saturation");
-  await expect(note.locator(".kw.engine")).toHaveText("inverse method");
+  await expect(note.locator(".kw.engine")).toHaveText("Inverse method");
   await expect(page.locator(".ptab[aria-current=true] .dot")).toHaveAttribute("data-tone", "bad");
   await page.locator("footer").getByRole("button", { name: "Export" }).click();
   await expect(page.getByRole("menuitem", { name: /Not derivable/ })).toHaveAttribute(
@@ -72,18 +72,18 @@ test("Settings forces an engine: those that take the sequent, the others greyed 
   await expect(engines.getByRole("radio", { name: /^Automatic/ })).toContainText(
     "here the focused search",
   );
-  const twoSided = engines.getByRole("radio", { name: /^two-sided focused search/ });
+  const twoSided = engines.getByRole("radio", { name: /^Two-sided focused search/ });
   await expect(twoSided).toHaveAttribute("aria-disabled", "true");
   await expect(twoSided).toContainText("not in classical mode");
-  await engines.getByRole("radio", { name: /^proof-net search/ }).click();
-  await expect(engines.getByRole("radio", { name: /^proof-net search/ })).toHaveAttribute(
+  await engines.getByRole("radio", { name: /^Proof-net search/ }).click();
+  await expect(engines.getByRole("radio", { name: /^Proof-net search/ })).toHaveAttribute(
     "aria-checked",
     "true",
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Close goal" }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
-  await expect(page.locator(".drawing svg text.engine")).toHaveText("proof-net search");
+  await expect(page.locator(".drawing svg text.engine")).toHaveText("Proof-net search");
   // A sequent with a unit is no net's: the forced engine's refusal is said at the goal.
   await start(page, "|- 1, bot", false);
   await page.getByRole("button", { name: "Close goal" }).click();

@@ -80,16 +80,15 @@ export function refusal(failed: Failure, formulas: readonly GoalFormula[], rule:
 export function notTaken(failed: Failure): Said {
   const because = (failed.details?.["because"] ?? {}) as Record<string, unknown>;
   const engine = String(failed.details?.["engine"] ?? "");
+  const own: Record<string, string> = {
+    additive: "two additive formulas only",
+    horn: "Horn programs only",
+  };
   const lines: Record<string, string> = {
-    fragment: `${String(because["decides"] ?? "a smaller fragment")} at most`,
+    fragment: own[engine] ?? `${String(because["decides"] ?? "a smaller fragment")} at most`,
     mode: `not in ${String(because["mode"] ?? "this")} mode`,
     goal: "the whole sequent only",
-    shape:
-      engine === "additive"
-        ? "two additive formulas only"
-        : engine === "horn"
-          ? "Horn programs only"
-          : "not of its shape",
+    shape: own[engine] ?? "not of its shape",
   };
   return {
     keyword: lines[String(because["kind"])] ?? "does not take it",

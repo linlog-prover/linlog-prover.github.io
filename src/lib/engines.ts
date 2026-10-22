@@ -91,7 +91,13 @@ export function engineTip(key: string): string {
   return `The ${engine.name} ${engine.does}. Source: ${engine.source}; Learn's reference has it in full.`;
 }
 
-/** An engine's name beside its work. */
+/** An engine's name standing alone, as a label: in sentence case. */
+export function engineLabel(key: string): string {
+  const name = engineName(key);
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
+/** An engine's name inside a sentence. */
 export function engineName(key: string): string {
   return ENGINES[key]?.name ?? key;
 }

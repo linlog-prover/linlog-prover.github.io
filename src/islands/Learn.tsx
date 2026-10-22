@@ -173,7 +173,7 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
       <p class="row">
         <button
           type="button"
-          class="btn btn-s"
+          class="btn btn-s outline"
           disabled={busy()}
           aria-label={`Prove ${props.example.title}`}
           onClick={() => void props.prover.example(props.example, false)}
@@ -190,7 +190,7 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
         <Show when={props.example.session}>
           <button
             type="button"
-            class="btn btn-s"
+            class="btn btn-s outline"
             disabled={busy()}
             aria-label={`Watch ${props.example.title}`}
             data-tip="Its proof from the start: Redo plays the next step"

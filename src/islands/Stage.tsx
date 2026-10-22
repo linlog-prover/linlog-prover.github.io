@@ -21,7 +21,7 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { engineName, engineOf, engineTip } from "../lib/engines";
+import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
 import { failure, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
 import { formulaText, rungs } from "../lib/words";
@@ -179,7 +179,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         mark.setAttribute("y", label.getAttribute("y") ?? String(box.y + box.height));
         mark.setAttribute("font-size", String(box.height * 0.6));
         mark.setAttribute("data-tip", engineTip(engine));
-        mark.textContent = engineName(engine);
+        mark.textContent = engineLabel(engine);
         label.after(mark);
       }
     });
@@ -385,6 +385,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   createEffect(() => {
     camera();
     drawn();
+    void ui.offered;
     const spot = ui.split ?? ui.selected;
     if (!popover || !spot) return;
     const s = stage.getBoundingClientRect();
@@ -1047,7 +1048,7 @@ export function EngineChip(props: { outcome: Outcome | undefined | null; ui: Ui 
             props.ui.setUi({ learn: "reference", spot: `engine-${engine()}` });
           }}
         >
-          {engineName(engine())}
+          {engineLabel(engine())}
         </button>
       )}
     </Show>

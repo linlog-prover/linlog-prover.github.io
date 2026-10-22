@@ -247,7 +247,9 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         }}
       >
         {mark(props.proof)}
-        <Show when={fragment()}>{(f) => <span class="frag">{f()}</span>}</Show>
+        <Show when={fragment() !== mark(props.proof) && fragment()}>
+          {(f) => <span class="frag">{f()}</span>}
+        </Show>
       </button>
       <button
         type="button"
@@ -275,7 +277,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
             </button>
           </fieldset>
           <p class="sub">
-            The calculus's switches are on the stage. Fragment:{" "}
+            The calculus's switches are on the stage (on a phone, under More). Fragment:{" "}
             {props.proof.view?.fragment ?? "not started"}.
           </p>
         </div>

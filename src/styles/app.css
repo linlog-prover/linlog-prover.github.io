@@ -282,6 +282,10 @@ button.kw {
   border-color: var(--color-warn);
   background: var(--color-warn-wash);
 }
+/* A control in running content (a practice card): its outline says it is one. */
+.btn.outline {
+  border-color: var(--color-line);
+}
 .btn.icon {
   padding: 0;
 }
@@ -627,6 +631,7 @@ button svg.lucide {
   margin: 0;
 }
 .seg-b {
+  flex: none;
   padding: 0 var(--spacing-3);
   font-size: var(--text-small);
   color: var(--color-dim);
@@ -1124,6 +1129,9 @@ button svg.lucide {
   font: var(--font-weight-semibold) var(--text-panel) / var(--leading-snug) var(--font-text);
   margin: var(--spacing-4) 0 var(--spacing-1);
 }
+.written td code {
+  white-space: nowrap;
+}
 .written code,
 .ex-seq {
   font-family: var(--font-math);
@@ -1136,7 +1144,7 @@ button svg.lucide {
 }
 .linkish {
   pointer-events: auto;
-  padding: 0 var(--spacing-2);
+  padding: 0 var(--spacing-1);
   text-decoration: underline;
   text-underline-offset: var(--spacing-0-5);
   display: inline-flex;

@@ -27,7 +27,7 @@ import {
   Upload,
 } from "lucide-solid";
 import { createResource, createSignal, For, type JSX, Show } from "solid-js";
-import { engineName, engineTip } from "../lib/engines";
+import { engineLabel, engineName, engineTip } from "../lib/engines";
 import { failure, type Failure, type Outcome, type SessionDoc } from "../lib/linlog";
 import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
@@ -700,7 +700,7 @@ function EngineChoice(props: { prover: Prover }) {
                 if (!e.refused) props.prover.setSettings({ engine: e.engine });
               }}
             >
-              <span>{engineName(e.engine)}</span>
+              <span>{engineLabel(e.engine)}</span>
               <span class="why">{e.refused ? notTaken(e.refused).keyword : ""}</span>
             </button>
           )}
