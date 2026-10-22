@@ -15,12 +15,17 @@ import { start } from "./prover";
  * part is pressed): a tap on a touch screen.
  */
 async function pressField(page: Page, touch: boolean) {
+  // A sheet slides in: measure where it is once it stands still.
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== "running"),
+  );
   const stage = await page.locator(".stage").boundingBox();
   if (!stage) throw new Error("no stage");
   const open = await page
     .locator(".menu, .pop, .mode-warn")
     .evaluateAll((all) => all.map((e) => e.getBoundingClientRect().top));
-  const top = Math.min(stage.y + stage.height * 0.2, ...open.filter((t) => t >= stage.y));
+  // A surface that starts at or above the stage's top covers it there.
+  const top = Math.min(stage.y + stage.height * 0.2, ...open.map((t) => Math.max(t, stage.y)));
   // A sheet that covers the whole stage leaves the top band's empty part.
   const free = await page.evaluate(() => {
     const band = document.querySelector("header")?.getBoundingClientRect();
