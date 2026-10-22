@@ -26,7 +26,8 @@ sent to a server.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
   a refuted goal has no proof), the drawings set in a math font chosen in the export menu
-  (Euler Math, STIX Two Math, Garamond-Math, Asana Math or New Computer Modern Math); the proof in the link's fragment; every open proof saved
+  (Euler Math, STIX Two Math, Garamond-Math, Asana Math or New Computer Modern Math), by
+  default the stage's, which Settings chooses among the same five; the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
   linlog writes them; everything by keyboard (`?` lists the keys); a menu, sheet or popover
   closed by Escape or by a press outside it; light and dark. On a

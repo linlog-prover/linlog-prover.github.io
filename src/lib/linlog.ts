@@ -30,18 +30,33 @@ export const MODES: readonly Mode[] = [
 /** A math font linlog lays its drawings out in, by the name `styles.svg.font` takes. */
 export type MathFont = "euler" | "stix-two" | "garamond" | "asana" | "new-computer-modern";
 
-/** linlog's math fonts, Euler Math (the page's own) first, each with its name and its look. */
-export const MATH_FONTS: readonly { key: MathFont; name: string; look: string }[] = [
-  { key: "euler", name: "Euler Math", look: "Upright, as handwritten" },
-  { key: "stix-two", name: "STIX Two Math", look: "In the style of Times" },
-  { key: "garamond", name: "Garamond-Math", look: "In the style of Garamond" },
-  { key: "asana", name: "Asana Math", look: "In the style of Palatino" },
-  {
-    key: "new-computer-modern",
-    name: "New Computer Modern Math",
-    look: "The Computer Modern of TeX",
-  },
-];
+/**
+ * linlog's math fonts, Euler Math (the page's default) first, each with its name, its look and
+ * the family its file names, under which the page loads it and linlog's drawing asks for it.
+ */
+export const MATH_FONTS: readonly { key: MathFont; name: string; look: string; family: string }[] =
+  [
+    { key: "euler", name: "Euler Math", look: "Upright, as handwritten", family: "Euler Math" },
+    {
+      key: "stix-two",
+      name: "STIX Two Math",
+      look: "In the style of Times",
+      family: "STIX Two Math",
+    },
+    {
+      key: "garamond",
+      name: "Garamond-Math",
+      look: "In the style of Garamond",
+      family: "Garamond-Math",
+    },
+    { key: "asana", name: "Asana Math", look: "In the style of Palatino", family: "Asana Math" },
+    {
+      key: "new-computer-modern",
+      name: "New Computer Modern Math",
+      look: "The Computer Modern of TeX",
+      family: "NewComputerModernMath",
+    },
+  ];
 
 /** A sequent's JSON, as `seq json` writes it: opaque to the page but its level. */
 export interface SequentDoc {

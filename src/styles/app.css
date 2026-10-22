@@ -213,6 +213,20 @@ button.kw {
   align-items: center;
 }
 
+/* The formulas in the font Settings chooses (the drawing asks linlog for the same). */
+:root[data-math-font="stix-two"] {
+  --font-math: var(--font-math-stix-two);
+}
+:root[data-math-font="garamond"] {
+  --font-math: var(--font-math-garamond);
+}
+:root[data-math-font="asana"] {
+  --font-math: var(--font-math-asana);
+}
+:root[data-math-font="new-computer-modern"] {
+  --font-math: var(--font-math-new-computer-modern);
+}
+
 /* Every control: one height (two on a phone, both 44 pixels), one radius,
    and the same states: hover, pressed, focus, disabled. */
 .btn,

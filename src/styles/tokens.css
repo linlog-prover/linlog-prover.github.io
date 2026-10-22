@@ -77,6 +77,11 @@
   --font-mono: "Space Mono", ui-monospace, monospace;
   /* Every formula and rule name. */
   --font-math: "Euler Math", "Neo Euler", serif;
+  /* The other math fonts Settings may set the formulas in. */
+  --font-math-stix-two: "STIX Two Math", serif;
+  --font-math-garamond: "Garamond-Math", serif;
+  --font-math-asana: "Asana Math", serif;
+  --font-math-new-computer-modern: "NewComputerModernMath", serif;
 
   --font-weight-*: initial;
   --font-weight-normal: 400;

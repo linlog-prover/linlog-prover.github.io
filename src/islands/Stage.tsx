@@ -22,7 +22,7 @@ import {
   Show,
 } from "solid-js";
 import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
-import { failure, type Offered, type Outcome, type StepForm } from "../lib/linlog";
+import { failure, type MathFont, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
 import { formulaText, rungs } from "../lib/words";
 import { Calculus } from "./Calculus";
@@ -49,9 +49,9 @@ interface Camera {
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** The settings of the stage's drawing: the formulas large enough to click. */
-const drawSettings = (work: number, essential: boolean, net: NetDrawing) =>
-  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30, essential, net } } });
+/** The settings of the stage's drawing: the formulas large enough to click, in the stage's font. */
+const drawSettings = (work: number, essential: boolean, net: NetDrawing, font: MathFont) =>
+  JSON.stringify({ limits: { work }, styles: { svg: { font_size: 30, essential, net, font } } });
 
 export function Stage(props: { prover: Prover; ui: Ui }) {
   const prover = () => props.prover;
@@ -98,8 +98,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           ui.tab,
           props.prover.store.active,
           props.prover.settings().net,
+          props.prover.settings().stageFont,
         ] as const,
-      async ([session, v, tab, , netDrawing]) => {
+      async ([session, v, tab, , netDrawing, font]) => {
         const mine = ++sequence;
         if (!session || !v) {
           host.replaceChildren();
@@ -114,6 +115,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             props.prover.settings().budget,
             session.mode.startsWith("intuitionistic"),
             netDrawing,
+            font,
           );
           svg = net
             ? await props.prover.api.drawNet(session, settings)

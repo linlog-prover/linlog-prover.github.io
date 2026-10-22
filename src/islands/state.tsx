@@ -93,9 +93,14 @@ export interface Settings {
   net: NetDrawing;
   /** The engine every search is forced to, `search.engine`; null for linlog's own choice. */
   engine: string | null;
-  /** The math font the SVG, PNG and PDF exports are set in, `styles.svg.font`; the page draws in Euler Math. */
-  font: MathFont;
+  /** The math font the stage's drawing, its formulas and the tabs' sequents are set in. */
+  stageFont: MathFont;
+  /** The math font the SVG, PNG and PDF exports are set in, `styles.svg.font`; null for the stage's. */
+  font: MathFont | null;
 }
+
+/** The math font the exports are set in: the one chosen for them, else the stage's. */
+export const exportFont = (settings: Settings): MathFont => settings.font ?? settings.stageFont;
 
 /** linlog's two drawings of a net: every formula occurrence written, or only the literals and the conclusions. */
 export type NetDrawing = "formulas" | "compact";
@@ -121,7 +126,8 @@ function loadSettings(): Settings {
       showKeys: stored.showKeys === true,
       net: stored.net === "compact" ? "compact" : "formulas",
       engine: typeof stored.engine === "string" ? stored.engine : null,
-      font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? "euler",
+      stageFont: MATH_FONTS.find((f) => f.key === stored.stageFont)?.key ?? "euler",
+      font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
     };
   } catch {
     return {
@@ -129,7 +135,8 @@ function loadSettings(): Settings {
       showKeys: false,
       net: "formulas",
       engine: null,
-      font: "euler",
+      stageFont: "euler",
+      font: null,
     };
   }
 }

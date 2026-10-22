@@ -192,6 +192,49 @@ test("every export downloads, and the link is copied", async ({ page, context })
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("#v=1");
 });
 
+test("Settings sets the formulas' font: the drawing laid out in it, every formula in it, the font fetched when chosen, the exports following it until they choose their own", async ({
+  page,
+}) => {
+  const fetched: string[] = [];
+  page.on("request", (request) => fetched.push(new URL(request.url()).pathname));
+  await proveCommuted(page);
+  const drawn = () =>
+    page
+      .locator(".drawing svg text")
+      .evaluateAll((all) => all.map((t) => t.getAttribute("textLength")));
+  const euler = await drawn();
+  expect(fetched.some((path) => path.startsWith("/fonts/STIXTwoMath-"))).toBe(false);
+  await page.locator("footer").getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("radio", { name: "STIX Two Math" }).check();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".drawing svg")).toHaveAttribute("font-family", /'STIX Two Math'/);
+  expect(await drawn()).not.toEqual(euler);
+  expect(fetched.some((path) => path.startsWith("/fonts/STIXTwoMath-"))).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => document.fonts.check("30px 'STIX Two Math'")))
+    .toBe(true);
+  // The tab's sequent and every formula of the page follow.
+  const family = await page
+    .locator(".ptab .pt-go .m")
+    .evaluate((element) => getComputedStyle(element).fontFamily);
+  expect(family).toContain("STIX Two Math");
+  // The exports follow the stage until they choose their own, which is kept apart.
+  await page.getByRole("button", { name: "Export" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "STIX Two Math" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await page.getByRole("menuitemradio", { name: "Euler Math" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".drawing svg")).toHaveAttribute("font-family", /'STIX Two Math'/);
+  const stored = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("linlog-settings") ?? "{}"),
+  );
+  expect([stored.stageFont, stored.font]).toEqual(["stix-two", "euler"]);
+  await start(page, "A |- A");
+  await expect(page.locator(".drawing svg")).toHaveAttribute("font-family", /'STIX Two Math'/);
+});
+
 test("the export menu chooses the font of the SVG, PNG and PDF, kept for the next visit, and the page's drawing stays in Euler Math", async ({
   page,
 }) => {

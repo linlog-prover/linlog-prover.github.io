@@ -3,9 +3,10 @@
 
 // The service worker that lets the site work with no network after one
 // visit. The build (src/integrations/offline.ts) writes it to /sw.js with
-// the two constants below filled in: FILES, every file of the site by its
-// path, and VERSION, a hash of their contents, so that a new deployment is
-// a new worker.
+// the three constants below filled in: FILES, every file of the site by its
+// path but LATER's, LATER, the math fonts a visitor may choose besides Euler
+// Math (fetched when chosen, not before), and VERSION, a hash of all their
+// contents, so that a new deployment is a new worker.
 //
 // Its scope is the whole origin, since the page it serves is at / and a
 // scope is a path prefix; but linlog's documentation at
@@ -16,20 +17,23 @@
 // where the browser can route by pattern (the Static Routing API) requests
 // under /linlog never reach the worker at all.
 //
-// The cache is written whole when the worker installs, every file fetched
+// The cache is written when the worker installs, every file of FILES fetched
 // past the browser's HTTP cache (Pages lets it keep a file ten minutes, and
 // a new worker would otherwise store the old page beside the new files),
 // and a new worker
 // waits until no page of the old one is open: a page and the files it asks
 // for later (the module, its worker, the fonts) always come from one
-// deployment.
+// deployment. A file of LATER is cached the first time the page asks for
+// it, so a font chosen once works offline too, from the worker's deployment
+// alone: the cache is the worker's own, deleted with it.
 
 const FILES = [];
+const LATER = [];
 const VERSION = "";
 
 const PREFIX = "linlog-site-";
 const CACHE = PREFIX + VERSION;
-const OWN = new Set(FILES);
+const OWN = new Set([...FILES, ...LATER]);
 
 /** Whether a path is linlog's own Pages site, which this worker never touches. */
 const isLinlog = (path) => path === "/linlog" || path.startsWith("/linlog/");
@@ -79,9 +83,12 @@ self.addEventListener("fetch", (event) => {
   const path = page ? "/" : url.pathname;
   if (!OWN.has(path) || (request.mode === "navigate" && !page)) return;
   event.respondWith(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.match(path))
-      .then((cached) => cached ?? fetch(request)),
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(path);
+      if (cached) return cached;
+      const fetched = await fetch(request);
+      if (fetched.ok && LATER.includes(path)) await cache.put(path, fetched.clone());
+      return fetched;
+    }),
   );
 });

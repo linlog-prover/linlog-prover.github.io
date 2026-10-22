@@ -174,13 +174,20 @@ the page reads.
   and of the check (`families` and the served licences compared with linlog's). A licence
   that is not the OFL is served as `<Family>-LICENSE.txt` (`ofl: false`): New Computer
   Modern Math's, the GUST Font License's, with the LPPL's clause 6 notice linlog wrote.
-- **The exports' math font** is `Settings.font` (`styles.svg.font`, a `MathFont` name, kept
-  in the browser), chosen in the export menu (`menuitemradio`s in a fieldset, `MATH_FONTS`
-  in `src/lib/linlog.ts`), and sent only with the exports' settings: the page's own drawing
-  stays in Euler Math (D53). `font(name)` in `App.tsx` fetches a font's bytes once, when an
-  export first needs them (Euler Math at the start, for the drawing); `render` gets that
-  file and no other. The service worker caches the four export fonts with every other file
-  (about 3.4 MB), so an export in them works offline too.
+- **The formulas' font** is `Settings.stageFont` (a `MathFont` name, Settings' "Font of the
+  formulas", default Euler Math): the stage's drawing asks linlog for it
+  (`styles.svg.font`, `drawSettings`), and `App.tsx` sets `:root[data-math-font]`, which
+  `app.css` turns into `--font-math` (one token per font in `tokens.css`), so every formula
+  of the page, the tabs' sequents too, follows. `font(name)` fetches a font's bytes once and
+  adds them to the document under the family its file names (`MATH_FONTS[].family`, which
+  linlog's drawing asks for): Euler Math at the start, another font when it is chosen for
+  the stage or an export, never before. **The exports' font** is `Settings.font`, null for
+  the stage's (`exportFont`); the export menu's `menuitemradio`s set it, the stage's font
+  setting it back to null; `render` gets that font's file and no other.
+- **The service worker caches the four other math fonts when first fetched** (`LATER` in
+  `sw.js`, filled by `offline.ts` by their file names, and the build fails unless there
+  are four), not at install: a visitor who never chooses one never downloads it (0.4 to 1.3
+  MB each), and one chosen once works offline. Every other file is cached at install.
 
 ## The written content (`src/content/`, CC BY 4.0)
 

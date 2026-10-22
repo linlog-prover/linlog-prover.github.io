@@ -14,7 +14,7 @@
 import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { readLink, writeLink } from "../lib/link";
-import type { MathFont, Mode } from "../lib/linlog";
+import { MATH_FONTS, type MathFont, type Mode } from "../lib/linlog";
 import { paths } from "../lib/steps";
 import { failure } from "../lib/linlog";
 import { Cancelled } from "../lib/protocol";
@@ -49,21 +49,20 @@ export default function App(props: {
 
   const fontBytes = new Map<MathFont, Promise<Uint8Array>>();
   /**
-   * A math font's bytes, each fetched once when first asked for: Euler Math at the start, for
-   * the page's drawings, which it is added to the document for, and the PNG and PDF exports; the
-   * others when an export is set in them.
+   * A math font's bytes, each fetched once when first asked for, and added to the document under
+   * its family: Euler Math at the start, the stage's font when it is chosen, an export's when an
+   * export is set in it; the PNG and PDF exports render with them.
    */
   const font = (name: MathFont = "euler") => {
     let bytes = fontBytes.get(name);
     if (!bytes) {
+      const family = MATH_FONTS.find((f) => f.key === name)?.family ?? "Euler Math";
       bytes = fetch(props.fonts[name])
         .then((r) => r.arrayBuffer())
         .then((buffer) => {
-          if (name === "euler") {
-            const face = new FontFace("Euler Math", buffer.slice(0));
-            document.fonts.add(face);
-            void face.load();
-          }
+          const face = new FontFace(family, buffer.slice(0));
+          document.fonts.add(face);
+          void face.load();
           return new Uint8Array(buffer);
         });
       // A failed fetch is asked again by the next export.
@@ -72,6 +71,13 @@ export default function App(props: {
     }
     return bytes;
   };
+
+  // The logic is set in the stage's font, which is loaded when it is chosen and not before.
+  createEffect(() => {
+    const chosen = prover.settings().stageFont;
+    document.documentElement.dataset["mathFont"] = chosen;
+    void font(chosen).catch(() => undefined);
+  });
 
   onMount(async () => {
     void font().catch(() => undefined);

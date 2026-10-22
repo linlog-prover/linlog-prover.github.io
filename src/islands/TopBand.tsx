@@ -3,8 +3,8 @@
 
 /**
  * The top band, one row: what I am working on. The open proofs as tabs,
- * each its verdict as a dot (the details on a click), its sequent in Euler
- * Math (the sequent field when clicked, or for a new proof), its calculus
+ * each its verdict as a dot (the details on a click), its sequent in the
+ * formulas' font (the sequent field when clicked, or for a new proof), its calculus
  * and fragment as a small mark, and its close; then the new proof's `+` and
  * the light and dark toggle. Under the band, the field's problem with its
  * place marked.

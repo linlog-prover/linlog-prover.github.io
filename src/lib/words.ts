@@ -251,7 +251,7 @@ export function pretty(input: string): string {
 }
 
 /**
- * A typed sequent as the tab shows it, in Euler Math: `pretty`'s signs, the
+ * A typed sequent as the tab shows it, in the formulas' font: `pretty`'s signs, the
  * units and `par` as theirs, and a negation, `~A` or `A^`, as `A⊥`, the dual
  * of a group or of an exponential formula parenthesised (`(A ⊗ B)⊥`,
  * `(!A)⊥`). For the eye only: linlog's parser does not read `A⊥`.

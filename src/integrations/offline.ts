@@ -95,20 +95,37 @@ export function offline(): AstroIntegration {
           hash.update(path).update(await readFile(new URL(path, dir)));
         }
         const urls = paths.map((path) => (path === "index.html" ? "/" : `/${path}`));
+        // linlog's math fonts but Euler Math: fetched when a visitor chooses one.
+        const later = urls.filter((url) =>
+          /^\/fonts\/(STIXTwoMath-Regular|Garamond-Math|Asana-Math|NewCMMath-Book)\.[^/]*\.otf$/.test(
+            url,
+          ),
+        );
         if (urls.some((url) => url === "/linlog" || url.startsWith("/linlog/"))) {
           throw new Error("a file at /linlog, linlog's own Pages site");
         }
         const source = await readFile(new URL("src/offline/sw.js", root), "utf8");
-        if (!source.includes("const FILES = [];") || !source.includes('const VERSION = "";')) {
+        if (
+          !source.includes("const FILES = [];") ||
+          !source.includes("const LATER = [];") ||
+          !source.includes('const VERSION = "";')
+        ) {
           throw new Error(
-            "src/offline/sw.js: the lines FILES and VERSION are filled from are gone",
+            "src/offline/sw.js: the lines FILES, LATER and VERSION are filled from are gone",
           );
         }
         const worker = source
-          .replace("const FILES = [];", `const FILES = ${JSON.stringify(urls)};`)
+          .replace(
+            "const FILES = [];",
+            `const FILES = ${JSON.stringify(urls.filter((url) => !later.includes(url)))};`,
+          )
+          .replace("const LATER = [];", `const LATER = ${JSON.stringify(later)};`)
           .replace('const VERSION = "";', `const VERSION = "${hash.digest("hex").slice(0, 16)}";`);
         await writeFile(new URL("sw.js", dir), worker);
-        logger.info(`the service worker caches ${urls.length} files; the manifest has its icons`);
+        if (later.length !== 4) throw new Error(`${later.length} math fonts to fetch later, not 4`);
+        logger.info(
+          `the service worker caches ${urls.length - later.length} files, and ${later.length} fonts when chosen; the manifest has its icons`,
+        );
       },
     },
   };

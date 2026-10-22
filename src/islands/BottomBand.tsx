@@ -41,7 +41,7 @@ import { actions, goalAt } from "../lib/steps";
 import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import { Calculus } from "./Calculus";
-import { DEFAULT_BUDGET, type Prover, pathKey } from "./state";
+import { DEFAULT_BUDGET, exportFont, type Prover, pathKey } from "./state";
 import { Written } from "./Learn";
 import { applyTheme } from "./TopBand";
 import type { Menu, Ui } from "./ui";
@@ -340,7 +340,7 @@ function ExportMenu(props: {
           ids: false,
           essential: proof()?.mode.startsWith("intuitionistic") ?? false,
           net: props.prover.settings().net,
-          font: props.prover.settings().font,
+          font: exportFont(props.prover.settings()),
         },
       },
     });
@@ -381,7 +381,7 @@ function ExportMenu(props: {
     const bytes = await props.prover.api.render(
       await drawing(),
       format,
-      await props.font(props.prover.settings().font),
+      await props.font(exportFont(props.prover.settings())),
       settings,
     );
     download(
@@ -515,9 +515,14 @@ function ExportMenu(props: {
                     type="button"
                     role="menuitemradio"
                     class="mi"
-                    aria-checked={props.prover.settings().font === font.key}
+                    aria-checked={exportFont(props.prover.settings()) === font.key}
                     data-tip={font.look}
-                    onClick={() => props.prover.setSettings({ font: font.key })}
+                    // The stage's font again follows the stage.
+                    onClick={() =>
+                      props.prover.setSettings({
+                        font: font.key === props.prover.settings().stageFont ? null : font.key,
+                      })
+                    }
                   >
                     <span class="fmt">{font.name}</span>
                   </button>
@@ -676,6 +681,28 @@ function SettingsPanel(props: {
               )}
             </For>
           </fieldset>
+        </fieldset>
+        <fieldset class="lbl col">
+          <legend>Font of the formulas</legend>
+          <div class="choices" role="radiogroup" aria-label="Font of the formulas">
+            <For each={MATH_FONTS}>
+              {(font) => (
+                <label class="seg-b" data-tip={font.look}>
+                  <input
+                    type="radio"
+                    name="stage-font"
+                    checked={props.prover.settings().stageFont === font.key}
+                    onChange={() => props.prover.setSettings({ stageFont: font.key })}
+                  />
+                  <span>{font.name}</span>
+                  <span class="why" />
+                </label>
+              )}
+            </For>
+          </div>
+          <p class="sub">
+            The drawing, its formulas and the exports, unless Export chooses another.
+          </p>
         </fieldset>
         <EngineChoice prover={props.prover} />
         <label class="sw wide-only">
@@ -840,12 +867,12 @@ function StepsPanel(props: { prover: Prover }) {
 const LICENCES: readonly (readonly [string, string, string])[] = [
   ["The page's code and linlog", "EUPL-1.2", "/licenses/LICENSE.txt"],
   ["The written content", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"],
-  ["Euler Math, the formulas' font", "SIL OFL 1.1", "/fonts/Euler-Math-OFL.txt"],
-  ["STIX Two Math, a font of the exports", "SIL OFL 1.1", "/fonts/STIXTwoMath-OFL.txt"],
-  ["Garamond-Math, a font of the exports", "SIL OFL 1.1", "/fonts/Garamond-Math-OFL.txt"],
-  ["Asana Math, a font of the exports", "SIL OFL 1.1", "/fonts/Asana-Math-OFL.txt"],
+  ["Euler Math, the formulas' font by default", "SIL OFL 1.1", "/fonts/Euler-Math-OFL.txt"],
+  ["STIX Two Math, a font of the formulas", "SIL OFL 1.1", "/fonts/STIXTwoMath-OFL.txt"],
+  ["Garamond-Math, a font of the formulas", "SIL OFL 1.1", "/fonts/Garamond-Math-OFL.txt"],
+  ["Asana Math, a font of the formulas", "SIL OFL 1.1", "/fonts/Asana-Math-OFL.txt"],
   [
-    "New Computer Modern Math, a font of the exports",
+    "New Computer Modern Math, a font of the formulas",
     "GUST Font License (LPPL 1.3c)",
     "/fonts/NewCMMath-LICENSE.txt",
   ],
