@@ -311,6 +311,9 @@ the page reads.
   zooms in to the floor unless the visitor zoomed by hand since the last fit (`byHand`).
   The test measures the stage in every math font too: Garamond-Math's narrower `B⊥` fell
   to 43 pixels on a phone before a step re-applied the floor.
+- **A tab's calculus mark** stands apart from the sequent (`.pt-mark`: 12 pixels before it,
+  8 between the calculus and the fragment); `tests/chip.spec.ts` measures the gaps on the
+  text itself and that the phone's tab and `+` fit the row.
 - **On a phone** the bottom band keeps undo, redo, close all, hint, export and Learn;
   `wide-only` actions move to More's sheet with the calculus's cluster (`Calculus
   inSheet`). Tips follow a mouse or a keyboard, never a touch (`App.tsx`).
