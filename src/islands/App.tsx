@@ -7,8 +7,8 @@
  * what holds the work: the link in the URL's fragment, written as the proof
  * changes and read when the page opens; autosave of every open proof, with
  * the restore bar on the next visit; the one hover rule for tips; the
- * keyboard; the hint ladder; and the Euler Math font, whose bytes the PNG
- * and PDF exports render with.
+ * keyboard; the hint ladder; light dismiss; and the Euler Math font, whose
+ * bytes the PNG and PDF exports render with.
  */
 
 import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
@@ -240,6 +240,57 @@ export default function App(props: {
       document.removeEventListener("focusin", show);
       document.removeEventListener("pointerout", hide);
       document.removeEventListener("focusout", hide);
+    });
+  });
+
+  // Light dismiss: a press outside what is open closes it, as Escape does. A menu, a pane, More's
+  // sheet or the bands' popovers stay open for a press inside them or on their own button; the
+  // rule popover and the split chooser also for a press on a formula, by which a rule or a side
+  // is chosen; the tour's caption is inside everything it shows. A press on the stage that
+  // closes something does nothing else (no formula picked, no pan begun, no button pressed),
+  // since the visitor aimed at the open thing; a press on a band's button closes it and acts.
+  onMount(() => {
+    let swallow = false;
+    const pressed = (event: PointerEvent) => {
+      swallow = false;
+      const target = event.target as Element;
+      if (target.closest(".tour")) return;
+      const outside = (inside: string) => !target.closest(inside);
+      let closed = false;
+      if (ui.menu && outside(".menu, .status-pop, .calc-pop, [aria-expanded='true']:not(.fb)")) {
+        setUi("menu", null);
+        closed = true;
+      }
+      if (ui.pendingMode && outside(".mode-warn, .calc")) {
+        setUi("pendingMode", null);
+        closed = true;
+      }
+      if ((ui.selected || ui.split) && outside(".stage .pop, .fb")) {
+        setUi({ selected: null, offered: null, split: null });
+        closed = true;
+      }
+      if (closed && target.closest(".stage")) {
+        swallow = true;
+        event.stopPropagation();
+      }
+    };
+    const clicked = (event: MouseEvent) => {
+      if (!swallow) return;
+      swallow = false;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    // A press that never clicks (a drag) leaves nothing to swallow for a key's click.
+    const typed = () => {
+      swallow = false;
+    };
+    document.addEventListener("pointerdown", pressed, true);
+    document.addEventListener("click", clicked, true);
+    document.addEventListener("keydown", typed, true);
+    onCleanup(() => {
+      document.removeEventListener("pointerdown", pressed, true);
+      document.removeEventListener("click", clicked, true);
+      document.removeEventListener("keydown", typed, true);
     });
   });
 

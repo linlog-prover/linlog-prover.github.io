@@ -239,6 +239,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
       <button
         type="button"
         class="pt-mark"
+        aria-expanded={isActive() && ui.menu === "calculus"}
         data-tip={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
         aria-label={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
         onClick={() => {
