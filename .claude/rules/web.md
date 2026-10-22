@@ -297,7 +297,10 @@ the page reads.
   (44 on a phone, 24 on a desktop): a new control, popover or state gets a step in its
   walk. A formula's button covers half the gap to its neighbours and is at least a
   control's height on screen, and `fitView` never zooms out below the size at which the
-  active goal's formulas are a control wide (`floor`).
+  active goal's formulas are a control wide (`floor`); a step that leaves them narrower
+  zooms in to the floor unless the visitor zoomed by hand since the last fit (`byHand`).
+  The test measures the stage in every math font too: Garamond-Math's narrower `B⊥` fell
+  to 43 pixels on a phone before a step re-applied the floor.
 - **On a phone** the bottom band keeps undo, redo, close all, hint, export and Learn;
   `wide-only` actions move to More's sheet with the calculus's cluster (`Calculus
   inSheet`). Tips follow a mouse or a keyboard, never a touch (`App.tsx`).

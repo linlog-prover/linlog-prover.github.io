@@ -64,6 +64,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   let popover: HTMLDivElement | undefined;
   const [hits, setHits] = createSignal<Hit[]>([]);
   const [camera, setCamera] = createSignal<Camera>({ x: 0, y: 0, k: 1 });
+  /** Whether the visitor zoomed since the drawing was last fitted: then their zoom stands. */
+  let byHand = false;
   const [problem, setProblem] = createSignal<string | null>(null);
   const [glide, setGlide] = createSignal(false);
   let sequence = 0;
@@ -145,7 +147,17 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         shownProof = props.prover.store.active ?? undefined;
         shownKind = kind;
         if (fresh) fitView();
-        else bringIntoView();
+        else {
+          // A step can leave the active goal's formulas narrower than a control (a
+          // narrower font's more often): zoom in to the floor, unless the visitor zoomed by hand.
+          const k = floor();
+          if (!byHand && k > camera().k) {
+            const c = camera();
+            const at = { x: stage.clientWidth / 2, y: stage.clientHeight / 2 };
+            move({ k, x: at.x - ((at.x - c.x) * k) / c.k, y: at.y - ((at.y - c.y) * k) / c.k });
+          }
+          bringIntoView();
+        }
         setDrawn((n) => n + 1);
         if (hadFocus && !net) {
           queueMicrotask(() =>
@@ -308,6 +320,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
    * than a control: then the active goal is shown at that size instead.
    */
   function fitView() {
+    byHand = false;
     const { w, h } = natural();
     const W = stage.clientWidth;
     const H = stage.clientHeight;
@@ -361,6 +374,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   }
 
   function zoom(by: number, at?: { x: number; y: number }) {
+    byHand = true;
     const c = camera();
     const k = Math.max(0.2, Math.min(4, c.k * by));
     const px = at?.x ?? stage.clientWidth / 2;
@@ -370,6 +384,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
 
   /** Zooms by `by` about the point `from` of the stage, which then lies at `to`: a pinch. */
   function pinch(by: number, from: { x: number; y: number }, to: { x: number; y: number }) {
+    byHand = true;
     const c = camera();
     const k = Math.max(0.2, Math.min(4, c.k * by));
     move({ k, x: to.x - ((from.x - c.x) * k) / c.k, y: to.y - ((from.y - c.y) * k) / c.k });

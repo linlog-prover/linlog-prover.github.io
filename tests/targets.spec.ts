@@ -135,6 +135,25 @@ async function walk(page: Page, least: number, phone: boolean) {
   return found;
 }
 
+/** The stage in each math font: a proof started, the rule popover, and the split chooser. */
+async function fonts(page: Page, least: number): Promise<string[]> {
+  const found: string[] = [];
+  for (const font of ["stix-two", "garamond", "asana", "new-computer-modern"]) {
+    await page.evaluate(
+      (f) => localStorage.setItem("linlog-settings", JSON.stringify({ stageFont: f })),
+      font,
+    );
+    await start(page, "A * B |- B * A");
+    await expect(page.locator(".drawing svg")).not.toHaveAttribute("font-family", /Euler/);
+    for (const small of await tooSmall(page, least)) found.push(`${font}, started: ${small}`);
+    await rule(page, /^A⊥ ⅋ B⊥, formula/, "⅋");
+    await rule(page, /^B ⊗ A, formula/, "⊗");
+    await expect(page.getByRole("dialog", { name: "Split" })).toBeVisible();
+    for (const small of await tooSmall(page, least)) found.push(`${font}, split: ${small}`);
+  }
+  return found;
+}
+
 test("every control is a target of 24 by 24 pixels at least, at a desktop's width", async ({
   page,
 }) => {
@@ -148,4 +167,16 @@ test.describe("at a phone's width", () => {
   test("every control is a target of 44 by 44 pixels at least", async ({ page }) => {
     expect(await walk(page, 44, true)).toEqual([]);
   });
+
+  test("the stage's controls stay 44 by 44 pixels in every math font", async ({ page }) => {
+    await goto(page);
+    expect(await fonts(page, 44)).toEqual([]);
+  });
+});
+
+test("the stage's controls stay 24 by 24 pixels in every math font, at a desktop's width", async ({
+  page,
+}) => {
+  await goto(page);
+  expect(await fonts(page, 24)).toEqual([]);
 });
