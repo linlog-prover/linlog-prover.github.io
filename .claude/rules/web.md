@@ -181,8 +181,9 @@ the page reads.
   refuter's work (`engineOf`). The chip beside a note or a hint, the label beside a graft's
   rule (`text.engine` after the rule label, from `Proof.engines`, a goal's path to the
   engine, kept in the shelf), and the step list name it; the hover gives the source, a
-  press opens Learn's reference at `#engine-<key>` (`ui.spot`). The references in
-  `texts/reference.md` were checked against the works (2026-10-22); change one only from
+  press opens Learn's reference at `#engine-<key>` (`ui.spot`). Every reference in
+  `texts/reference.md` was read in the work itself (2026-10-22), an open copy where the
+  original is paywalled being replaced by an open work that states it; change one only from
   the work itself.
 - **Settings' engine** is `search.engine` in every search's settings. Which engines take a
   sequent is asked of linlog with the bindings as they are: `prove` forced to each engine

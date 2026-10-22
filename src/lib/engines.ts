@@ -32,7 +32,7 @@ export const ENGINES: Readonly<Record<string, Engine>> = {
   net: {
     name: "proof-net search",
     does: "links dual literals until the switching criterion accepts the net",
-    source: "Girard 1987, proof nets; Danos and Regnier 1989, the criterion",
+    source: "Girard 1987, proof nets; Danos and Regnier's criterion, as Gallier states it",
   },
   "two-sided": {
     name: "two-sided focused search",
@@ -42,17 +42,17 @@ export const ENGINES: Readonly<Record<string, Engine>> = {
   additive: {
     name: "additive path",
     does: "decides two formulas of & and ⊕ by their pairs of subformulas",
-    source: "Whitman 1941, free lattices",
+    source: "Whitman's word problem for lattices, as Day 1970 gives it",
   },
   horn: {
     name: "Horn engine",
     does: "reads the goal as a Petri net and searches its markings",
-    source: "Kanovich 1995, Horn programs and Petri nets; Abdulla et al. 1996",
+    source: "Engberg and Winskel 1990, Petri nets; Abdulla et al. 1996",
   },
   essential: {
     name: "essential-net search",
     does: "links literals under the intuitionistic reading's directions",
-    source: "Lamarche 1994, essential nets; Murawski and Ong 2000, dominator trees",
+    source: "Lamarche's essential nets, as Moot 2008 states them",
   },
   inverse: {
     name: "inverse method",
@@ -62,7 +62,7 @@ export const ENGINES: Readonly<Record<string, Engine>> = {
   classical: {
     name: "classical refuter",
     does: "finds an assignment under which the sequent read classically is false",
-    source: "Girard 1987, linear logic read classically",
+    source: "the forgetful map, Ferreira, Oliva and Protin",
   },
 };
 
