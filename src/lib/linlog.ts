@@ -153,6 +153,16 @@ export interface ClosedAll extends Played {
   }[];
 }
 
+/** The engines for a session's sequent: the one the dispatch picks, and whether each takes the sequent. */
+export interface Engines {
+  readonly automatic: string | null;
+  readonly engines: readonly {
+    readonly engine: string;
+    /** linlog's refusal of a search forced to the engine, or null where it takes the sequent. */
+    readonly refused: Failure | null;
+  }[];
+}
+
 /** A hint: the search's outcome on the goal and the first steps of its proof. */
 export interface Hint {
   readonly outcome: Outcome;

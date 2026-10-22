@@ -8,6 +8,7 @@
  * that stays in view, and a sentence one gesture away (a hover, a focus).
  */
 
+import { engineName } from "./engines";
 import type { Failure, GoalFormula, Outcome, StepForm } from "./linlog";
 
 /** A short keyword and the sentence behind it. */
@@ -75,6 +76,27 @@ export function refusal(failed: Failure, formulas: readonly GoalFormula[], rule:
   }
 }
 
+/** Why an engine does not take a sequent: a short line, and the library's sentence behind it. */
+export function notTaken(failed: Failure): Said {
+  const because = (failed.details?.["because"] ?? {}) as Record<string, unknown>;
+  const engine = String(failed.details?.["engine"] ?? "");
+  const lines: Record<string, string> = {
+    fragment: `${String(because["decides"] ?? "a smaller fragment")} at most`,
+    mode: `not in ${String(because["mode"] ?? "this")} mode`,
+    goal: "the whole sequent only",
+    shape:
+      engine === "additive"
+        ? "two additive formulas only"
+        : engine === "horn"
+          ? "Horn programs only"
+          : "not of its shape",
+  };
+  return {
+    keyword: lines[String(because["kind"])] ?? "does not take it",
+    sentence: `${failed.message.charAt(0).toUpperCase()}${failed.message.slice(1)}.`,
+  };
+}
+
 /** Why the sequent field's text is not a sequent the page can start. */
 export function inputProblem(failed: Failure): Said {
   const details = failed.details ?? {};
@@ -98,6 +120,13 @@ export function inputProblem(failed: Failure): Said {
       keyword: `${String(details["count"])} formulas right of ⊢`,
       sentence:
         "An intuitionistic sequent has exactly one formula right of ⊢: write the hypotheses left of it.",
+    };
+  }
+  if (failed.code === "engine_refused") {
+    const engine = typeof details["engine"] === "string" ? details["engine"] : "";
+    return {
+      keyword: `The ${engineName(engine)} does not take this goal`,
+      sentence: `${failed.message.charAt(0).toUpperCase()}${failed.message.slice(1)}. Settings forces this engine; Automatic lets linlog choose.`,
     };
   }
   if (failed.code === "unsupported_version") {
@@ -148,6 +177,11 @@ export function verdict(outcome: Outcome, checked: boolean | null): Said & { ton
       classical: {
         keyword: `Unprovable${mark}: a classical countermodel`,
         sentence: `Read classically the sequent is false when ${(Array.isArray(r["assignment"]) ? (r["assignment"] as boolean[]) : []).map((v, i) => `${atom(outcome, i)} is ${v ? "true" : "false"}`).join(", ")}; every provable sequent of linear logic is classically true.`,
+      },
+      saturated: {
+        keyword: `Unprovable${mark}: saturation`,
+        sentence:
+          "The inverse method derived, from the axioms upward, every sequent that can stand in a proof of this goal until nothing new came, and the goal is not among them; linlog's own checker confirmed that the set is closed under the rules.",
       },
       exhausted: {
         keyword: "Unprovable: search exhausted",

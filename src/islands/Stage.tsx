@@ -21,12 +21,13 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { failure, type Offered, type StepForm } from "../lib/linlog";
+import { engineName, engineOf, engineTip } from "../lib/engines";
+import { failure, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
 import { formulaText, rungs } from "../lib/words";
 import { Calculus } from "./Calculus";
-import type { NetDrawing, Prover } from "./state";
-import { ladderKey, type Ui } from "./ui";
+import { type NetDrawing, type Prover, pathKey } from "./state";
+import { ladderKey, phone, token, type Ui } from "./ui";
 
 /** A formula's button over the drawing, in the drawing's own pixels. */
 interface Hit {
@@ -156,6 +157,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const open = new Set(v.goals.map((g) => g.goal));
     const made = searchMade(session);
     const act = active();
+    const where = paths(session);
+    const engines = proof()?.engines ?? {};
     v.inferences.forEach((inference, n) => {
       const group = host.querySelector(`#i${n}`);
       if (!group) return;
@@ -163,33 +166,98 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       group.classList.toggle("active", inference === act);
       group.classList.toggle("dim", open.has(inference) && inference !== act);
       group.classList.toggle("search", made.has(inference));
+      // Beside the rule label of a search's graft, the engine that made it.
+      const engine = made.has(inference) ? engines[pathKey(where.get(inference) ?? [])] : undefined;
+      const label = group.nextElementSibling;
+      if (engine && !net && label instanceof SVGTextElement && !made.has(parentOf(inference))) {
+        label.parentNode?.querySelector(`text.engine[data-of="${n}"]`)?.remove();
+        const box = label.getBBox();
+        const mark = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        mark.classList.add("engine");
+        mark.dataset["of"] = String(n);
+        mark.setAttribute("x", String(box.x + box.width + box.height / 3));
+        mark.setAttribute("y", label.getAttribute("y") ?? String(box.y + box.height));
+        mark.setAttribute("font-size", String(box.height * 0.6));
+        mark.setAttribute("data-tip", engineTip(engine));
+        mark.textContent = engineName(engine);
+        label.after(mark);
+      }
     });
     if (net) {
       setHits([]);
       return;
     }
+    setHits(targets(v.goals));
+  }
+
+  /** The inference whose premise an inference is, or -1 for the root. */
+  function parentOf(inference: number): number {
+    const all = proof()?.session?.inferences ?? [];
+    return all.findIndex((i) => i.premises?.includes(inference));
+  }
+
+  /**
+   * The formulas' buttons of the open goals: each covers its formula and half
+   * the gap to its neighbours in the goal, so that no tap falls between two,
+   * and is at least a control's height on the screen.
+   */
+  function targets(goals: NonNullable<ReturnType<typeof view>>["goals"]): Hit[] {
+    const v = view();
+    if (!v) return [];
     const origin = host.getBoundingClientRect();
     const k = camera().k;
+    const least = token("--size-control-small") / k;
+    const pad = token("--spacing-1") / k;
     const found: Hit[] = [];
-    for (const goal of v.goals) {
+    for (const goal of goals) {
       const n = v.inferences.indexOf(goal.goal);
-      goal.formulas.forEach((formula, position) => {
+      const boxes = goal.formulas.flatMap((formula, position) => {
         const element = host.querySelector(`#i${n}-${position}`);
-        if (!element) return;
+        if (!element) return [];
         const r = element.getBoundingClientRect();
+        return [
+          {
+            position,
+            text: formulaText(formula.text),
+            left: (r.left - origin.left) / k,
+            right: (r.right - origin.left) / k,
+            top: (r.top - origin.top) / k,
+            height: r.height / k,
+          },
+        ];
+      });
+      const sorted = [...boxes].sort((a, b) => a.left - b.left);
+      sorted.forEach((box, i) => {
+        const before = sorted[i - 1];
+        const after = sorted[i + 1];
+        const left = before ? (before.right + box.left) / 2 : box.left - pad;
+        const right = after ? (box.right + after.left) / 2 : box.right + pad;
+        const h = Math.max(box.height + 2 * pad, least);
         found.push({
           goal: goal.goal,
-          position,
-          text: formulaText(formula.text),
-          x: (r.left - origin.left) / k - 4,
-          y: (r.top - origin.top) / k - 4,
-          w: r.width / k + 8,
-          h: r.height / k + 8,
+          position: box.position,
+          text: box.text,
+          x: left,
+          y: box.top + box.height / 2 - h / 2,
+          w: right - left,
+          h,
         });
       });
     }
-    setHits(found);
+    return found;
   }
+
+  // A zoom changes the least size of a formula's button on the screen.
+  createEffect(
+    on(
+      () => camera().k,
+      () => {
+        if (host.firstChild && !(ui.tab === "net" && netReady()))
+          setHits(targets(view()?.goals ?? []));
+      },
+      { defer: true },
+    ),
+  );
 
   // The active goal changes without a new drawing: mark it again.
   createEffect(
@@ -213,31 +281,61 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     setCamera(next);
   }
 
-  /** Fits the whole drawing into the stage, never larger than its own size. */
+  /**
+   * Fits the whole drawing into the stage, never larger than its own size,
+   * and never so small that a formula of the active goal is a smaller target
+   * than a control: then the active goal is shown at that size instead.
+   */
   function fitView() {
     const { w, h } = natural();
     const W = stage.clientWidth;
     const H = stage.clientHeight;
     if (!w || !h) return;
-    const k = Math.max(0.2, Math.min(1, (W - 48) / w, (H - 140) / h));
-    move({ k, x: (W - w * k) / 2, y: Math.max(96, (H - h * k) / 2 + 40) });
+    const margin = token("--spacing-7");
+    const top = hudBottom() + token("--spacing-8");
+    const fit = Math.max(0.2, Math.min(1, (W - margin) / w, (H - top - margin) / h));
+    const k = Math.max(fit, floor());
+    if (k > fit) {
+      move({ k, x: (W - w * k) / 2, y: top });
+      queueMicrotask(() => bringIntoView(false));
+    } else {
+      move({ k, x: (W - w * k) / 2, y: Math.max(top, (H - h * k) / 2) });
+    }
+  }
+
+  /** The least zoom at which every formula of the active goal is as wide as a control. */
+  function floor(): number {
+    const goal = active();
+    const formulas = (view()?.goals ?? []).filter((g) => g.goal === goal);
+    const k = camera().k;
+    const least = token("--size-control-small");
+    const narrowest = Math.min(...targets(formulas).map((t) => t.w * k));
+    return Number.isFinite(narrowest) && narrowest > 0 ? Math.min(4, (least / narrowest) * k) : 0;
+  }
+
+  /** The bottom of what floats at the stage's top (the calculus), in the stage's pixels. */
+  function hudBottom(): number {
+    const calc = stage.querySelector<HTMLElement>(".calc");
+    return calc && calc.offsetParent ? calc.offsetTop + calc.offsetHeight : 0;
   }
 
   /** Pans so that the active goal is in view (the other goals stay, dimmed). */
-  function bringIntoView() {
+  function bringIntoView(smooth = true) {
     const goal = active();
     if (goal === undefined) return;
     const element = host.querySelector(`#i${drawingIndex(goal)}`);
     if (!element) return;
     const r = element.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
-    const margin = 120;
+    const edge = token("--spacing-4");
+    const above = hudBottom() + token("--spacing-8");
+    const below = token("--spacing-8");
     let { x, y } = camera();
-    if (r.left < s.left + 16) x += s.left + 16 - r.left;
-    if (r.right > s.right - 16) x -= r.right - (s.right - 16);
-    if (r.top < s.top + margin) y += s.top + margin - r.top;
-    if (r.bottom > s.bottom - 16) y -= r.bottom - (s.bottom - 16);
-    if (x !== camera().x || y !== camera().y) move({ ...camera(), x, y }, true);
+    if (r.left < s.left + edge) x += s.left + edge - r.left;
+    if (r.right > s.right - edge) x -= r.right - (s.right - edge);
+    if (r.top < s.top + above) y += s.top + above - r.top;
+    else if (r.bottom > s.bottom - below) y -= r.bottom - (s.bottom - below);
+    if (x !== camera().x || y !== camera().y) move({ ...camera(), x, y }, smooth);
   }
 
   function zoom(by: number, at?: { x: number; y: number }) {
@@ -257,6 +355,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   createEffect(() => {
     camera();
     drawn();
+    note();
+    ladder();
+    props.prover.busy();
     const goal = active();
     if (!dock) return;
     if (goal === undefined || ui.tab === "net" || !host.firstChild) {
@@ -267,9 +368,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     if (!element) return;
     const r = element.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
+    const gap = token("--spacing-2");
     const height = dock.offsetHeight;
-    const left = Math.max(8, Math.min(r.left - s.left, s.width - dock.offsetWidth - 8));
-    const top = Math.max(84, r.top - s.top - height - 10);
+    const left = Math.max(gap, Math.min(r.left - s.left, s.width - dock.offsetWidth - gap));
+    // Above the goal, or below it where the calculus's cluster leaves no room.
+    const above = r.top - s.top - height - gap;
+    const top = above >= hudBottom() + gap ? above : r.bottom - s.top + gap;
     dock.style.visibility = "visible";
     dock.style.left = `${left}px`;
     dock.style.top = `${top}px`;
@@ -284,7 +388,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const spot = ui.split ?? ui.selected;
     if (!popover || !spot) return;
     const s = stage.getBoundingClientRect();
-    const narrow = s.width < 640;
+    const narrow = phone();
+    const gap = token("--spacing-2");
     const anchor = ui.split
       ? host.querySelector(`#i${drawingIndex(spot.goal)}`)
       : stage.querySelector<HTMLElement>(
@@ -295,17 +400,19 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     let left: number;
     let top: number;
     if (narrow) {
-      left = 8;
-      top = s.height - popover.offsetHeight - 60;
+      // A sheet at the stage's bottom, above its controls.
+      const controls = stage.querySelector<HTMLElement>(".stage-ctl")?.offsetHeight ?? 0;
+      left = gap;
+      top = s.height - popover.offsetHeight - controls - 2 * gap;
     } else if (ui.split) {
       left = r.left - s.left;
-      top = r.bottom - s.top + 12;
+      top = r.bottom - s.top + gap;
     } else {
-      left = r.right - s.left + 10;
+      left = r.right - s.left + gap;
       top = r.top - s.top;
     }
-    popover.style.left = `${Math.max(8, Math.min(left, s.width - popover.offsetWidth - 8))}px`;
-    popover.style.top = `${Math.max(8, Math.min(top, s.height - popover.offsetHeight - 8))}px`;
+    popover.style.left = `${Math.max(gap, Math.min(left, s.width - popover.offsetWidth - gap))}px`;
+    popover.style.top = `${Math.max(gap, Math.min(top, s.height - popover.offsetHeight - gap))}px`;
   });
 
   // Panning by dragging the field, zooming with ctrl and the wheel, and both by buttons and keys.
@@ -459,11 +566,11 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         button.animate(
           [
             { transform: "translateX(0)" },
-            { transform: "translateX(-4px)" },
-            { transform: "translateX(4px)" },
+            { transform: "translateX(calc(-1 * var(--spacing-1)))" },
+            { transform: "translateX(var(--spacing-1))" },
             { transform: "translateX(0)" },
           ],
-          { duration: 240 },
+          { duration: token("--duration-shake") },
         );
       }
     }
@@ -626,7 +733,6 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             >
               Practice
             </button>
-            .
           </p>
         </div>
       </Show>
@@ -649,7 +755,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
               onClick={() => props.prover.cycle(-1)}
               disabled={openCount() < 2}
             >
-              <ChevronLeft size={16} aria-hidden="true" />
+              <ChevronLeft aria-hidden="true" />
             </button>
             <span class="gn">
               Goal {goalNumber(active() ?? 0)} ({position()} of {openCount()} open)
@@ -663,7 +769,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
               onClick={() => props.prover.cycle(1)}
               disabled={openCount() < 2}
             >
-              <ChevronRight size={16} aria-hidden="true" />
+              <ChevronRight aria-hidden="true" />
             </button>
             <span class="sep" />
             <Show
@@ -703,6 +809,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 >
                   {n().said.keyword}
                 </button>
+                <EngineChip outcome={n().outcome} ui={props.ui} />
                 <Show when={verdictOf() === "unknown"}>
                   <button
                     type="button"
@@ -722,7 +829,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                     units
                   </button>
                 </Show>
-                <Show when={n().tone === "bad"}>
+                <Show when={n().tone === "bad" && !n().outcome}>
                   <button type="button" class="btn btn-s" onClick={() => void props.prover.undo()}>
                     Undo
                   </button>
@@ -745,6 +852,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                       ? rungs(l().hint?.steps ?? [], formulasOf(active() ?? 0))[l().rung - 1]
                       : "The search found no proof of this goal, so there is no hint: close it to see why."}
                 </span>
+                <EngineChip outcome={l().hint?.outcome} ui={props.ui} />
               </div>
             )}
           </Show>
@@ -888,7 +996,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           data-key="−"
           onClick={() => zoom(0.8)}
         >
-          <ZoomOut size={18} aria-hidden="true" />
+          <ZoomOut aria-hidden="true" />
         </button>
         <span class="zoom-v">{Math.round(camera().k * 100)}%</span>
         <button
@@ -899,7 +1007,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           data-key="+"
           onClick={() => zoom(1.25)}
         >
-          <ZoomIn size={18} aria-hidden="true" />
+          <ZoomIn aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -909,7 +1017,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           data-key="F"
           onClick={fitView}
         >
-          <Maximize size={18} aria-hidden="true" />
+          <Maximize aria-hidden="true" />
         </button>
       </div>
 
@@ -919,5 +1027,29 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         </div>
       </Show>
     </section>
+  );
+}
+
+/**
+ * The engine whose work a note or a hint is, by name: its source on hover,
+ * and a press opens Learn's reference at it.
+ */
+export function EngineChip(props: { outcome: Outcome | undefined | null; ui: Ui }) {
+  return (
+    <Show when={engineOf(props.outcome)}>
+      {(engine) => (
+        <button
+          type="button"
+          class="kw engine"
+          data-tip={engineTip(engine())}
+          aria-label={`By the ${engineName(engine())}: its source in Learn's reference`}
+          onClick={() => {
+            props.ui.setUi({ learn: "reference", spot: `engine-${engine()}` });
+          }}
+        >
+          {engineName(engine())}
+        </button>
+      )}
+    </Show>
   );
 }

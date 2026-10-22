@@ -65,6 +65,11 @@
   --color-shadow-far: light-dark(rgb(18 26 46 / 0.25), rgb(0 0 0 / 0.8));
   --color-scrim: light-dark(rgb(18 26 46 / 0.55), rgb(4 7 15 / 0.72));
 
+  /* The floating clusters, a little translucent over the field, and the
+     hairline of light along their top edge. */
+  --color-glass: light-dark(rgb(251 252 254 / 0.88), rgb(21 28 48 / 0.84));
+  --color-sheen: light-dark(rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.06));
+
   --font-*: initial;
   /* Every word of the interface. */
   --font-text: "Figtree Variable", system-ui, sans-serif;
@@ -73,27 +78,50 @@
   /* Every formula and rule name. */
   --font-math: "Euler Math", "Neo Euler", serif;
 
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* The type scale: the interface's five steps, and the logic's three in
+     Euler Math (a tab's sequent, a premise, a popover's formula and a rule's
+     name). */
   --text-*: initial;
   --text-label: 11px;
   --text-small: 12.5px;
   --text-body: 14px;
   --text-panel: 15px;
   --text-head: 18px;
+  --text-math: 17px;
+  --text-math-large: 20px;
 
-  /* Tailwind's spacing unit, and the scale's steps. */
+  --leading-*: initial;
+  --leading-none: 1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.45;
+
+  /* The one spacing scale: every gap, padding, margin and offset is a step
+     of it. */
   --spacing: 4px;
+  --spacing-0-5: 2px;
   --spacing-1: 4px;
+  --spacing-1-5: 6px;
   --spacing-2: 8px;
   --spacing-3: 12px;
   --spacing-4: 16px;
   --spacing-5: 24px;
   --spacing-6: 32px;
-  /* The least target size (WCAG 2.2, 2.5.8). */
+  --spacing-7: 48px;
+  --spacing-8: 96px;
+  /* The least target size anywhere (WCAG 2.2, 2.5.8). */
   --spacing-target: 24px;
 
   --radius-*: initial;
-  --radius-cluster: 6px;
-  --radius-key: 3px;
+  /* Clusters, menus and cards; a control; a key cap or a small mark. */
+  --radius-cluster: 10px;
+  --radius-control: 6px;
+  --radius-key: 4px;
+  --radius-round: 999px;
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* Popovers, a label settling, the camera, a refusal's shake; all 0 under
@@ -102,6 +130,72 @@
   --duration-mid: 220ms;
   --duration-camera: 380ms;
   --duration-shake: 240ms;
+}
+
+/*
+ * The sizes of things that are not spacing: the controls (every button,
+ * field and switch is one of two heights, both 44 pixels on a phone, WCAG's
+ * enhanced target size), icons, marks, and the widths of the panels; the
+ * lines, the layers, the opacities and the blur. Plain variables, since
+ * Tailwind has no namespace for them.
+ */
+:root {
+  --size-control: 32px;
+  --size-control-small: 28px;
+  --size-chip: 24px;
+  --size-band: 48px;
+  --size-icon: 18px;
+  --size-icon-small: 16px;
+  --size-key: 18px;
+  --size-badge: 16px;
+  --size-dot: 8px;
+  --size-lamp: 10px;
+  --size-switch: 32px;
+  --size-switch-height: 18px;
+  --size-knob: 12px;
+  --size-rung: 12px;
+  --size-rung-height: 4px;
+  --size-label-column: 96px;
+  --size-premise-column: 44px;
+  --size-field: 380px;
+  --size-field-share: 60vw;
+  --size-grid-dot: 1.1px;
+  --size-grid-fade: 1.6px;
+  --size-tab: 240px;
+  --size-popover: 200px;
+  --size-popover-wide: 340px;
+  --size-menu: 400px;
+  --size-frame: 360px;
+  --size-tour: 320px;
+  --size-text: 640px;
+  --size-number: 160px;
+  --size-textarea: 84px;
+  --size-learn-sheet: 46vh;
+  --line: 1px;
+  --line-strong: 2px;
+  --press: 1px;
+  --blur-hud: 10px;
+  --opacity-disabled: 0.42;
+  --opacity-dimmed: 0.45;
+  --layer-stage: 4;
+  --layer-hud: 5;
+  --layer-band: 6;
+  --layer-popover: 30;
+  --layer-menu: 35;
+  --layer-tour: 80;
+  --layer-tip: 90;
+}
+
+/* A phone: every control 44 by 44 pixels. */
+@media (max-width: 640px) {
+  :root {
+    --size-control: 44px;
+    --size-control-small: 44px;
+    --size-switch: 40px;
+    --size-switch-height: 24px;
+    --size-knob: 16px;
+    --size-band: 52px;
+  }
 }
 
 :root {

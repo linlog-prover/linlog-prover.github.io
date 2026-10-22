@@ -6,7 +6,9 @@
  * its key. Undo and redo (icons alone, as is conventional, with their names
  * on hover and focus), close all, hint; Export (a menu of the formats and
  * the link), Import (a file, a paste, or a drop onto the stage), Settings;
- * Learn, the tour, Keys and About. The menus open above the band.
+ * Learn, the tour, Keys and About. The menus open above the band. On a
+ * phone the row keeps undo, redo, close all, hint, export and Learn, and
+ * More opens a sheet with the calculus's switches and the other actions.
  */
 
 import {
@@ -18,18 +20,21 @@ import {
   Keyboard,
   Lightbulb,
   ListOrdered,
+  Menu as MenuIcon,
   Redo2,
   SlidersHorizontal,
   Undo2,
   Upload,
 } from "lucide-solid";
 import { createResource, createSignal, For, type JSX, Show } from "solid-js";
-import { failure, type Outcome, type SessionDoc } from "../lib/linlog";
+import { engineName, engineTip } from "../lib/engines";
+import { failure, type Failure, type Outcome, type SessionDoc } from "../lib/linlog";
 import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
-import { pretty } from "../lib/words";
+import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
-import { DEFAULT_BUDGET, type Prover } from "./state";
+import { Calculus } from "./Calculus";
+import { DEFAULT_BUDGET, type Prover, pathKey } from "./state";
 import { Written } from "./Learn";
 import { applyTheme } from "./TopBand";
 import type { Menu, Ui } from "./ui";
@@ -90,7 +95,7 @@ export function BottomBand(props: {
         <div class="group">
           <Action
             label="Undo"
-            icon={<Undo2 size={18} aria-hidden="true" />}
+            icon={<Undo2 aria-hidden="true" />}
             tip="Undo on this branch"
             keyName="U"
             alone
@@ -100,7 +105,7 @@ export function BottomBand(props: {
           />
           <Action
             label="Redo"
-            icon={<Redo2 size={18} aria-hidden="true" />}
+            icon={<Redo2 aria-hidden="true" />}
             tip="Redo"
             keyName="⇧U"
             alone
@@ -110,9 +115,10 @@ export function BottomBand(props: {
           />
           <Action
             label="Steps"
-            icon={<ListOrdered size={18} aria-hidden="true" />}
+            icon={<ListOrdered aria-hidden="true" />}
             tip="Every step; click one to go back to it"
             keyName="S"
+            wide
             expanded={ui.menu === "steps"}
             disabled={!proof()?.session}
             onClick={() => toggle("steps")}
@@ -121,7 +127,7 @@ export function BottomBand(props: {
           />
           <Action
             label="Close all"
-            icon={<CheckCheck size={18} aria-hidden="true" />}
+            icon={<CheckCheck aria-hidden="true" />}
             tip="The search closes every open goal"
             keyName="⇧C"
             disabled={!proof()?.view || proof()?.view?.complete || props.prover.busy()}
@@ -131,7 +137,7 @@ export function BottomBand(props: {
           />
           <Action
             label="Hint"
-            icon={<Lightbulb size={18} aria-hidden="true" />}
+            icon={<Lightbulb aria-hidden="true" />}
             tip="The next rung of the hint ladder"
             keyName="H"
             disabled={!proof()?.view || proof()?.view?.complete || props.prover.busy()}
@@ -143,7 +149,7 @@ export function BottomBand(props: {
         <div class="group">
           <Action
             label="Export"
-            icon={<Upload size={18} aria-hidden="true" />}
+            icon={<Upload aria-hidden="true" />}
             tip="Every format, and the link"
             keyName="E"
             expanded={ui.menu === "export"}
@@ -154,9 +160,10 @@ export function BottomBand(props: {
           />
           <Action
             label="Import"
-            icon={<Download size={18} aria-hidden="true" />}
+            icon={<Download aria-hidden="true" />}
             tip="A session or a sequent from a file"
             keyName="I"
+            wide
             expanded={ui.menu === "import"}
             onClick={() => toggle("import")}
             show={key}
@@ -164,9 +171,10 @@ export function BottomBand(props: {
           />
           <Action
             label="Settings"
-            icon={<SlidersHorizontal size={18} aria-hidden="true" />}
+            icon={<SlidersHorizontal aria-hidden="true" />}
             tip="Budget, theme, keys"
             keyName=","
+            wide
             expanded={ui.menu === "settings"}
             onClick={() => toggle("settings")}
             show={key}
@@ -176,7 +184,7 @@ export function BottomBand(props: {
         <div class="group">
           <Action
             label="Learn"
-            icon={<GraduationCap size={18} aria-hidden="true" />}
+            icon={<GraduationCap aria-hidden="true" />}
             tip="The tutorial, practice and the reference, around the stage"
             keyName="L"
             pressed={ui.learn !== null}
@@ -186,18 +194,20 @@ export function BottomBand(props: {
           />
           <Action
             label="Tour"
-            icon={<Compass size={18} aria-hidden="true" />}
+            icon={<Compass aria-hidden="true" />}
             tip="A walk through the page, proving a sequent"
             keyName=""
+            wide
             onClick={props.tour}
             show={key}
             labelled={labelled}
           />
           <Action
             label="Keys"
-            icon={<Keyboard size={18} aria-hidden="true" />}
+            icon={<Keyboard aria-hidden="true" />}
             tip="Every key"
             keyName="?"
+            wide
             expanded={ui.menu === "keys"}
             onClick={() => toggle("keys")}
             show={key}
@@ -205,11 +215,23 @@ export function BottomBand(props: {
           />
           <Action
             label="About"
-            icon={<Info size={18} aria-hidden="true" />}
+            icon={<Info aria-hidden="true" />}
             tip="What this page is, its licences"
             keyName=""
+            wide
             expanded={ui.menu === "about"}
             onClick={() => toggle("about")}
+            show={key}
+            labelled={labelled}
+          />
+          <Action
+            label="More"
+            icon={<MenuIcon aria-hidden="true" />}
+            tip="The calculus, steps, import, settings, the tour, keys and About"
+            keyName=""
+            phone
+            expanded={ui.menu === "more"}
+            onClick={() => toggle("more")}
             show={key}
             labelled={labelled}
           />
@@ -220,6 +242,9 @@ export function BottomBand(props: {
       </Show>
       <Show when={ui.menu === "steps"}>
         <StepsPanel prover={props.prover} />
+      </Show>
+      <Show when={ui.menu === "more"}>
+        <MoreSheet prover={props.prover} ui={props.ui} tour={props.tour} />
       </Show>
       <Show when={ui.menu === "import"}>
         <ImportPanel prover={props.prover} ui={props.ui} />
@@ -257,6 +282,10 @@ function Action(props: {
   tip: string;
   keyName: string;
   alone?: boolean;
+  /** Only on a wide screen: on a phone it is in More's sheet. */
+  wide?: boolean;
+  /** Only on a phone. */
+  phone?: boolean;
   disabled?: boolean | undefined;
   expanded?: boolean;
   pressed?: boolean;
@@ -267,7 +296,7 @@ function Action(props: {
   return (
     <button
       type="button"
-      class="btn act"
+      class={`btn act${props.wide ? " wide-only" : ""}${props.phone ? " phone-only" : ""}`}
       aria-label={props.alone ? props.label : undefined}
       aria-expanded={props.expanded}
       aria-pressed={props.pressed}
@@ -409,7 +438,14 @@ function ExportMenu(props: { prover: Prover; ui: Ui; font: () => Promise<Uint8Ar
           await props.prover.api.certificate(outcome() as Outcome, exportSettings()),
           "text/plain",
         ),
-      off: () => (outcome() ? null : "Close a goal the search refutes first"),
+      off: () => {
+        const kind = outcome()?.refutation?.kind;
+        if (!outcome()) return "Close a goal the search refutes first";
+        if (kind === "saturated")
+          return "A refutation by saturation has no Rocq certificate: linlog's own checker verified its set";
+        if (!kind || kind === "exhausted") return "An exhausted search leaves no certificate";
+        return null;
+      },
     },
   ];
 
@@ -494,6 +530,7 @@ function ImportPanel(props: { prover: Prover; ui: Ui }) {
         <label class="lbl">
           <span>File</span>
           <input
+            class="file-in"
             type="file"
             accept=".json,application/json,text/plain"
             onChange={async (event) => {
@@ -603,6 +640,7 @@ function SettingsPanel(props: {
             </For>
           </fieldset>
         </fieldset>
+        <EngineChoice prover={props.prover} />
         <label class="sw">
           <input
             type="checkbox"
@@ -615,6 +653,107 @@ function SettingsPanel(props: {
           Show keys beside actions
         </label>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The engine every search is forced to, or Automatic: the engines that take
+ * the current proof's sequent, the others greyed with why they do not.
+ */
+function EngineChoice(props: { prover: Prover }) {
+  const proof = () => props.prover.current();
+  const engine = () => props.prover.settings().engine;
+  const [listed] = createResource(
+    () => proof()?.session ?? null,
+    (session) => props.prover.engines(session),
+  );
+  const refusalOf = (key: string): Failure | null =>
+    listed()?.engines.find((e) => e.engine === key)?.refused ?? null;
+  return (
+    <fieldset class="lbl col">
+      <legend>Engine</legend>
+      <div class="choices" role="radiogroup" aria-label="Engine">
+        <button
+          type="button"
+          class="seg-b"
+          role="radio"
+          aria-checked={engine() === null}
+          data-tip="linlog chooses the engine by the sequent's fragment and mode"
+          onClick={() => props.prover.setSettings({ engine: null })}
+        >
+          <span>Automatic</span>
+          <span class="why">
+            {listed()?.automatic ? `here the ${engineName(listed()?.automatic ?? "")}` : ""}
+          </span>
+        </button>
+        <For each={listed()?.engines ?? []}>
+          {(e) => (
+            <button
+              type="button"
+              class="seg-b"
+              role="radio"
+              aria-checked={engine() === e.engine}
+              aria-disabled={e.refused ? "true" : undefined}
+              data-tip={e.refused ? notTaken(e.refused).sentence : engineTip(e.engine)}
+              onClick={() => {
+                if (!e.refused) props.prover.setSettings({ engine: e.engine });
+              }}
+            >
+              <span>{engineName(e.engine)}</span>
+              <span class="why">{e.refused ? notTaken(e.refused).keyword : ""}</span>
+            </button>
+          )}
+        </For>
+      </div>
+      <Show when={!proof()?.session}>
+        <p class="sub">Start a proof to see which engines take its sequent.</p>
+      </Show>
+      <Show when={engine() !== null && refusalOf(engine() ?? "")}>
+        <p class="sub">
+          The {engineName(engine() ?? "")} does not take this proof's sequent: its searches are
+          refused at the goal.
+        </p>
+      </Show>
+    </fieldset>
+  );
+}
+
+/** More's sheet on a phone: the calculus's switches and the actions the band leaves out. */
+function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
+  const { setUi } = props.ui;
+  const items: readonly (readonly [string, Menu | "tour", () => JSX.Element])[] = [
+    ["Steps", "steps", () => <ListOrdered aria-hidden="true" />],
+    ["Import", "import", () => <Download aria-hidden="true" />],
+    ["Settings", "settings", () => <SlidersHorizontal aria-hidden="true" />],
+    ["Tour", "tour", () => <Compass aria-hidden="true" />],
+    ["Keys", "keys", () => <Keyboard aria-hidden="true" />],
+    ["About", "about", () => <Info aria-hidden="true" />],
+  ];
+  return (
+    <div class="cluster menu" role="dialog" aria-label="More">
+      <Show when={props.prover.current()?.session}>
+        <p class="kw-label h">Calculus</p>
+        <Calculus prover={props.prover} ui={props.ui} inSheet />
+        <div class="msep" />
+      </Show>
+      <ul class="mlist">
+        <For each={items}>
+          {([label, menu, icon]) => (
+            <li>
+              <button
+                type="button"
+                class="mi icon-row"
+                disabled={menu === "steps" && !props.prover.current()?.session}
+                onClick={() => (menu === "tour" ? props.tour() : setUi("menu", menu))}
+              >
+                {icon()}
+                <span>{label}</span>
+              </button>
+            </li>
+          )}
+        </For>
+      </ul>
     </div>
   );
 }
@@ -647,7 +786,7 @@ function StepsPanel(props: { prover: Prover }) {
                 <span class="fn">
                   {action.kind === "step"
                     ? `${action.step.rule} on goal ${goalNumber(action.path)}`
-                    : `The search closed goal ${goalNumber(action.path)}`}
+                    : `The ${engineName(proof()?.engines[pathKey(action.path)] ?? "") || "search"} closed goal ${goalNumber(action.path)}`}
                 </span>
               </button>
             </li>

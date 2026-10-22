@@ -44,6 +44,7 @@ export type Menu =
   | "calculus"
   | "steps"
   | "about"
+  | "more"
   | null;
 
 /** Learn's three places. */
@@ -65,6 +66,8 @@ export function createUi() {
     learn: Rubric | null;
     /** The tour's stop shown (from 0), or null when no tour runs. */
     tour: number | null;
+    /** The id of what Learn shows and marks: an engine of the reference. */
+    spot: string | null;
   }>({
     selected: null,
     offered: null,
@@ -76,6 +79,7 @@ export function createUi() {
     pendingMode: null,
     learn: null,
     tour: null,
+    spot: null,
   });
   /** Bumped when the drawing must be laid out again (a new drawing, a resize). */
   const [drawn, setDrawn] = createSignal(0);
@@ -89,3 +93,19 @@ export type Ui = ReturnType<typeof createUi>;
 export function ladderKey(proof: string, path: readonly number[]): string {
   return `${proof}:${path.join(".")}`;
 }
+
+/** A token of tokens.css as a number: a length in pixels, a duration in milliseconds. */
+export function token(name: string): number {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+}
+
+/** The phone's width, at which tokens.css makes every control 44 pixels: as app.css's media queries. */
+const PHONE = "(max-width: 640px)";
+
+/** Whether the page is at a phone's width, as a signal. */
+export const phone = (() => {
+  const query = typeof window === "undefined" ? null : window.matchMedia(PHONE);
+  const [matches, setMatches] = createSignal(query?.matches ?? false);
+  query?.addEventListener("change", (event) => setMatches(event.matches));
+  return matches;
+})();

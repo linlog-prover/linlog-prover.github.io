@@ -29,6 +29,8 @@ export interface StoredProof {
   readonly session: SessionDoc | null;
   /** What undo took back, the last first out, until a new step. */
   readonly redo: readonly (readonly Action[])[];
+  /** The engine of each search that closed a goal, by the goal's path joined with dots. */
+  readonly engines?: Readonly<Record<string, string>>;
   /** When it was saved, in milliseconds since the epoch: the later copy of a proof wins. */
   readonly saved: number;
 }

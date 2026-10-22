@@ -90,7 +90,7 @@ export function TopBand(props: {
             queueMicrotask(() => document.querySelector<HTMLInputElement>(".field")?.focus());
           }}
         >
-          <Plus size={16} aria-hidden="true" />
+          <Plus aria-hidden="true" />
         </button>
       </nav>
       <span class="grow" />
@@ -108,8 +108,8 @@ export function TopBand(props: {
           props.setTheme(next);
         }}
       >
-        <Show when={dark()} fallback={<Moon size={18} aria-hidden="true" />}>
-          <Sun size={18} aria-hidden="true" />
+        <Show when={dark()} fallback={<Moon aria-hidden="true" />}>
+          <Sun aria-hidden="true" />
         </Show>
       </button>
       <Show when={current()?.inputProblem}>
@@ -256,7 +256,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         data-tip="Close this proof"
         onClick={() => props.prover.remove(props.proof.id)}
       >
-        <X size={14} aria-hidden="true" />
+        <X aria-hidden="true" />
       </button>
       <Show when={isActive() && ui.menu === "calculus"}>
         <div class="cluster pop calc-pop" role="dialog" aria-label="Logic">

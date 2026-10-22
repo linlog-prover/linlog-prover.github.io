@@ -346,8 +346,12 @@ test("a proof goes by keyboard alone", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Keys" })).toHaveCount(0);
 });
 
-test("the calculus's switches restart the proof after a warning", async ({ page }) => {
+test("the calculus's switches restart the proof after a warning, and two-sided shows in classical mode alone", async ({
+  page,
+}) => {
   await start(page, "A, B |- A * B");
+  // Classical derivations are drawn one-sided: the switch is there, greyed.
+  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
   await rule(page, /^A ⊗ B/, "⊗");
   await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
   await page.getByRole("dialog", { name: "Split" }).getByRole("button", { name: "Apply" }).click();
@@ -355,7 +359,8 @@ test("the calculus's switches restart the proof after a warning", async ({ page 
   await page.getByRole("button", { name: "Restart" }).click();
   await expect(page.locator(".pt-mark")).toContainText("ILL");
   await expect(page.getByRole("button", { name: /^A ⊗ B, formula 3 of goal 1/ })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
+  // Intuitionistic derivations are two-sided already: the switch is not shown.
+  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toHaveCount(0);
   await start(page, "A |- B, C", false);
   await expect(page.getByRole("alert")).toContainText("2 formulas right of ⊢");
 });
@@ -385,7 +390,7 @@ test("the step list goes back to a step, and redo brings the rest back", async (
   await expect(steps.getByRole("button")).toHaveText([
     /^0/,
     /^1⅋ on goal 1/,
-    /^2The search closed goal 2/,
+    /^2The focused search closed goal 2/,
   ]);
   await steps.getByRole("button", { name: /^0/ }).click();
   await expect(page.getByRole("button", { name: /^A⊥ ⅋ B⊥, formula 1 of goal 1/ })).toBeVisible();

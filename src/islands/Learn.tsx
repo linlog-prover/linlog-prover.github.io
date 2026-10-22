@@ -11,18 +11,36 @@
  */
 
 import { Compass, Play, X } from "lucide-solid";
-import { For, Match, Show, Switch } from "solid-js";
+import { createEffect, For, Match, Show, Switch } from "solid-js";
 import { type Example, written } from "../lib/content";
-import { pretty } from "../lib/words";
+import { displayed } from "../lib/words";
 import type { Prover } from "./state";
 import type { Rubric, Ui } from "./ui";
 
-/** A written text of the page, by its template's name. */
-export function Written(props: { name: string; class?: string }) {
+/**
+ * A written text of the page, by its template's name; `spot`, the id of an
+ * element in it, is brought into view and marked.
+ */
+export function Written(props: { name: string; class?: string; spot?: string | null }) {
+  let host!: HTMLDivElement;
+  createEffect(() => {
+    const spot = props.spot;
+    queueMicrotask(() => {
+      for (const marked of host.querySelectorAll("[data-highlight]"))
+        marked.removeAttribute("data-highlight");
+      const at = spot ? host.querySelector<HTMLElement>(`#${CSS.escape(spot)}`) : null;
+      if (!at) return;
+      at.dataset["highlight"] = "";
+      at.scrollIntoView({ block: "center" });
+    });
+  });
   return (
     <div
       class={`written ${props.class ?? ""}`}
-      ref={(el) => queueMicrotask(() => el.replaceChildren(written(props.name)))}
+      ref={(el) => {
+        host = el;
+        queueMicrotask(() => el.replaceChildren(written(props.name)));
+      }}
     />
   );
 }
@@ -67,7 +85,7 @@ export function LearnFrame(props: {
                 id={`ftab-${rubric}`}
                 aria-controls="frame-panel"
                 aria-selected={ui.learn === rubric}
-                onClick={() => setUi("learn", rubric)}
+                onClick={() => setUi({ learn: rubric, spot: null })}
               >
                 {label}
               </button>
@@ -82,7 +100,7 @@ export function LearnFrame(props: {
           data-tip="Turn Learn off"
           onClick={() => setUi("learn", null)}
         >
-          <X size={16} aria-hidden="true" />
+          <X aria-hidden="true" />
         </button>
       </div>
       <div class="frame-body" id="frame-panel" role="tabpanel" aria-labelledby={`ftab-${ui.learn}`}>
@@ -90,7 +108,7 @@ export function LearnFrame(props: {
           <Match when={ui.learn === "tutorial"}>
             <Written name="texts/tutorial" />
             <button type="button" class="btn" onClick={() => props.tour()}>
-              <Compass size={16} aria-hidden="true" />
+              <Compass aria-hidden="true" />
               Take the tour of the page
             </button>
             <ol class="lessons">
@@ -106,14 +124,27 @@ export function LearnFrame(props: {
           </Match>
           <Match when={ui.learn === "practice"}>
             <Written name="texts/practice" />
-            <ul class="prac">
-              <For each={props.examples}>
-                {(example) => <Exercise example={example} prover={props.prover} ui={props.ui} />}
-              </For>
-            </ul>
+            <For each={LESSONS.map((name, i) => [name, i + 1] as const)}>
+              {([name, lesson]) => (
+                <Show when={props.examples.some((e) => e.lesson === lesson)}>
+                  <details class="lesson" open={lesson === 1}>
+                    <summary class="prac-h">
+                      {lesson}. {name}
+                    </summary>
+                    <ul class="prac">
+                      <For each={props.examples.filter((e) => e.lesson === lesson)}>
+                        {(example) => (
+                          <Exercise example={example} prover={props.prover} ui={props.ui} />
+                        )}
+                      </For>
+                    </ul>
+                  </details>
+                </Show>
+              )}
+            </For>
           </Match>
           <Match when={ui.learn === "reference"}>
-            <Written name="texts/reference" />
+            <Written name="texts/reference" spot={ui.spot} />
           </Match>
         </Switch>
         <Written name="licence" class="frame-licence" />
@@ -138,8 +169,7 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
           {"○".repeat(3 - props.example.difficulty)}
         </span>
       </div>
-      <p class="m ex-seq">{pretty(props.example.sequent)}</p>
-      <Written name={`examples/${props.example.id}`} class="sub" />
+      <p class="m ex-seq">{displayed(props.example.sequent)}</p>
       <p class="row">
         <button
           type="button"
@@ -150,6 +180,13 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
         >
           Prove
         </button>
+      </p>
+      <details class="answer">
+        <summary aria-label={`The answer to ${props.example.title}`}>Answer</summary>
+        <p class={`kw ${props.example.verdict === "provable" ? "ok" : "bad"}`}>
+          {props.example.verdict === "provable" ? "Provable" : "No proof"}
+        </p>
+        <Written name={`examples/${props.example.id}`} class="sub" />
         <Show when={props.example.session}>
           <button
             type="button"
@@ -162,14 +199,11 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
               props.ui.setUi("live", `${props.example.title}: press Redo to play the next step.`);
             }}
           >
-            <Play size={14} aria-hidden="true" />
-            Watch
+            <Play aria-hidden="true" />
+            Watch the proof
           </button>
         </Show>
-        <Show when={props.example.verdict === "unprovable"}>
-          <span class="sub">No proof: find out why.</span>
-        </Show>
-      </p>
+      </details>
     </li>
   );
 }

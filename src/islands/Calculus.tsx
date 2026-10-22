@@ -4,10 +4,12 @@
 /**
  * The calculus's switches, one floating cluster at the stage's top left: a
  * segmented control for classical or intuitionistic logic and labelled
- * switches for Mix, affine weakening and the two-sided presentation (greyed:
- * linlog does not draw classical derivations two-sided yet). A session is
- * one sequent in one mode, so a change restarts the proof, and the cluster
- * says so first when the proof has steps.
+ * switches for Mix, affine weakening and, in classical mode alone, the
+ * two-sided presentation (greyed: linlog does not draw classical derivations
+ * two-sided yet; intuitionistic ones are two-sided already, so there it is
+ * not shown). A session is one sequent in one mode, so a change restarts the
+ * proof, and the cluster says so first when the proof has steps. On a phone
+ * the cluster folds into More's sheet (`inSheet`).
  */
 
 import { Show } from "solid-js";
@@ -22,7 +24,7 @@ export function modeOf(intuitionistic: boolean, mix: boolean, affine: boolean): 
   return mix ? "mix" : "classical";
 }
 
-export function Calculus(props: { prover: Prover; ui: Ui }) {
+export function Calculus(props: { prover: Prover; ui: Ui; inSheet?: boolean }) {
   const proof = () => props.prover.current();
   const mode = () => proof()?.mode ?? "classical";
   const intuitionistic = () => mode().startsWith("intuitionistic");
@@ -38,7 +40,7 @@ export function Calculus(props: { prover: Prover; ui: Ui }) {
   }
 
   return (
-    <fieldset class="cluster calc" aria-label="Calculus">
+    <fieldset class={`cluster calc${props.inSheet ? " in-sheet" : ""}`} aria-label="Calculus">
       <fieldset class="seg" aria-label="Logic">
         <button
           type="button"
@@ -81,14 +83,16 @@ export function Calculus(props: { prover: Prover; ui: Ui }) {
         <span class="sw-t" aria-hidden="true" />
         Affine
       </label>
-      <label
-        class="sw"
-        data-tip="Drawing classical derivations two-sided is a later feature of linlog; they are drawn one-sided"
-      >
-        <input type="checkbox" checked={intuitionistic()} disabled />
-        <span class="sw-t" aria-hidden="true" />
-        Two-sided
-      </label>
+      <Show when={!intuitionistic()}>
+        <label
+          class="sw"
+          data-tip="Drawing classical derivations two-sided is a later feature of linlog; they are drawn one-sided"
+        >
+          <input type="checkbox" disabled />
+          <span class="sw-t" aria-hidden="true" />
+          Two-sided
+        </label>
+      </Show>
       <Show when={ui.pendingMode}>
         {(next) => (
           <div class="cluster mode-warn" role="alertdialog" aria-label="Restart the proof">

@@ -12,6 +12,7 @@ import { batch, createSignal } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { type Api, createApi } from "../lib/api";
 import {
+  type Engines,
   failure,
   type Failure,
   type Mode,
@@ -22,6 +23,7 @@ import {
   type View,
 } from "../lib/linlog";
 import type { Example } from "../lib/content";
+import { ENGINE_ORDER, engineName, engineOf } from "../lib/engines";
 import { Cancelled } from "../lib/protocol";
 import {
   type Shelf,
@@ -75,6 +77,8 @@ export interface Proof {
   typed: { classical: string; intuitionistic: string } | null;
   /** A line on the stage that is no goal's: a proof the link could not restore. */
   banner: Said | null;
+  /** The engine of each search that closed a goal, by the goal's path joined with dots. */
+  engines: Record<string, string>;
 }
 
 /** The visitor's settings, kept in the browser. */
@@ -85,6 +89,8 @@ export interface Settings {
   showKeys: boolean;
   /** How a net is drawn, `styles.svg.net`: every formula written, or compact. */
   net: NetDrawing;
+  /** The engine every search is forced to, `search.engine`; null for linlog's own choice. */
+  engine: string | null;
 }
 
 /** linlog's two drawings of a net: every formula occurrence written, or only the literals and the conclusions. */
@@ -110,9 +116,10 @@ function loadSettings(): Settings {
         typeof stored.budget === "number" && stored.budget > 0 ? stored.budget : DEFAULT_BUDGET,
       showKeys: stored.showKeys === true,
       net: stored.net === "compact" ? "compact" : "formulas",
+      engine: typeof stored.engine === "string" ? stored.engine : null,
     };
   } catch {
-    return { budget: DEFAULT_BUDGET, showKeys: false, net: "formulas" };
+    return { budget: DEFAULT_BUDGET, showKeys: false, net: "formulas", engine: null };
   }
 }
 
@@ -139,13 +146,17 @@ const blank = (mode: Mode): Proof => ({
   verdict: null,
   typed: null,
   banner: null,
+  engines: {},
 });
+
+/** A goal's path as the key of `Proof.engines`. */
+export const pathKey = (path: Path) => path.join(".");
 
 /** The prover's state and actions, for one island. */
 export type Prover = ReturnType<typeof createProver>;
 
-/** Creates the state, its worker and its actions. */
-export function createProver() {
+/** Creates the state, its worker and its actions; `say` speaks in the page's live region. */
+export function createProver(say: (text: string) => void = () => undefined) {
   const [pending, setPending] = createSignal(0);
   const api: Api = createApi(setPending);
   const [store, setStore] = createStore<{ proofs: Proof[]; active: string | null }>({
@@ -166,20 +177,33 @@ export function createProver() {
    * would overwrite the other. An action asked for while another runs does
    * nothing (and answers undefined); its buttons and keys wait on `busy`.
    */
+  let running: Promise<unknown> = Promise.resolve();
   const guard =
     <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
     async (...args: A): Promise<R | undefined> => {
       if (busy()) return undefined;
       setBusy(true);
+      const now = run(...args);
+      running = now.catch(() => undefined);
       try {
-        return await run(...args);
+        return await now;
       } finally {
         setBusy(false);
       }
     };
+  /** As `guard`, but an action asked for while another runs waits for it instead of doing nothing. */
+  const queued =
+    <A extends unknown[], R>(run: (...args: A) => Promise<R>) =>
+    async (...args: A): Promise<R | undefined> => {
+      while (busy()) await running;
+      return guard(run)(...args);
+    };
 
-  /** The settings as linlog reads them: the tab's defaults with the budget. */
-  const json = (budget = settings().budget) => JSON.stringify({ limits: { work: budget } });
+  /** The settings as linlog reads them: the tab's defaults with the budget, and the engine forced. */
+  const json = (budget = settings().budget) => {
+    const engine = settings().engine;
+    return JSON.stringify({ limits: { work: budget }, ...(engine ? { search: { engine } } : {}) });
+  };
 
   const current = () => store.proofs.find((p) => p.id === store.active);
   const index = (id: string) => store.proofs.findIndex((p) => p.id === id);
@@ -239,6 +263,7 @@ export function createProver() {
             mode: p.mode,
             session: p.session,
             redo: p.redo,
+            engines: p.engines,
             saved: Date.now(),
           }),
         ),
@@ -285,6 +310,7 @@ export function createProver() {
             input: stored.input,
             session: stored.session,
             redo: stored.redo.map((r) => [...r]),
+            engines: { ...(stored.engines ?? {}) },
             editing: !stored.session,
           };
           setStore("proofs", (all) => [...all.filter((p) => p.session || p.input.trim()), proof]);
@@ -363,8 +389,12 @@ export function createProver() {
       update(id, (q) => (q.typed = read.ok ? (read.value.fragment ?? null) : null));
     },
 
-    /** Starts the field's text as a new session in the proof's mode (or opens a session pasted there). */
-    submit: guard(async (id: string, mode?: Mode) => {
+    /**
+     * Starts the field's text as a new session in the proof's mode (or opens
+     * a session pasted there); asked for while another action runs, it waits
+     * for that one.
+     */
+    submit: queued(async (id: string, mode?: Mode) => {
       const p = store.proofs.find((q) => q.id === id);
       if (!p) return;
       const read = await attempt(() => api.read(p.input, json()));
@@ -405,6 +435,7 @@ export function createProver() {
         q.mode = startMode;
         q.redo = [];
         q.verdict = null;
+        q.engines = {};
       });
       show(id, started.value, 0);
       save();
@@ -430,6 +461,7 @@ export function createProver() {
         q.mode = mode;
         q.redo = [];
         q.verdict = null;
+        q.engines = {};
       });
       show(id, started.value, 0);
       save();
@@ -663,9 +695,16 @@ export function createProver() {
         return;
       }
       const closed = result.value;
+      const engine = engineOf(closed.outcome);
       if (closed.outcome.verdict === "proved" && !closed.refused) {
-        update(p.id, (q) => (q.redo = []));
+        update(p.id, (q) => {
+          q.redo = [];
+          if (engine) q.engines = { ...q.engines, [pathKey(path)]: engine };
+        });
         show(p.id, closed, closed.view.goals[0]?.goal);
+        say(
+          `Goal ${goal + 1} closed${engine ? ` by the ${engineName(engine)}` : ""}${closed.view.complete ? ": the proof is finished" : ""}.`,
+        );
         save();
         return;
       }
@@ -701,10 +740,16 @@ export function createProver() {
       const before = p.session;
       const where = paths(before);
       const unproved = closed.results.find((r) => r.outcome && r.outcome.verdict !== "proved");
-      update(
-        p.id,
-        (q) => (q.redo = closed.session.history.length !== before.history.length ? [] : q.redo),
-      );
+      const grafted: Record<string, string> = {};
+      for (const r of closed.results) {
+        const engine = engineOf(r.outcome);
+        if (r.outcome?.verdict === "proved" && !r.refused && engine)
+          grafted[pathKey(where.get(r.goal) ?? [])] = engine;
+      }
+      update(p.id, (q) => {
+        q.redo = closed.session.history.length !== before.history.length ? [] : q.redo;
+        q.engines = { ...q.engines, ...grafted };
+      });
       show(p.id, closed, closed.view.goals[0]?.goal);
       if (unproved?.outcome) {
         const said = verdict(unproved.outcome, null);
@@ -725,6 +770,42 @@ export function createProver() {
 
     stop() {
       api.cancel();
+    },
+
+    /**
+     * The engines for a proof's sequent: the one linlog picks, and for each
+     * engine whether it takes the sequent or the refusal a search forced to it
+     * answers before it starts (each asked with a budget of one unit, so that
+     * none searches).
+     */
+    async engines(session: SessionDoc): Promise<Engines> {
+      const asked = (engine?: string) =>
+        attempt(() =>
+          api.prove(
+            session.sequent,
+            session.mode,
+            JSON.stringify({
+              limits: { work: 1 },
+              search: { classical_work: 1, ...(engine ? { engine } : {}) },
+            }),
+          ),
+        );
+      const automatic = await asked();
+      const engines = [];
+      for (const engine of ENGINE_ORDER) {
+        const answer = await asked(engine);
+        engines.push({ engine, refused: answer.ok ? null : answer.failed });
+      }
+      return {
+        automatic: automatic.ok ? (automatic.value.outcome.engine ?? null) : null,
+        engines,
+      };
+    },
+
+    /** Notes at a goal what the page has to say there: a hint's failure. */
+    note(goal: number, said: Said, tone: Tone) {
+      const p = current();
+      if (p) update(p.id, (q) => (q.note = { path: pathOf(p, goal), said, tone }));
     },
 
     /** The note at a goal shown, cleared. */

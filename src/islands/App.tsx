@@ -16,7 +16,9 @@ import { unwrap } from "solid-js/store";
 import { readLink, writeLink } from "../lib/link";
 import type { Mode } from "../lib/linlog";
 import { paths } from "../lib/steps";
-import { pretty } from "../lib/words";
+import { failure } from "../lib/linlog";
+import { Cancelled } from "../lib/protocol";
+import { inputProblem, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import type { Example, Stop } from "../lib/content";
 import { BottomBand } from "./BottomBand";
@@ -35,9 +37,9 @@ export default function App(props: {
   /** The tour's stops, in their order. */
   stops: readonly Stop[];
 }) {
-  const prover = createProver();
   const view = createUi();
   const { ui, setUi } = view;
+  const prover = createProver((text) => setUi("live", text));
   const [theme, setTheme] = createSignal<Theme>("system");
   const [tip, setTip] = createSignal<{ text: string; key?: string; x: number; y: number } | null>(
     null,
@@ -157,8 +159,15 @@ export default function App(props: {
       try {
         const answer = await prover.api.hint(p.session, goal, prover.json());
         if (ui.ladder?.key === key) setUi("ladder", (l) => (l ? { ...l, hint: answer } : l));
-      } catch {
+      } catch (thrown) {
         if (ui.ladder?.key === key) setUi("ladder", null);
+        // A refusal (a forced engine that does not take the goal) is said at the goal.
+        if (!(thrown instanceof Cancelled))
+          prover.note(
+            goal,
+            inputProblem(failure(thrown instanceof Error ? thrown.message : thrown)),
+            "bad",
+          );
       }
       return;
     }

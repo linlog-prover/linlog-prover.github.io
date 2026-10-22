@@ -2,7 +2,7 @@
 // Licensed under the EUPL
 
 import { describe, expect, it } from "vitest";
-import { displayed, pretty } from "./words";
+import { displayed, pretty, verdict } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -28,5 +28,19 @@ describe("the tab's sequent", () => {
     expect(displayed("|- ~A | A, bot, top")).toBe("⊢ A⊥ ⅋ A, ⊥, ⊤");
     expect(displayed("~(A * ~B) |- ~~C, ~!D")).toBe("(A ⊗ B⊥)⊥ ⊢ C⊥⊥, (!D)⊥");
     expect(displayed("A, A -o B |- B")).toBe("A, A ⊸ B ⊢ B");
+  });
+});
+
+describe("a verdict", () => {
+  it("names a saturation refutation, checked, as the other checked refutations", () => {
+    const answer = JSON.parse(
+      linlog.prove("!(a -o a * a * a), !(a -o a), a |- a * (a + 0)", "intuitionistic", ""),
+    );
+    expect(answer.outcome.refutation.kind).toBe("saturated");
+    expect(answer.outcome.version).toBe(3);
+    expect(verdict(answer.outcome, answer.refutation_checked)).toMatchObject({
+      keyword: "Unprovable, checked: saturation",
+      tone: "bad",
+    });
   });
 });
