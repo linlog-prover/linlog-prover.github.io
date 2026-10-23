@@ -14,7 +14,7 @@ import { goto, rule, start } from "./prover";
 async function tooSmall(page: Page, least: number): Promise<string[]> {
   return page.evaluate((least) => {
     const controls = document.querySelectorAll<HTMLElement>(
-      "button, input:not([type=checkbox]), select, textarea, summary, a[href], [role=tab], [role=radio], label.sw",
+      "button, input:not([type=checkbox]), select, textarea, summary, a[href], [role=tab], [role=radio], label.sw, label.chip",
     );
     const small: string[] = [];
     for (const control of controls) {
@@ -50,8 +50,8 @@ async function tooSmall(page: Page, least: number): Promise<string[]> {
  * Puts the page through its states, measuring the controls in each: the
  * empty page, a proof with the rule popover, the split chooser, a refusal,
  * a hint, a proof closed and its net, every menu, the status and the
- * calculus, the restart warning, Learn's three places, the tour, a field's
- * parse error, and the restore bar.
+ * calculus, the restart warning, Practice and its filters, Learn's two
+ * places, the tour, a field's parse error, and the restore bar.
  */
 async function walk(page: Page, least: number) {
   const found: string[] = [];
@@ -120,8 +120,16 @@ async function walk(page: Page, least: number) {
   await measure("restart warning");
   await page.getByRole("button", { name: "Keep the proof" }).click();
   await page.keyboard.press("Escape");
+  await band("Practice");
+  const practice = page.getByRole("dialog", { name: "Practice" });
+  await expect(practice.locator(".pr-row").first()).toBeVisible();
+  await measure("Practice");
+  await practice.getByRole("checkbox", { name: "Additives" }).check();
+  await practice.getByRole("checkbox", { name: "Hard", exact: true }).check();
+  await measure("Practice filtered");
+  await page.keyboard.press("Escape");
   await band("Learn");
-  for (const place of ["Practice", "Tutorial", "Reference"]) {
+  for (const place of ["Tutorial", "Reference"]) {
     await page.getByRole("tab", { name: place }).click();
     await measure(`Learn ${place}`);
   }

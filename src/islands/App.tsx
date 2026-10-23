@@ -23,6 +23,7 @@ import type { Theme } from "../lib/theme";
 import type { Example, Stop } from "../lib/content";
 import { BottomBand } from "./BottomBand";
 import { LearnFrame } from "./Learn";
+import { createPractice } from "./Practice";
 import { Stage } from "./Stage";
 import { createProver } from "./state";
 import { TopBand } from "./TopBand";
@@ -32,7 +33,7 @@ import { createUi, ladderKey } from "./ui";
 export default function App(props: {
   /** The math fonts' addresses: the page imports them, so each is served under /fonts/ beside its licence. */
   fonts: Record<MathFont, string>;
-  /** Learn's practice: the examples, in their order. */
+  /** Learn's problems: the lessons' practice, in their order. */
   examples: readonly Example[];
   /** The tour's stops, in their order. */
   stops: readonly Stop[];
@@ -40,6 +41,7 @@ export default function App(props: {
   const view = createUi();
   const { ui, setUi } = view;
   const prover = createProver((text) => setUi("live", text));
+  const practice = createPractice(prover);
   const [theme, setTheme] = createSignal<Theme>("system");
   const [tip, setTip] = createSignal<{ text: string; key?: string; x: number; y: number } | null>(
     null,
@@ -355,7 +357,8 @@ export default function App(props: {
         i: () => setUi("menu", ui.menu === "import" ? null : "import"),
         ",": () => setUi("menu", ui.menu === "settings" ? null : "settings"),
         "?": () => setUi("menu", ui.menu === "keys" ? null : "keys"),
-        l: () => setUi("learn", ui.learn ? null : "practice"),
+        l: () => setUi("learn", ui.learn ? null : "tutorial"),
+        p: () => setUi("menu", ui.menu === "practice" ? null : "practice"),
         Escape: () => {
           setTip(null);
           setUi({ menu: null, pendingMode: null });
@@ -415,6 +418,7 @@ export default function App(props: {
           ui={view}
           hint={() => void hint()}
           font={font}
+          practice={practice}
           theme={theme}
           setTheme={setTheme}
           tour={() => {

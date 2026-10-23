@@ -18,6 +18,9 @@
 #                PNG and PDF exports render with. Taken from the input's
 #                source at its pinned commit, never copied into this
 #                repository.
+#   linlogCli    the package `linlog-cli' of linlog's flake, its command
+#                `linlog', at the same commit: the `problems' check decides the
+#                store of problems with it (checks.nix).
 #
 # The dev shell and every npm task link the two at .cache/linlog-web and
 # .cache/linlog-fonts, where astro.config.ts's aliases `linlog-web' and
@@ -33,6 +36,13 @@
           default = inputs.linlog.packages.${system}.linlog-web;
           defaultText = lib.literalExpression "inputs.linlog.packages.\${system}.linlog-web";
           description = "linlog's WebAssembly bindings, the package the site's worker loads.";
+        };
+
+        linlogCli = lib.mkOption {
+          type = lib.types.package;
+          default = inputs.linlog.packages.${system}.default;
+          defaultText = lib.literalExpression "inputs.linlog.packages.\${system}.default";
+          description = "linlog's command, by which the store of problems is decided.";
         };
 
         linlogFonts = lib.mkOption {

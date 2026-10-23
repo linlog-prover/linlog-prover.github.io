@@ -593,32 +593,34 @@ export function createProver(say: (text: string) => void = () => undefined) {
     },
 
     /**
-     * Opens an example as a proof of its own, in place of the page's empty
-     * one if that is shown: its sequent to prove, or with `watch` its proof
+     * Opens a problem (Learn's or Practice's) as a proof of its own, in place
+     * of the page's empty one if that is shown: its sequent to prove, or with `watch` its proof
      * taken back to the sequent, each step on the redo stack by itself, so
      * that Redo plays the proof one step at a time. Nothing open is replaced.
      */
-    example: guard(async (example: Example, watch: boolean) => {
-      const empty = current();
-      const blankId = empty && !empty.session && !empty.input.trim() ? empty.id : null;
-      const opened = await actions.open(
-        watch && example.session ? example.session : example.sequent,
-        example.mode,
-      );
-      if ("problem" in opened) return;
-      const p = current();
-      if (blankId && blankId !== p?.id) actions.remove(blankId);
-      if (!watch || !p?.session) return;
-      const all = actionsOf(p.session);
-      const result = await attempt(() => api.replay(p.session as SessionDoc, [], json()));
-      if (!result.ok) return;
-      update(p.id, (q) => {
-        q.input = example.sequent;
-        q.redo = all.toReversed().map((action) => [action]);
-      });
-      show(p.id, result.value, 0);
-      save();
-    }),
+    example: guard(
+      async (example: Pick<Example, "sequent" | "mode" | "session">, watch: boolean) => {
+        const empty = current();
+        const blankId = empty && !empty.session && !empty.input.trim() ? empty.id : null;
+        const opened = await actions.open(
+          watch && example.session ? example.session : example.sequent,
+          example.mode,
+        );
+        if ("problem" in opened) return;
+        const p = current();
+        if (blankId && blankId !== p?.id) actions.remove(blankId);
+        if (!watch || !p?.session) return;
+        const all = actionsOf(p.session);
+        const result = await attempt(() => api.replay(p.session as SessionDoc, [], json()));
+        if (!result.ok) return;
+        update(p.id, (q) => {
+          q.input = example.sequent;
+          q.redo = all.toReversed().map((action) => [action]);
+        });
+        show(p.id, result.value, 0);
+        save();
+      },
+    ),
 
     /** Notes a line on the stage that is no goal's. */
     banner(id: string, said: Said | null) {

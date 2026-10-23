@@ -6,17 +6,19 @@
  * its key. Undo and redo (icons alone, as is conventional, with their names
  * on hover and focus), close all, hint; Export (a menu of the formats and
  * the link), Import (a file, a paste, or a drop onto the stage), Settings;
- * Learn, the tour, Keys and About. The menus open above the band. On a
- * phone the row keeps undo, redo, close all, hint, export and Learn, and
- * More opens a sheet with the other actions: steps, import, settings, the
- * tour, keys and About, and the privacy page's link, which the wide band
- * shows at its end.
+ * Practice (a place of its own, its problems over the stage), Learn, the
+ * tour, Keys and About. The menus open above the band. On a phone the row
+ * keeps undo, redo, close all, hint, Practice and Learn, and More opens a
+ * sheet with the other actions: steps, export, import, settings, the tour,
+ * keys and About, and the privacy page's link, which the wide band shows at
+ * its end.
  */
 
 import {
   CheckCheck,
   Compass,
   Download,
+  Dumbbell,
   GraduationCap,
   Info,
   Keyboard,
@@ -46,6 +48,7 @@ import type { Theme } from "../lib/theme";
 import { DEFAULT_BUDGET, exportFont, type Prover, pathKey } from "./state";
 import { Written } from "./Learn";
 import { Logo } from "./Logo";
+import { type Practice, PracticePlace } from "./Practice";
 import { applyTheme } from "./TopBand";
 import type { Menu, Ui } from "./ui";
 
@@ -75,6 +78,7 @@ export const KEYS: readonly (readonly [string, string])[] = [
   ["V", "Tree or net"],
   ["+ − F", "Zoom in, zoom out, fit"],
   ["N", "A new proof"],
+  ["P", "Practice"],
   ["L", "Learn on or off"],
   ["E I ,", "Export, Import, Settings"],
   ["?", "This list"],
@@ -84,6 +88,7 @@ export function BottomBand(props: {
   prover: Prover;
   ui: Ui;
   hint: () => void;
+  practice: Practice;
   font: (name: MathFont) => Promise<Uint8Array>;
   theme: () => Theme;
   setTheme: (t: Theme) => void;
@@ -162,6 +167,7 @@ export function BottomBand(props: {
             icon={<Upload aria-hidden="true" />}
             tip="Every format, and the link"
             keyName="E"
+            wide
             expanded={ui.menu === "export"}
             disabled={!proof()?.session}
             onClick={() => toggle("export")}
@@ -193,12 +199,22 @@ export function BottomBand(props: {
         </div>
         <div class="group">
           <Action
+            label="Practice"
+            icon={<Dumbbell aria-hidden="true" />}
+            tip="Problems to prove, by kind and difficulty, or one at random"
+            keyName="P"
+            expanded={ui.menu === "practice"}
+            onClick={() => toggle("practice")}
+            show={key}
+            labelled={labelled}
+          />
+          <Action
             label="Learn"
             icon={<GraduationCap aria-hidden="true" />}
-            tip="The tutorial, practice and the reference, around the stage"
+            tip="The tutorial and the reference, around the stage"
             keyName="L"
             pressed={ui.learn !== null}
-            onClick={() => setUi("learn", ui.learn ? null : "practice")}
+            onClick={() => setUi("learn", ui.learn ? null : "tutorial")}
             show={key}
             labelled={labelled}
           />
@@ -245,7 +261,7 @@ export function BottomBand(props: {
           <Action
             label="More"
             icon={<MenuIcon aria-hidden="true" />}
-            tip="Steps, import, settings, the tour, keys, About and privacy"
+            tip="Steps, export, import, settings, the tour, keys, About and privacy"
             keyName=""
             phone
             expanded={ui.menu === "more"}
@@ -260,6 +276,9 @@ export function BottomBand(props: {
       </Show>
       <Show when={ui.menu === "steps"}>
         <StepsPanel prover={props.prover} />
+      </Show>
+      <Show when={ui.menu === "practice"}>
+        <PracticePlace prover={props.prover} ui={props.ui} practice={props.practice} />
       </Show>
       <Show when={ui.menu === "more"}>
         <MoreSheet prover={props.prover} ui={props.ui} tour={props.tour} />
@@ -802,6 +821,7 @@ function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
   const { setUi } = props.ui;
   const items: readonly (readonly [string, Menu | "tour", () => JSX.Element])[] = [
     ["Steps", "steps", () => <ListOrdered aria-hidden="true" />],
+    ["Export", "export", () => <Upload aria-hidden="true" />],
     ["Import", "import", () => <Download aria-hidden="true" />],
     ["Settings", "settings", () => <SlidersHorizontal aria-hidden="true" />],
     ["Tour", "tour", () => <Compass aria-hidden="true" />],
@@ -817,7 +837,9 @@ function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
               <button
                 type="button"
                 class="mi icon-row"
-                disabled={menu === "steps" && !props.prover.current()?.session}
+                disabled={
+                  (menu === "steps" || menu === "export") && !props.prover.current()?.session
+                }
                 onClick={() => (menu === "tour" ? props.tour() : setUi("menu", menu))}
               >
                 {icon()}

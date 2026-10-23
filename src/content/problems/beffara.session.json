@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "sequent": {
+    "terms": [{ "D": 0 }, { "V": 0 }, { "⊗": [1, 0] }, { "⅋": [0, 2] }],
+    "roots": [3, 1],
+    "atoms": ["A"],
+    "antecedents": 1
+  },
+  "mode": "classical",
+  "inferences": [
+    { "sequent": [0, 5], "rule": "⅋", "principal": 0, "premises": [1] },
+    { "sequent": [1, 2, 5], "rule": "⊗", "principal": 1, "premises": [2, 3] },
+    { "sequent": [1, 3], "rule": "ax" },
+    { "sequent": [4, 5], "rule": "ax" }
+  ],
+  "history": [0, 1, 2, 3]
+}

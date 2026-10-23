@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "sequent": {
+    "terms": [
+      { "D": 0 },
+      { "V": 1 },
+      { "⅋": [0, 1] },
+      { "D": 2 },
+      { "⊗": [2, 3] },
+      { "V": 2 },
+      "1",
+      { "⊗": [5, 6] },
+      { "⅋": [4, 7] },
+      { "?": 3 },
+      { "⊗": [8, 9] },
+      { "V": 0 },
+      { "D": 1 },
+      { "⊗": [11, 12] },
+      { "?": 13 },
+      { "!": 5 },
+      { "⊗": [2, 15] }
+    ],
+    "roots": [10, 14, 16],
+    "atoms": ["A", "B", "C"],
+    "antecedents": 2
+  },
+  "mode": "classical",
+  "inferences": [
+    { "sequent": [0, 12, 16], "rule": "?c", "principal": 1, "premises": [1] },
+    { "sequent": [0, 12, 12, 16], "rule": "⊗", "principal": 0, "premises": [2, 3] },
+    { "sequent": [1, 12], "rule": "⅋", "principal": 0, "premises": [4] },
+    { "sequent": [10, 12, 16], "rule": "⊗", "principal": 2, "premises": [5, 6] },
+    { "sequent": [2, 7, 12], "rule": "⊗", "principal": 0, "premises": [7, 8] },
+    { "sequent": [12, 17], "rule": "⅋", "principal": 1, "premises": [9] },
+    { "sequent": [10, 20], "rule": "!", "principal": 1, "premises": [10] },
+    { "sequent": [3, 12], "rule": "⅋", "principal": 0, "premises": [11] },
+    { "sequent": [6, 7], "rule": "⊗", "principal": 1, "premises": [12, 13] },
+    { "sequent": [12, 18, 19], "rule": "?d", "principal": 0, "premises": [14] },
+    { "sequent": [10, 21], "rule": "?d", "principal": 0, "premises": [15] },
+    { "sequent": [4, 5, 12], "rule": "?d", "principal": 2, "premises": [16] },
+    { "sequent": [6, 8], "rule": "ax" },
+    { "sequent": [9], "rule": "1", "principal": 0 },
+    { "sequent": [13, 18, 19], "rule": "⊗", "principal": 0, "premises": [17, 18] },
+    { "sequent": [11, 21], "rule": "ax" },
+    { "sequent": [4, 5, 13], "rule": "⊗", "principal": 2, "premises": [19, 20] },
+    { "sequent": [14, 18], "rule": "ax" },
+    { "sequent": [15, 19], "rule": "ax" },
+    { "sequent": [4, 14], "rule": "ax" },
+    { "sequent": [5, 15], "rule": "ax" }
+  ],
+  "history": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+}

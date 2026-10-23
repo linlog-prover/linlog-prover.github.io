@@ -24,7 +24,7 @@ export const TOUR_EXAMPLE: Example = {
   title: "Tensor commutes",
   sequent: "A * B |- B * A",
   mode: "classical",
-  difficulty: 1,
+  level: 1,
   verdict: "provable",
   lesson: 2,
   session: null,

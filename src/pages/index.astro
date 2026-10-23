@@ -11,8 +11,9 @@
 //
 // The written content (src/content.config.ts) is rendered here into inert
 // templates, each marked data-written, which the island clones where it
-// shows them (Learn, the tour, About); the examples' and the tour's data go
-// to the island as props. The licence of the written content is a template
+// shows them (Learn, Practice, the tour, About); Learn's problems (those of
+// the store with a lesson, with their sessions) and the tour's data go to
+// the island as props. Practice's problems come from /problems.json. The licence of the written content is a template
 // of its own, shown with it.
 import asana from "linlog-fonts/Asana-Math.otf?url";
 import euler from "linlog-fonts/Euler-Math.otf?url";
@@ -24,24 +25,26 @@ import App from "../islands/App";
 import type { Example, Stop } from "../lib/content";
 import Base from "../layouts/Base.astro";
 
-const sessions = import.meta.glob<string>("../content/examples/*.session.json", {
+const sessions = import.meta.glob<string>("../content/problems/*.session.json", {
   query: "?raw",
   import: "default",
   eager: true,
 });
-const examples = (await getCollection("examples")).sort((a, b) => a.data.order - b.data.order);
+const examples = (await getCollection("problems"))
+  .filter((p) => p.data.lesson !== undefined)
+  .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0));
 const stops = (await getCollection("tour")).sort((a, b) => a.id.localeCompare(b.id));
 const texts = await getCollection("texts");
 
 const exampleData: Example[] = examples.map((e) => ({
   id: e.id,
-  title: e.data.title,
+  title: e.data.title ?? e.data.sequent,
   sequent: e.data.sequent,
   mode: e.data.mode,
-  difficulty: e.data.difficulty,
-  lesson: e.data.lesson,
+  level: e.data.level,
+  lesson: e.data.lesson ?? 0,
   verdict: e.data.verdict,
-  session: sessions[`../content/examples/${e.id}.session.json`] ?? null,
+  session: sessions[`../content/problems/${e.id}.session.json`] ?? null,
 }));
 const stopData: Stop[] = stops.map((s) => ({
   id: s.id,

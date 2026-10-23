@@ -39,12 +39,21 @@ sent to a server.
   meaning told apart under simulated colour-vision deficiencies and shown with a word, a
   sign or a shape beside it. On a phone every control is at least 44 by 44 pixels, and the
   rarer actions are under More. Each tab keeps its own calculus.
-- Learn, a frame around the page with the tutorial's places, practice along the lessons
-  (73 sequents, each decided by linlog, provable and unprovable mixed, graded by
-  difficulty; each opened as a proof, its answer kept until asked, and a provable one's
-  proof watched step by step) and a reference of the connectives and of the engines with
-  their literature; a tour of the page that proves a sequent as it goes; About, with every
-  licence the site serves.
+- One store of problems (`src/content/problems/`, 424 of them), each decided by linlog's
+  command, which a flake check runs over them all: its sequent, calculus, verdict, a level
+  of difficulty from easy to very hard, the categories it is found under and its fragment,
+  and for a provable one a session that linlog's `proof` accepts. Most are generated from a
+  chosen proof shape and kept at the level they aimed at; others are the classic sequents
+  of the literature, each with its source.
+- Practice, a place of its own reached from the bottom band at every width: the store's
+  391 provable problems, filtered by their connectives, their logic, their source and
+  their difficulty, or one at random within the filters, each opened as a proof on a new
+  tab; the problems proved are marked, also on the next visit.
+- Learn, a frame around the page with the tutorial: the lessons' places, each with its
+  practice drawn from the store (provable and unprovable mixed, each opened as a proof,
+  its answer kept until asked, and a provable one's proof watched step by step), and a
+  reference of the connectives and of the engines with their literature; a tour of the
+  page that proves a sequent as it goes; About, with every licence the site serves.
 - After one visit the page works with no network, and it can be installed as an app.
   No cookies, no tracking: GitHub, which serves the site, logs visitors' IP addresses, and
   the privacy page (`/privacy/`) says what that means and what the browser keeps, citing
@@ -56,7 +65,7 @@ Everything comes from the Nix flake (flake-parts, `modules/`): `nix develop` (or
 for the dev shell, whose `menu` lists the commands; `nix build` for the site in `result/`;
 `nix flake check` for every check (the site's build, Vitest, `astro check`, Biome,
 Playwright in Chromium, the Content-Security-Policy's hashes, the licences served, the
-formatting and the licence headers). The site is Astro with one Solid island, TypeScript
+formatting, the licence headers, and the store of problems against linlog's command). The site is Astro with one Solid island, TypeScript
 and Tailwind; linlog's WebAssembly bindings come from linlog's own flake, a pinned input
 of this one. The written content is Markdown under `src/content/`.
 

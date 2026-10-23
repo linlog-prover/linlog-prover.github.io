@@ -1,7 +1,7 @@
 ---
 title: Practice
 ---
-Sequents to decide, by lesson, easiest first, those with a proof mixed with
-those without. Prove opens one as a new proof; decide first whether it has a
-proof, then open its answer, which says why and, for a provable one, lets you
-watch its proof step by step with Redo.
+Every problem here has a proof. Choose the kinds and the difficulty you want,
+or let chance choose; a problem opens as a proof on a new tab, and Hint helps
+when you are stuck. The difficulty counts what a proof by hand takes: its steps,
+and the choices on the way that a count of the atoms does not settle.

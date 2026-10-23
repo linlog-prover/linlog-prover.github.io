@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "sequent": {
+    "terms": [{ "D": 0 }, { "?": 0 }, { "V": 1 }, { "V": 0 }, { "⊗": [3, 3] }, { "⊕": [2, 4] }],
+    "roots": [1, 5],
+    "atoms": ["A", "B"],
+    "antecedents": 1
+  },
+  "mode": "intuitionistic",
+  "inferences": [
+    { "sequent": [0, 2], "rule": "⊕R₂", "principal": 1, "premises": [1] },
+    { "sequent": [0, 4], "rule": "!c", "principal": 0, "premises": [2] },
+    { "sequent": [0, 0, 4], "rule": "!L", "principal": 0, "premises": [3] },
+    { "sequent": [0, 1, 4], "rule": "!L", "principal": 0, "premises": [4] },
+    { "sequent": [1, 1, 4], "rule": "⊗R", "principal": 2, "premises": [5, 6] },
+    { "sequent": [1, 5], "rule": "ax" },
+    { "sequent": [1, 6], "rule": "ax" }
+  ],
+  "history": [0, 1, 2, 3, 4, 5, 6]
+}

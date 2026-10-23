@@ -9,20 +9,21 @@ import { goto } from "./prover";
 
 const CC_BY = "https://creativecommons.org/licenses/by/4.0/";
 
-test("Learn frames the window with the tutorial, practice and reference, and off leaves none", async ({
+test("Learn frames the window with the tutorial and the reference, and off leaves none", async ({
   page,
 }) => {
   await goto(page);
   await expect(page.getByRole("complementary", { name: "Learn" })).toHaveCount(0);
   await page.getByRole("button", { name: "Learn" }).click();
   const frame = page.getByRole("complementary", { name: "Learn" });
-  await expect(frame.getByRole("tab", { name: "Practice" })).toHaveAttribute(
+  await expect(frame.getByRole("tab", { name: "Tutorial" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
+  // Practice is a place of its own, outside the frame.
+  await expect(frame.getByRole("tab", { name: "Practice" })).toHaveCount(0);
   await expect(frame.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", CC_BY);
-  await frame.getByRole("tab", { name: "Tutorial" }).click();
-  await expect(frame.locator(".lessons li")).toHaveCount(9);
+  await expect(frame.locator(".lessons > li")).toHaveCount(9);
   await expect(frame.getByRole("button", { name: "Take the tour of the page" })).toBeVisible();
   await frame.getByRole("tab", { name: "Reference" }).click();
   await expect(frame.getByRole("table")).toContainText("linear implication");
@@ -32,10 +33,12 @@ test("Learn frames the window with the tutorial, practice and reference, and off
   await expect(frame).toHaveCount(0);
 });
 
-test("an example opens at once, and Watch plays its proof one step at a time", async ({ page }) => {
+test("a lesson's problem opens at once, and Watch plays its proof one step at a time", async ({
+  page,
+}) => {
   await goto(page);
-  // The empty stage's line opens Practice.
-  await page.getByRole("button", { name: "Practice" }).click();
+  // Each lesson of the tutorial holds its practice.
+  await page.locator("footer").getByRole("button", { name: "Learn" }).click();
   await page.getByText("6. Two sides").click();
   await page.getByRole("button", { name: "Prove Modus ponens" }).click();
   await expect(page.locator(".ptab")).toHaveCount(1);

@@ -35,6 +35,11 @@
 #               each font beside its OFL text, every image the logo's under
 #               logo/ beside its CC BY 4.0 notice, and CC BY 4.0 on every page
 #               of written content (modules/_checks/licences.py)
+#   problems    the store of problems (src/content/problems/) against linlog's
+#               command at the pinned input: every verdict and fragment the
+#               command's, every provable problem with a session of its
+#               sequent that `proof' accepts, no unprovable one with a session
+#               (modules/_checks/problems.py)
 #   pages-paths the site as Pages publishes it: a 404.html at its root, and
 #               nothing at /linlog or under it, where linlog's own Pages
 #               site (the rustdoc) lives on the same address
@@ -268,6 +273,12 @@
           licences = pkgs.runCommand "check-licences" { } ''
             ${pkgs.python3}/bin/python3 ${./_checks/licences.py} ${config.packages.default} \
               ${config.linlogWeb} ${config.linlogFonts} ${../package.json} ${../package-lock.json} ${../LICENSE}
+            touch $out
+          '';
+
+          problems = pkgs.runCommand "check-problems" { } ''
+            ${pkgs.python3}/bin/python3 ${./_checks/problems.py} ${../src/content/problems} \
+              ${config.linlogCli}/bin/linlog
             touch $out
           '';
 

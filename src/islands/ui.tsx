@@ -44,11 +44,12 @@ export type Menu =
   | "calculus"
   | "steps"
   | "about"
+  | "practice"
   | "more"
   | null;
 
-/** Learn's three places. */
-export type Rubric = "tutorial" | "practice" | "reference";
+/** Learn's two places. */
+export type Rubric = "tutorial" | "reference";
 
 /** Creates the view state. */
 export function createUi() {

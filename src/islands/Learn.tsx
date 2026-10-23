@@ -3,16 +3,18 @@
 
 /**
  * Learn: a frame around the window, on only when the visitor turns it on,
- * holding three places. The tutorial (its opening and the lessons' places,
- * which perform real steps on the stage once written; the tour of the page
- * meanwhile), practice (the examples, each proved by the visitor or watched
- * step by step) and the reference (the connectives). The texts are the
- * page's written content, cloned from its templates, with their licence.
+ * holding two places. The tutorial (its opening, the tour of the page, and
+ * the lessons, each with its practice: problems of the store, proved by the
+ * visitor or watched step by step, provable and not mixed; the lessons'
+ * worked examples come when they are written) and the reference (the
+ * connectives). The texts are the page's written content, cloned from its
+ * templates, with their licence.
  */
 
 import { Compass, Play, X } from "lucide-solid";
 import { createEffect, For, Match, Show, Switch } from "solid-js";
-import { type Example, written } from "../lib/content";
+import { type Example, type Level, written } from "../lib/content";
+import { LEVEL_NAMES } from "../lib/practice";
 import { displayed } from "../lib/words";
 import type { Prover } from "./state";
 import type { Rubric, Ui } from "./ui";
@@ -60,9 +62,20 @@ export const LESSONS = [
 
 const RUBRICS: readonly (readonly [Rubric, string])[] = [
   ["tutorial", "Tutorial"],
-  ["practice", "Practice"],
   ["reference", "Reference"],
 ];
+
+/** A level drawn as a stair of four steps, the first `level` of them filled; its name says it in words. */
+export function Stairs(props: { level: Level }) {
+  return (
+    <span class="stairs" data-level={props.level} aria-hidden="true">
+      <i />
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
 
 export function LearnFrame(props: {
   prover: Prover;
@@ -112,36 +125,36 @@ export function LearnFrame(props: {
               Take the tour of the page
             </button>
             <ol class="lessons">
-              <For each={LESSONS}>
-                {(lesson) => (
+              <For each={LESSONS.map((name, i) => [name, i + 1] as const)}>
+                {([name, lesson]) => (
                   <li>
-                    <span>{lesson}</span>
-                    <span class="sub">to come</span>
+                    <Show
+                      when={props.examples.some((e) => e.lesson === lesson)}
+                      fallback={
+                        <>
+                          <span>{name}</span>
+                          <span class="sub">to come</span>
+                        </>
+                      }
+                    >
+                      <details class="lesson" open={lesson === 1}>
+                        <summary class="prac-h">
+                          {lesson}. {name}
+                        </summary>
+                        <p class="sub">Practice: decide first whether each has a proof.</p>
+                        <ul class="prac">
+                          <For each={props.examples.filter((e) => e.lesson === lesson)}>
+                            {(example) => (
+                              <Exercise example={example} prover={props.prover} ui={props.ui} />
+                            )}
+                          </For>
+                        </ul>
+                      </details>
+                    </Show>
                   </li>
                 )}
               </For>
             </ol>
-          </Match>
-          <Match when={ui.learn === "practice"}>
-            <Written name="texts/practice" />
-            <For each={LESSONS.map((name, i) => [name, i + 1] as const)}>
-              {([name, lesson]) => (
-                <Show when={props.examples.some((e) => e.lesson === lesson)}>
-                  <details class="lesson" open={lesson === 1}>
-                    <summary class="prac-h">
-                      {lesson}. {name}
-                    </summary>
-                    <ul class="prac">
-                      <For each={props.examples.filter((e) => e.lesson === lesson)}>
-                        {(example) => (
-                          <Exercise example={example} prover={props.prover} ui={props.ui} />
-                        )}
-                      </For>
-                    </ul>
-                  </details>
-                </Show>
-              )}
-            </For>
           </Match>
           <Match when={ui.learn === "reference"}>
             <Written name="texts/reference" spot={ui.spot} />
@@ -159,14 +172,9 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
     <li class="exercise">
       <div class="ex-head">
         <span class="ex-title">{props.example.title}</span>
-        <span
-          class="diff"
-          role="img"
-          aria-label={`Difficulty ${props.example.difficulty} of 3`}
-          data-tip={`Difficulty ${props.example.difficulty} of 3`}
-        >
-          {"●".repeat(props.example.difficulty)}
-          {"○".repeat(3 - props.example.difficulty)}
+        <span class="diff">
+          <Stairs level={props.example.level} />
+          {LEVEL_NAMES[props.example.level]}
         </span>
       </div>
       <p class="m ex-seq">{displayed(props.example.sequent)}</p>
@@ -186,7 +194,7 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
         <p class={`kw ${props.example.verdict === "provable" ? "ok" : "bad"}`}>
           {props.example.verdict === "provable" ? "Provable" : "No proof"}
         </p>
-        <Written name={`examples/${props.example.id}`} class="sub" />
+        <Written name={`problems/${props.example.id}`} class="sub" />
         <Show when={props.example.session}>
           <button
             type="button"

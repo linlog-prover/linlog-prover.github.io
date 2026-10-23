@@ -24,7 +24,7 @@ test("Learn's frame takes the lower half at a phone's width, with no sideways sc
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Learn" }).click();
+  await page.locator("footer").getByRole("button", { name: "Learn" }).click();
   const frame = page.getByRole("complementary", { name: "Learn" });
   await frame.getByText("2. The multiplicatives").click();
   await frame.getByRole("button", { name: "Prove Tensor commutes" }).click();
@@ -42,4 +42,26 @@ test("More's sheet links the privacy page at a phone's width", async ({ page }) 
   await page.locator("footer").getByRole("button", { name: "More" }).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("link", { name: "Privacy" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+});
+
+test("Practice is in the bottom band at a phone's width, and a problem opens from it", async ({
+  page,
+}) => {
+  for (const width of [320, 360, 412]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const button = page.locator("footer").getByRole("button", { name: "Practice", exact: true });
+    await expect(button, `${width}`).toBeVisible();
+    const box = await button.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= width, `${width}`).toBe(true);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `${width}`).toBe(0);
+  }
+  await page.locator("footer").getByRole("button", { name: "Practice", exact: true }).click();
+  const practice = page.getByRole("dialog", { name: "Practice" });
+  await practice.getByRole("button", { name: /^Prove A & B ⊢ A,/ }).click();
+  await expect(practice).toBeHidden();
+  await expect(page.locator(".ptab[aria-current=true] .pt-go .m")).toHaveText("A & B ⊢ A");
 });

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "sequent": {
+    "terms": [
+      { "V": 0 },
+      { "D": 1 },
+      { "⊗": [0, 1] },
+      { "?": 2 },
+      { "D": 0 },
+      { "V": 1 },
+      { "⅋": [4, 5] },
+      "1",
+      { "⊗": [6, 7] },
+      { "V": 2 },
+      { "⅋": [9, 5] },
+      { "⊕": [8, 10] },
+      { "&": [6, 11] },
+      { "⊗": [9, 0] },
+      { "⊕": [12, 13] },
+      { "⊗": [14, 6] }
+    ],
+    "roots": [3, 15],
+    "atoms": ["A", "B", "C"],
+    "antecedents": 1
+  },
+  "mode": "classical",
+  "inferences": [
+    { "sequent": [0, 4], "rule": "?c", "principal": 0, "premises": [1] },
+    { "sequent": [0, 0, 4], "rule": "⊗", "principal": 2, "premises": [2, 3] },
+    { "sequent": [0, 5], "rule": "⊕₁", "principal": 1, "premises": [4] },
+    { "sequent": [0, 22], "rule": "⅋", "principal": 1, "premises": [5] },
+    { "sequent": [0, 6], "rule": "&", "principal": 1, "premises": [6, 7] },
+    { "sequent": [0, 23, 24], "rule": "?d", "principal": 0, "premises": [8] },
+    { "sequent": [0, 7], "rule": "⅋", "principal": 1, "premises": [9] },
+    { "sequent": [0, 10], "rule": "⊕₁", "principal": 1, "premises": [10] },
+    { "sequent": [1, 23, 24], "rule": "⊗", "principal": 0, "premises": [11, 12] },
+    { "sequent": [0, 8, 9], "rule": "?d", "principal": 0, "premises": [13] },
+    { "sequent": [0, 11], "rule": "⊗", "principal": 1, "premises": [14, 15] },
+    { "sequent": [2, 23], "rule": "ax" },
+    { "sequent": [3, 24], "rule": "ax" },
+    { "sequent": [1, 8, 9], "rule": "⊗", "principal": 0, "premises": [16, 17] },
+    { "sequent": [0, 12], "rule": "⅋", "principal": 1, "premises": [18] },
+    { "sequent": [15], "rule": "1", "principal": 0 },
+    { "sequent": [2, 8], "rule": "ax" },
+    { "sequent": [3, 9], "rule": "ax" },
+    { "sequent": [0, 13, 14], "rule": "?d", "principal": 0, "premises": [19] },
+    { "sequent": [1, 13, 14], "rule": "⊗", "principal": 0, "premises": [20, 21] },
+    { "sequent": [2, 13], "rule": "ax" },
+    { "sequent": [3, 14], "rule": "ax" }
+  ],
+  "history": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+}

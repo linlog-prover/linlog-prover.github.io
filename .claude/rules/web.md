@@ -218,30 +218,55 @@ the page reads.
 
 ## The written content (`src/content/`, CC BY 4.0)
 
-- **Markdown in content collections** (`src/content.config.ts`): `examples/` (a sequent,
-  its mode, difficulty and verdict; a provable one's proof beside it as
+- **Markdown in content collections** (`src/content.config.ts`): `problems/` (the one store
+  Practice and Learn draw from: a sequent, its mode, linlog's verdict, a `level` 1 to 4, its
+  `categories`, the `fragment` linlog detects; `lesson`/`order` for a lesson's practice,
+  `source`/`url` for one from the literature; a provable one's proof beside it as
   `<id>.session.json`), `tour/` (the stops in order, each with the element it points at
-  and the step it performs), `texts/` (About and Learn's three openings).
+  and the step it performs), `texts/` (About, Practice's opening and Learn's two openings).
 - **Rendered by `index.astro` into `<template data-written data-content="…">`** and cloned
   by the island (`Written` in `Learn.tsx`), never set from strings: the content is in the
-  built HTML, where `no-style-attributes`, `csp` and `licences` read it. The examples' and
-  the tour's data are the island's props. The `licence` template is the CC BY line, shown
-  with the content (Learn's frame); every page with a `data-written` element must link CC
-  BY 4.0 (the `licences` check).
-- **An example's session is written by the command**: `linlog interact` with `save`, then
-  `proof` (exit 0). `src/content/examples.test.ts` holds every example to linlog's verdict
-  and every session to its sequent, mode and a finished proof. Learn's lessons, when
-  written, prove or refute every sequent with the command first.
-- **The practice set** is along the lessons of `LESSONS` (`lesson` in each example), easiest
-  first, provable and unprovable mixed, never three alike in a row (`examples.test.ts`); a
-  card keeps its verdict and explanation under "Answer". Each sequent is decided with
-  `linlog prove` before it is used, and each provable one's session is written by `linlog
-  interact` from the steps linlog's own hints give (`apply` per step, then `save` and
-  `proof`, exit 0), so that Watch plays it step by step rather than one search's graft.
-  Every lesson from the second ends with harder problems (difficulty 3: at least two
-  provable, `examples.test.ts`, beside a near miss that is not, which keeps the mix), their
-  `order` past 100 (`100 + 10 · lesson + k`) so that they follow the lesson's earlier ones
-  without renumbering them.
+  built HTML, where `no-style-attributes`, `csp` and `licences` read it. Only Learn's
+  problems (those with a `lesson`, with their sessions) and the tour's data are the
+  island's props; Practice's problems are `/problems.json` (`src/pages/problems.json.ts`,
+  `offered` in `src/lib/practice.ts`: the provable ones alone), fetched when Practice first
+  opens, so the first load carries none of the 400. The `licence` template is the CC BY
+  line, shown with the content (Learn's frame, Practice); every page with a `data-written`
+  element must link CC BY 4.0 (the `licences` check).
+- **Every problem is decided by the command, and checked twice**: `src/content/problems.test.ts`
+  (each verdict and fragment by the module, each session to its sequent, mode and a
+  finished proof, the categories to the sequent's connectives and mode, no sequent twice in
+  one calculus, the lessons' mix) and the flake's `problems` check
+  (`modules/_checks/problems.py`), which runs linlog's command at the pinned input over the
+  whole store in one deterministic batch and `interact --state … proof` on each session: a
+  problem without that evidence, or whose verdict a later linlog changes, fails it. A
+  session is written by `linlog interact` from the steps linlog's own hints give (`apply`
+  per step, then `save` and `proof`, exit 0), so that Watch plays it step by step.
+- **A problem's level is measured on its checked proof** (the hints' proof), never the
+  search's effort: score = steps + 2 × the bits of choice a count of atoms does not settle +
+  ½ × the bits it does, summed over the goals where no invertible rule applies (bits:
+  log2 of the moves there over the moves after which the goal stays provable); levels Easy
+  under 6, Moderate under 14, Hard under 30, Very hard from 30. The generators, the measure
+  and its validation by agents of two strengths live outside the repository (linlog's
+  `plan/reports/43-learn-lessons.md` says where); an unprovable problem keeps the level set
+  by hand. A new problem is measured the same way before it is filed.
+- **Categories** are the connectives' families the sequent uses (`multiplicatives`,
+  `additives`, `units`, `exponentials`), its logic (`classical`, `intuitionistic`, and
+  `structural` for weakening or Mix) and `literature` for a classic with its source read in
+  the work. Practice filters by groups (`GROUPS`): any chosen within a group, every group at
+  once, and the levels.
+- **Learn's practice is a lesson's**: the problems with a `lesson`, under the tutorial's
+  lesson, easiest first, provable and unprovable mixed, never three alike in a row
+  (`problems.test.ts`); a card keeps its verdict and explanation under "Answer". Every
+  lesson from the second has at least two provable problems at level 3 or above. Every
+  unprovable problem has a lesson (the schema refuses one without): Practice never offers
+  it.
+- **Practice** (`Practice.tsx`, `ui.menu === "practice"`, the band's Practice at every
+  width, key P) is a sheet over the stage, outside Learn's frame, so light dismiss and
+  Escape close it as any menu. A problem opens through `prover.example`, a proof of its
+  own, replacing only the page's empty tab. `createPractice` lives as long as the island:
+  a tab that finishes a proof of a problem's sequent in its calculus marks the problem
+  proved, kept with the filters under `linlog-practice` (the privacy page lists it).
 - **A goal opens in a new tab** (`openGoal`, the dock's arrow): its formulas as the field
   reads them (`sequentText`, two-sided where they have sides, each formula as its reading,
   linlog's `reading`, the dual of its one-sided `text` only where there is none), in the same
@@ -279,10 +304,10 @@ the page reads.
 
 ## Learn, the tour, About
 
-- **Learn** (`Learn.tsx`) is `ui.learn`, the place shown or null: a frame of `--color-learn`
+- **Learn** (`Learn.tsx`) is `ui.learn`, the place shown or null (the tutorial or the reference): a frame of `--color-learn`
   around the window (`.app[data-learn]`, the window is `.win`) with the panel beside it,
   under it on a phone; with it on every action shows its label. Off, nothing of it is on
-  the page. The tutorial's lessons are places (`LESSONS`) until they are written.
+  the page. The tutorial's lessons are places (`LESSONS`), each holding its practice, until they are written. With Learn on, the band packs tighter (`.app[data-learn] .act`) to keep one row at 1280 pixels (`learn.spec.ts`).
 - **The tour** (`Tour.tsx`) runs on `ui.tour`: each stop's `act` is performed once, on the
   way forward, through the state's own actions; the caption takes the focus, says each
   stop in the live region, and marks what it points at with `data-tour-spot`.
@@ -378,7 +403,7 @@ the page reads.
 - **A tab's calculus mark** stands apart from the sequent (`.pt-mark`: 12 pixels before it,
   8 between the calculus and the fragment); `tests/chip.spec.ts` measures the gaps on the
   text itself and that the phone's tab and `+` fit the row.
-- **On a phone** the bottom band keeps undo, redo, close all, hint, export and Learn;
+- **On a phone** the bottom band keeps undo, redo, close all, hint, Practice and Learn;
   `wide-only` actions move to More's sheet. Tips follow a mouse or a keyboard, never a
   touch (`App.tsx`).
 - **The calculus is each tab's** (`Proof.mode`, kept in the shelf; a new empty tab starts in

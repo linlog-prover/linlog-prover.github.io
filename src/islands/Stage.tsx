@@ -824,7 +824,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             <button
               type="button"
               class="linkish"
-              onClick={() => props.ui.setUi("learn", "practice")}
+              onClick={() => props.ui.setUi("menu", "practice")}
             >
               Practice
             </button>

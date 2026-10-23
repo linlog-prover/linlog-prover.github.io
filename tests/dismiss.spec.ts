@@ -66,7 +66,7 @@ async function dismissals(page: Page, touch: boolean) {
     await expect(page.getByRole("dialog", { name: "Rules" })).toBeHidden();
     expect(await conclusion(page)).toEqual(drawn);
   };
-  for (const name of ["Export", "Steps", "Settings", "About"]) {
+  for (const name of ["Export", "Steps", "Settings", "About", "Practice"]) {
     await band(page, name);
     await closes(page.getByRole(name === "Export" ? "menu" : "dialog", { name }));
   }

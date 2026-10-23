@@ -139,5 +139,6 @@ test("practice is grouped by lesson, writes negation as the drawings do, and kee
   await expect(card.getByText("No proof")).toBeHidden();
   await card.getByLabel("The answer to Two strangers").click();
   await expect(card.getByText("No proof")).toBeVisible();
-  await expect(card.locator(".diff")).toHaveAttribute("aria-label", "Difficulty 2 of 3");
+  // The difficulty is the store's one scale, its level named beside its stair.
+  await expect(card.locator(".diff")).toHaveText("Moderate");
 });

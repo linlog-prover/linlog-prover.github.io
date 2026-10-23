@@ -366,6 +366,8 @@ button.kw {
 .ftab,
 .rule,
 .mi,
+.pr-item,
+.chip,
 .linkish {
   min-height: var(--size-control);
   min-width: var(--size-control);
@@ -379,21 +381,42 @@ button.kw {
     border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
-:is(.btn, .dot-b, .pt-go, .pt-mark, .pt-x, .pt-new, .seg-b, .tab, .ftab, .rule, .mi):hover:not(
-  :disabled,
-  [aria-disabled="true"]
-) {
+:is(
+  .btn,
+  .dot-b,
+  .pt-go,
+  .pt-mark,
+  .pt-x,
+  .pt-new,
+  .seg-b,
+  .tab,
+  .ftab,
+  .rule,
+  .mi,
+  .pr-item,
+  .chip
+):hover:not(:disabled, [aria-disabled="true"]) {
   background: var(--color-panel-2);
   border-color: var(--color-line);
 }
-:is(.btn, .dot-b, .pt-go, .pt-mark, .pt-x, .pt-new, .seg-b, .tab, .ftab, .rule, .mi):active:not(
-  :disabled,
-  [aria-disabled="true"]
-) {
+:is(
+  .btn,
+  .dot-b,
+  .pt-go,
+  .pt-mark,
+  .pt-x,
+  .pt-new,
+  .seg-b,
+  .tab,
+  .ftab,
+  .rule,
+  .mi,
+  .pr-item
+):active:not(:disabled, [aria-disabled="true"]) {
   background: var(--color-accent-wash);
   transform: translateY(var(--press));
 }
-:is(.btn, .seg-b, .tab, .mi, .rule):is(:disabled, [aria-disabled="true"]) {
+:is(.btn, .seg-b, .tab, .mi, .rule, .pr-item):is(:disabled, [aria-disabled="true"]) {
   opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
@@ -588,7 +611,8 @@ button.kw {
   padding: 0 var(--spacing-0-5);
 }
 .app[data-learn] .act {
-  padding: 0 var(--spacing-1);
+  padding: 0 var(--spacing-0-5);
+  gap: var(--spacing-1);
 }
 .act .k {
   margin-left: var(--spacing-0-5);
@@ -1346,6 +1370,7 @@ button.kw {
 }
 .written a,
 .about a,
+.pr-source a,
 .linkish {
   color: var(--color-accent);
 }
@@ -1461,9 +1486,164 @@ button.kw {
   margin: var(--spacing-1) 0;
 }
 .diff {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
   color: var(--color-learn);
-  letter-spacing: var(--line);
+  font-size: var(--text-small);
   white-space: nowrap;
+}
+.lessons li:has(details) {
+  display: block;
+  border-style: solid;
+}
+/* A level as a stair of four steps, the first ones filled; its name stands beside it. */
+.stairs {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: var(--line);
+  height: calc(var(--spacing-1) * 3);
+}
+.stairs i {
+  width: var(--spacing-1);
+  border: var(--line) solid currentColor;
+  border-radius: var(--line);
+}
+.stairs i:nth-child(1) {
+  height: calc(var(--spacing-0-5) * 3);
+}
+.stairs i:nth-child(2) {
+  height: calc(var(--spacing-1) * 2);
+}
+.stairs i:nth-child(3) {
+  height: calc(var(--spacing-0-5) * 5);
+}
+.stairs i:nth-child(4) {
+  height: calc(var(--spacing-1) * 3);
+}
+.stairs[data-level="1"] i:nth-child(-n + 1),
+.stairs[data-level="2"] i:nth-child(-n + 2),
+.stairs[data-level="3"] i:nth-child(-n + 3),
+.stairs[data-level="4"] i {
+  background: currentColor;
+}
+
+/* Practice: a sheet over the stage, wider than a menu, the filters above the problems. */
+.menu.practice {
+  width: min(var(--size-practice), calc(100vw - var(--spacing-5)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+}
+.pr-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2) var(--spacing-3);
+}
+.pr-title {
+  margin: 0;
+  font: var(--font-weight-semibold) var(--text-head) / var(--leading-snug) var(--font-text);
+}
+.pr-intro p {
+  margin: 0;
+  max-width: var(--size-text);
+}
+.pr-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-2) var(--spacing-4);
+  padding-bottom: var(--spacing-2);
+  border-bottom: var(--line) solid var(--color-edge);
+}
+.pr-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+.pr-group legend {
+  padding: 0;
+  margin-bottom: var(--spacing-1);
+}
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  padding: 0 var(--spacing-2);
+  border-color: var(--color-edge);
+  font-size: var(--text-small);
+}
+.chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.chip:has(input:checked) {
+  background: var(--color-accent-wash);
+  border-color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+.chip:has(input:checked)::before {
+  content: "✓";
+}
+.chip:has(input:focus-visible) {
+  outline: var(--line-strong) solid var(--color-accent);
+  outline-offset: var(--spacing-0-5);
+}
+.pr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+.pr-item {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  text-align: left;
+}
+.pr-seq {
+  font-size: var(--text-math);
+  overflow-wrap: anywhere;
+}
+.pr-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-size: var(--text-small);
+  color: var(--color-dim);
+  white-space: nowrap;
+}
+.pr-meta .stairs {
+  color: var(--color-accent);
+}
+.pr-frag {
+  min-width: calc(var(--spacing-6) * 2);
+}
+.pr-done {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+.pr-source {
+  margin: 0 var(--spacing-2) var(--spacing-1);
+  font-size: var(--text-small);
 }
 .frame-licence {
   font-size: var(--text-small);
