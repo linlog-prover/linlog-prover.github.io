@@ -330,7 +330,8 @@ the page reads.
   key too (the switches take the focus, Escape gives it back to the mark); that is their
   only place, the stage has none (`tests/modes.spec.ts`), and the restart warning
   (`ui.pendingMode`) is inside the popover. Tests set a calculus through `calculus()` and
-  `switches()` in `tests/prover.ts`. The band's popovers (Status, Logic) are `position: fixed` under the active tab
+  `switches()` in `tests/prover.ts`. The status writes the mode in the switches' words
+  (`modeWords`). The band's popovers (Status, Logic) are `position: fixed` under the active tab
   (`underTab`): the row of tabs scrolls (`overflow: auto`) and clipped them while they were
   absolute, which no test saw until one asked what is drawn at the popover's middle.
 

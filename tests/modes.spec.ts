@@ -3,7 +3,7 @@
 
 // The calculus is each tab's own: a goal opened in a new tab keeps the whole mode of the tab
 // it came from, and a change of one tab's mode leaves the others alone, across a reload. Its
-// switches are on the tab's mark alone.
+// switches are on the tab's mark alone, and the status writes it in their words.
 
 import { devices, type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
@@ -169,4 +169,19 @@ test("a goal's hypothesis A ⊸ B opens in a new tab as A ⊸ B, and the split c
     .click();
   await expect(split.locator(".prem").first()).toHaveText(/^Left\s*A$/);
   await expect(split.locator(".prem").last()).toHaveText(/^Right\s*B$/);
+});
+
+test("the status popover writes the calculus in the switches' words", async ({ page }) => {
+  await start(page, "A |- A");
+  await calculus(page, ["Intuitionistic", "Affine"]);
+  await expect(mark(page)).toContainText("ILL+aff");
+  await page
+    .locator(".ptab[aria-current=true]")
+    .getByRole("button", { name: /^Status/ })
+    .click();
+  const status = page.getByRole("dialog", { name: "Status" });
+  await expect(status.locator("dt", { hasText: "Calculus" }).locator("+ dd")).toHaveText(
+    "Intuitionistic, affine",
+  );
+  await expect(status).not.toContainText("intuitionistic-affine");
 });

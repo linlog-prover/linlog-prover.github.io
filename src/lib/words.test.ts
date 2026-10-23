@@ -2,7 +2,8 @@
 // Licensed under the EUPL
 
 import { describe, expect, it } from "vitest";
-import { displayed, pretty, verdict } from "./words";
+import { MODES } from "./linlog";
+import { displayed, modeWords, pretty, verdict } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -42,5 +43,18 @@ describe("a verdict", () => {
       keyword: "Unprovable, checked: saturation",
       tone: "bad",
     });
+  });
+});
+
+describe("a mode's words", () => {
+  it("are the switches' labels, not linlog's names", () => {
+    expect(MODES.map(modeWords)).toEqual([
+      "Classical",
+      "Classical, affine",
+      "Classical, Mix",
+      "Classical, Mix, affine",
+      "Intuitionistic",
+      "Intuitionistic, affine",
+    ]);
   });
 });

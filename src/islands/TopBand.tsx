@@ -13,7 +13,7 @@
 import { Moon, Plus, Sun, X } from "lucide-solid";
 import { createEffect, createSignal, For, on, onMount, Show } from "solid-js";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
-import { displayed } from "../lib/words";
+import { displayed, modeWords } from "../lib/words";
 import { Calculus } from "./Calculus";
 import type { Proof, Prover } from "./state";
 import { token, type Ui } from "./ui";
@@ -179,6 +179,8 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         ]
       : undefined);
   const { ui, setUi } = props.ui;
+  const calculusWords = () =>
+    `Calculus: ${modeWords(props.proof.mode)}${props.proof.view ? `; fragment ${props.proof.view.fragment}` : ""}`;
   // The mark's switches, opened by a key, closed with the focus lost (Escape): back to the mark.
   createEffect(
     on(
@@ -268,8 +270,8 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         type="button"
         class="pt-mark"
         aria-expanded={isActive() && ui.menu === "calculus"}
-        data-tip={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
-        aria-label={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
+        data-tip={calculusWords()}
+        aria-label={calculusWords()}
         ref={chip}
         onClick={(event) => {
           props.prover.activate(props.proof.id);
@@ -365,7 +367,7 @@ function StatusDetails(props: { proof: Proof; prover: Prover; close: () => void 
               <dt>Fragment</dt>
               <dd>{view().fragment}</dd>
               <dt>Calculus</dt>
-              <dd>{props.proof.mode}</dd>
+              <dd>{modeWords(props.proof.mode)}</dd>
               <dt>Steps</dt>
               <dd>{view().steps}</dd>
               <Show when={props.proof.verdict?.outcome?.engine}>

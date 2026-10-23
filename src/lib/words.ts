@@ -9,12 +9,21 @@
  */
 
 import { engineName } from "./engines";
-import type { Failure, GoalFormula, Outcome, StepForm } from "./linlog";
+import type { Failure, GoalFormula, Mode, Outcome, StepForm } from "./linlog";
 
 /** A short keyword and the sentence behind it. */
 export interface Said {
   readonly keyword: string;
   readonly sentence: string;
+}
+
+/** A mode in the calculus's switches' own words: "Intuitionistic, affine", "Classical, Mix". */
+export function modeWords(mode: Mode): string {
+  return [
+    mode.startsWith("intuitionistic") ? "Intuitionistic" : "Classical",
+    ...(mode.endsWith("mix") ? ["Mix"] : []),
+    ...(mode.includes("affine") ? ["affine"] : []),
+  ].join(", ");
 }
 
 /** What a tone of colour a fact takes: refused or unprovable, unknown, checked, or plain. */
