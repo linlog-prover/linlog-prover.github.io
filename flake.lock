@@ -85,11 +85,11 @@
         "yalla": "yalla"
       },
       "locked": {
-        "lastModified": 1792769204,
-        "narHash": "sha256-E7w5UmU80jBNfzk8igs5Vl7pnKy3jSr3CarVO/Et/lk=",
+        "lastModified": 1792771752,
+        "narHash": "sha256-ClcJsrHIGPikeba8oEZyIxtHTMpu3LBG/K/ndNkbGYM=",
         "owner": "linlog-prover",
         "repo": "linlog",
-        "rev": "92d6fc68f5ee9fb9319b29c756ac99ebeab1c05a",
+        "rev": "fe008c5002281d8b04b315aeb75acb0708304fd9",
         "type": "github"
       },
       "original": {
