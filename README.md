@@ -18,8 +18,8 @@ sent to a server.
   is left alone; a click on a formula of an open goal lists the rules linlog gives for it; a split asks which formulas
   go left and says whether it can still close; a refused step says why, at the goal.
 - A goal opened in a new tab as a proof of its own, and filled back from it (or from any tab
-  whose finished proof has its formulas) as one step, named with that tab and checked again
-  in the goal's calculus.
+  whose finished proof has its formulas) as one step, named with that tab's sequent and
+  checked again in the goal's calculus.
 - Undo on the active goal's branch, redo, and a list of every step to go back to; a goal
   closed by linlog's search, or every goal at once, within a work budget; the verdicts
   three-valued (proved and checked, unprovable with the reason and a checked refutation,

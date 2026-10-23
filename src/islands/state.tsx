@@ -46,7 +46,16 @@ import {
   retract,
   within,
 } from "../lib/steps";
-import { fillRefusal, inputProblem, refusal, type Said, type Tone, verdict } from "../lib/words";
+import {
+  displayed,
+  fillRefusal,
+  inputProblem,
+  refusal,
+  type Said,
+  short,
+  type Tone,
+  verdict,
+} from "../lib/words";
 
 /** A note at a goal: a refusal, or what a search answered there. */
 export interface Note {
@@ -765,16 +774,21 @@ export function createProver(say: (text: string) => void = () => undefined) {
       save();
     }),
 
-    /** The other tabs whose finished proof is of a goal's formulas in any order, by id and number. */
-    async fillable(goal: number): Promise<{ id: string; tab: number }[]> {
+    /**
+     * The other tabs whose finished proof is of a goal's formulas in any order, by id and by
+     * their sequent shortened, which names a tab as its place in the row cannot: that changes as
+     * tabs close.
+     */
+    async fillable(goal: number): Promise<{ id: string; tab: string }[]> {
       const p = current();
       const g = p?.view?.goals.find((x) => x.goal === goal);
       if (!p || !g) return [];
       const want = keyOf(g.formulas);
-      const found: { id: string; tab: number }[] = [];
-      for (const [i, q] of store.proofs.entries()) {
+      const found: { id: string; tab: string }[] = [];
+      for (const q of store.proofs) {
         if (q.id === p.id || !q.view?.complete) continue;
-        if ((await sequentKey(q)) === want) found.push({ id: q.id, tab: i + 1 });
+        if ((await sequentKey(q)) === want)
+          found.push({ id: q.id, tab: short(displayed(q.input)) });
       }
       return found;
     },
@@ -792,7 +806,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
       const result = await attempt(() =>
         api.fill(p.session as SessionDoc, goal, q.session as SessionDoc, json()),
       );
-      const tab = index(from) + 1;
+      const tab = short(displayed(q.input));
       if (!result.ok) {
         if (result.failed)
           update(p.id, (x) => {
@@ -806,7 +820,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
       });
       show(p.id, result.value, result.value.view.goals[0]?.goal);
       say(
-        `Goal ${goal + 1} filled from tab ${tab}${result.value.view.complete ? ": the proof is finished" : ""}.`,
+        `Goal ${goal + 1} filled from ${tab}${result.value.view.complete ? ": the proof is finished" : ""}.`,
       );
       save();
     }),

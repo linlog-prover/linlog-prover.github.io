@@ -913,13 +913,13 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                   <button
                     type="button"
                     class="btn btn-s"
-                    data-tip={`Tab ${f.tab} holds a finished proof of this goal's formulas: graft it here as one step`}
+                    data-tip={`The tab of ${f.tab} holds a finished proof of this goal's formulas: graft it here as one step`}
                     onClick={() => {
                       const goal = active();
                       if (goal !== undefined) void props.prover.fill(goal, f.id);
                     }}
                   >
-                    Fill from tab {f.tab}
+                    Fill from <span class="m">{f.tab}</span>
                   </button>
                 )}
               </For>

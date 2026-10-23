@@ -622,27 +622,29 @@ test("a goal opens in a new tab of its sequent, in the same calculus, which reme
   expect(origin?.origin).toEqual({ from: origin?.from, path: [0] });
 });
 
-test("a goal is filled from another tab's finished proof as one step named with the tab, undone as one, and a proof of another calculus is refused at the goal", async ({
+test("a goal is filled from another tab's finished proof as one step named with the tab's sequent, undone as one, and a proof of another calculus is refused at the goal", async ({
   page,
 }) => {
   await start(page, "A * B |- B * A");
   await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
-  await expect(page.getByRole("button", { name: /^Fill from tab/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Fill from/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Open this goal in a new tab" }).click();
   await page.locator("footer").getByRole("button", { name: "Close all" }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
+  const goal = "⊢ A⊥, B⊥, B ⊗ A";
+  await expect(page.locator(".ptab").nth(1).locator(".pt-go .m")).toHaveText(goal);
   await page.locator(".ptab").first().locator(".pt-go").click();
-  await page.getByRole("button", { name: "Fill from tab 2" }).click();
+  await page.getByRole("button", { name: `Fill from ${goal}` }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
-  await expect(page.locator(".drawing svg text.engine")).toHaveText(["Proof from tab 2"]);
+  await expect(page.locator(".drawing svg text.engine")).toHaveText([`Proof from ${goal}`]);
   await page.getByRole("button", { name: "Steps" }).click();
   await expect(page.getByRole("dialog", { name: "Steps" })).toContainText(
-    "The proof from tab 2 closed goal",
+    `The proof from ${goal} closed goal`,
   );
   await page.keyboard.press("Escape");
   await page.locator("footer").getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("button", { name: /^B ⊗ A, formula/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Fill from tab 2" })).toBeVisible();
+  await expect(page.getByRole("button", { name: `Fill from ${goal}` })).toBeVisible();
 
   // A proof under Mix, offered for the same formulas, is refused in classical logic.
   await start(page, "|- A, ~A, B, ~B", false);
@@ -652,9 +654,27 @@ test("a goal is filled from another tab's finished proof as one step named with 
   await page.locator("footer").getByRole("button", { name: "Close all" }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
   await page.locator(".ptab").nth(2).locator(".pt-go").click();
-  await page.getByRole("button", { name: "Fill from tab 4" }).click();
+  await page.getByRole("button", { name: "Fill from ⊢ A, A⊥, B, B⊥" }).click();
   await expect(page.locator(".dline .kw.bad")).toHaveText(
     "Not filled: not a proof in this calculus",
   );
   await expect(page.getByRole("button", { name: /^A, formula/ })).toBeVisible();
+});
+
+test("a fill names its tab by the tab's sequent, which stays as tabs before it close", async ({
+  page,
+}) => {
+  await start(page, "|- C, ~C");
+  await start(page, "A * B |- B * A", false);
+  await rule(page, /^A⊥ ⅋ B⊥/, "⅋");
+  await page.getByRole("button", { name: "Open this goal in a new tab" }).click();
+  await page.locator("footer").getByRole("button", { name: "Close all" }).click();
+  await expect(page.getByText("Proved: every goal is closed")).toBeVisible();
+  // The first tab closes: the finished one moves from the third place to the second.
+  await page.locator(".ptab").first().getByRole("button", { name: "Close this proof" }).click();
+  await expect(page.locator(".ptab")).toHaveCount(2);
+  await page.locator(".ptab").first().locator(".pt-go").click();
+  await expect(page.getByRole("button", { name: /^Fill from/ })).toHaveText(
+    "Fill from ⊢ A⊥, B⊥, B ⊗ A",
+  );
 });

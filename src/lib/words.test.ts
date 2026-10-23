@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { MODES } from "./linlog";
-import { displayed, modeWords, pretty, verdict } from "./words";
+import { displayed, modeWords, pretty, SHORT, short, verdict } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -56,5 +56,16 @@ describe("a mode's words", () => {
       "Intuitionistic",
       "Intuitionistic, affine",
     ]);
+  });
+});
+
+describe("a tab's sequent, shortened to name the tab", () => {
+  it("is kept whole when short, and cut with an ellipsis at SHORT characters", () => {
+    expect(short("⊢ A⊥, B⊥, B ⊗ A")).toBe("⊢ A⊥, B⊥, B ⊗ A");
+    const long = displayed("!(a -o a * a * a), !(a -o a), a |- a * (a + 0)");
+    const cut = short(long);
+    expect(Array.from(cut).length).toBeLessThanOrEqual(SHORT);
+    expect(cut.endsWith("…")).toBe(true);
+    expect(long.startsWith(cut.slice(0, -1))).toBe(true);
   });
 });

@@ -146,8 +146,22 @@ export function inputProblem(failed: Failure): Said {
   return { keyword: "Not read", sentence: failed.message };
 }
 
-/** Why a goal was not filled from another tab's proof, as the goal's note says it. */
-export function fillRefusal(failed: Failure, tab: number): Said {
+/** The longest a tab's sequent is written where it names the tab, in characters. */
+export const SHORT = 24;
+
+/** A tab's sequent shortened to name the tab in a line: `SHORT` characters at most, an ellipsis where cut. */
+export function short(sequent: string): string {
+  const chars = Array.from(sequent);
+  return chars.length <= SHORT
+    ? sequent
+    : `${chars
+        .slice(0, SHORT - 1)
+        .join("")
+        .trimEnd()}…`;
+}
+
+/** Why a goal was not filled from another tab's proof (named by its shortened sequent), as the goal's note says it. */
+export function fillRefusal(failed: Failure, tab: string): Said {
   const details = failed.details ?? {};
   const listed = (key: string) =>
     Array.isArray(details[key]) && (details[key] as string[]).length
@@ -157,17 +171,17 @@ export function fillRefusal(failed: Failure, tab: number): Said {
     case "invalid_proof":
       return {
         keyword: "Not filled: not a proof in this calculus",
-        sentence: `linlog's checker refused tab ${tab}'s proof here: ${failed.message}. It holds in its own tab's calculus, which allows a rule this one does not.`,
+        sentence: `linlog's checker refused the proof of ${tab} here: ${failed.message}. It holds in its own tab's calculus, which allows a rule this one does not.`,
       };
     case "sequent_mismatch":
       return {
         keyword: "Not filled: other formulas",
-        sentence: `Tab ${tab}'s proof concludes ${listed("proof")} where this goal holds ${listed("goal")}.`,
+        sentence: `The proof of ${tab} concludes ${listed("proof")} where this goal holds ${listed("goal")}.`,
       };
     case "open_goals":
       return {
         keyword: "Not filled: that proof is not finished",
-        sentence: `Tab ${tab} still has open goals; finish its proof first.`,
+        sentence: `The tab of ${tab} still has open goals; finish its proof first.`,
       };
     default:
       return { keyword: "Not filled", sentence: failed.message };

@@ -84,8 +84,8 @@ export function engineOf(outcome: Outcome | undefined | null): string | undefine
   return outcome.engine;
 }
 
-/** The key under which a proof filled in from another tab is named, as an engine's is: `tab:<its number>`. */
-export const fromTab = (tab: number) => `tab:${tab}`;
+/** The key under which a proof filled in from another tab is named, as an engine's is: `tab:<its shortened sequent>`. */
+export const fromTab = (tab: string) => `tab:${tab}`;
 
 /** The tab a key names, for a proof filled in from it, or null for an engine's. */
 const tabOf = (key: string): string | null => (key.startsWith("tab:") ? key.slice(4) : null);
@@ -94,7 +94,7 @@ const tabOf = (key: string): string | null => (key.startsWith("tab:") ? key.slic
 export function engineTip(key: string): string {
   const tab = tabOf(key);
   if (tab !== null)
-    return `Filled in from the finished proof in tab ${tab}, checked again in this proof's calculus.`;
+    return `Filled in from the finished proof of ${tab}, in another tab, checked again in this proof's calculus.`;
   const engine = ENGINES[key];
   if (!engine) return `The engine ${key}`;
   return `The ${engine.name} ${engine.does}. Source: ${engine.source}; Learn's reference has it in full.`;
@@ -109,6 +109,6 @@ export function engineLabel(key: string): string {
 /** An engine's name inside a sentence; for a filled-in proof, the tab it came from. */
 export function engineName(key: string): string {
   const tab = tabOf(key);
-  if (tab !== null) return `proof from tab ${tab}`;
+  if (tab !== null) return `proof from ${tab}`;
   return ENGINES[key]?.name ?? key;
 }

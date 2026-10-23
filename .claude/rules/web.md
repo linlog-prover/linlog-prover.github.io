@@ -225,13 +225,15 @@ the page reads.
   linlog's `reading`, the dual of its one-sided `text` only where there is none), in the same
   calculus, the new
   proof's `origin` the tab and the goal's path (kept in the shelf). **A goal is filled from
-  a tab** (`fill`, the dock's "Fill from tab N") when that tab's proof is finished and its
+  a tab** (`fill`, the dock's "Fill from <its sequent>") when that tab's proof is finished and its
   sequent has the goal's formulas in any order (`fillable`: `keyOf` of each, the other
   tab's from a `start` of its sequent, cached by mode and sequent); linlog's `fill` carries
   the proof over and checks it in the goal's calculus, and a refusal is the goal's note
-  (`fillRefusal`). The graft is named like a search's, `engines[path] = "tab:N"` (the
+  (`fillRefusal`). The graft is named like a search's, `engines[path] = "tab:<sequent>"` (the
   drawing's label, the step list), and replays from its own inferences, never by the search
-  (`own` on its action, set by `actionsFor` from that name), so undo elsewhere keeps it.
+  (`own` on its action, set by `actionsFor` from that name), so undo elsewhere keeps it. A
+  tab is named by its sequent as the tab shows it, cut to `SHORT` characters (`short`),
+  never by its place in the row, which changes as tabs close.
 - **Watch** opens an example's proof taken back to the sequent with each step alone on the
   redo stack, so Redo plays it; an example opens as a proof of its own, in place of the
   page's empty one only, so it replaces no work and needs no warning.
