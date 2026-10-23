@@ -26,6 +26,7 @@ import { Dynamic } from "solid-js/web";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
 import { displayed, modeWords } from "../lib/words";
 import { Calculus } from "./Calculus";
+import { Logo } from "./Logo";
 import type { Proof, Prover } from "./state";
 import { token, type Ui } from "./ui";
 
@@ -108,7 +109,7 @@ export function TopBand(props: {
 
   return (
     <header class="band top">
-      <span class="wordmark">linlog</span>
+      <Logo class="wordmark" />
       <nav class="proofs" aria-label="Open proofs">
         <For each={props.prover.store.proofs}>
           {(proof) => <ProofTab proof={proof} prover={props.prover} ui={props.ui} />}

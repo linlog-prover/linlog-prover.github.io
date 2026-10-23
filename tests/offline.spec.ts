@@ -80,6 +80,56 @@ test("the service worker leaves linlog's documentation at /linlog/ alone", async
   expect(prover?.fromServiceWorker()).toBe(true);
 });
 
+test("the logo's icons and link preview are served at the sizes the page and the manifest name", async ({
+  page,
+  request,
+}) => {
+  await goto(page);
+  const named = await page.evaluate(async () => {
+    const attr = (selector: string, name: string) =>
+      document.querySelector(selector)?.getAttribute(name) ?? "";
+    const manifest = (await (await fetch(attr('link[rel="manifest"]', "href"))).json()) as {
+      icons: { src: string; sizes: string; type: string; purpose: string }[];
+    };
+    const og = `${attr('meta[property="og:image:width"]', "content")}x${attr('meta[property="og:image:height"]', "content")}`;
+    return [
+      ...manifest.icons.map((i) => ({ src: i.src, sizes: i.sizes, type: i.type })),
+      ...[...document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]')].map((l) => ({
+        src: l.getAttribute("href") ?? "",
+        sizes: l.getAttribute("sizes") ?? "any",
+        type: l.type,
+      })),
+      { src: attr('link[rel="apple-touch-icon"]', "href"), sizes: "180x180", type: "image/png" },
+      {
+        src: new URL(attr('meta[property="og:image"]', "content")).pathname,
+        sizes: og,
+        type: "image/png",
+      },
+      { purposes: manifest.icons.map((i) => i.purpose) },
+    ];
+  });
+  expect(named.at(-1)).toEqual({ purposes: ["any", "any", "maskable"] });
+  const files = named.slice(0, -1) as { src: string; sizes: string; type: string }[];
+  expect(files.map((f) => f.src)).toEqual([
+    "/logo/icon-192.png",
+    "/logo/icon-512.png",
+    "/logo/icon-maskable-512.png",
+    "/logo/favicon-32.png",
+    "/logo/square-dark.svg",
+    "/logo/apple-touch-icon.png",
+    "/logo/og.png",
+  ]);
+  for (const { src, sizes, type } of files) {
+    const response = await request.get(src);
+    expect(response.status(), src).toBe(200);
+    expect(response.headers()["content-type"], src).toBe(type);
+    if (type !== "image/png") continue;
+    // A PNG's width and height are the IHDR chunk's first two fields.
+    const png = await response.body();
+    expect(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, src).toBe(sizes);
+  }
+});
+
 test("the web app manifest makes the page installable", async ({ page, context }) => {
   await goto(page);
   const manifest = await page.evaluate(async () => {

@@ -16,6 +16,10 @@
 #   fonts' (Euler Math, STIX Two Math, Garamond-Math, Asana Math, New
 #   Computer Modern Math) being the licences linlog keeps beside them, and
 #   their files linlog's, byte for byte;
+# - every image the site serves is the logo's, under logo/, beside
+#   logo/LICENSE.txt, which puts it under CC BY 4.0 with a link to the
+#   licence, and every SVG of it has its text outlined (no <text>, so no
+#   font file goes with it);
 # - every page that carries written content (an element marked
 #   data-written) says that it is under CC BY 4.0, with a link to the
 #   licence, and the prover's page is one of them.
@@ -34,6 +38,7 @@ CC_BY = "https://creativecommons.org/licenses/by/4.0/"
 # The pages that must carry written content, and so the CC BY line.
 WRITTEN = {"index.html"}
 FONT_FILES = {".woff", ".woff2", ".otf", ".ttf"}
+IMAGE_FILES = {".png", ".svg", ".ico", ".jpg", ".jpeg", ".gif", ".webp", ".avif"}
 
 problems = []
 
@@ -131,6 +136,29 @@ for prefix, source in [
     if len(served) != 1 or served[0].read_bytes() != (fonts / source).read_bytes():
         problems.append(f"fonts/{prefix}*: not linlog's {source}, unmodified, once")
 
+# The logo: the site's only images, under CC BY 4.0.
+logo = site / "logo"
+notice = logo / "LICENSE.txt"
+if (
+    not notice.is_file()
+    or CC_BY not in notice.read_text()
+    or "CC BY 4.0" not in notice.read_text()
+):
+    problems.append(
+        "logo/LICENSE.txt does not put the logo under CC BY 4.0, linking it"
+    )
+images = sorted(p for p in site.rglob("*") if p.suffix in IMAGE_FILES)
+for path in images:
+    name = path.relative_to(site)
+    if path.parent != logo:
+        problems.append(
+            f"{name}: an image outside logo/, under no licence the site states"
+        )
+    elif path.suffix == ".svg" and "<text" in path.read_text():
+        problems.append(
+            f"{name}: the logo with text not outlined, which needs its font"
+        )
+
 
 class Written(html.parser.HTMLParser):
     def __init__(self):
@@ -167,5 +195,6 @@ if problems:
     sys.exit("\n".join(problems))
 print(
     f"the bundle's {len(entries)} notices, the crates' notices and the code's licence are served, "
-    f"every font sits beside its licence, and {len(carrying)} pages of written content say CC BY 4.0"
+    f"every font sits beside its licence, the {len(images)} images are the logo's under CC BY 4.0, "
+    f"and {len(carrying)} pages of written content say CC BY 4.0"
 )

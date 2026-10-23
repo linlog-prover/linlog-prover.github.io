@@ -45,6 +45,7 @@ import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import { DEFAULT_BUDGET, exportFont, type Prover, pathKey } from "./state";
 import { Written } from "./Learn";
+import { Logo } from "./Logo";
 import { applyTheme } from "./TopBand";
 import type { Menu, Ui } from "./ui";
 
@@ -879,6 +880,7 @@ function StepsPanel(props: { prover: Prover }) {
 const LICENCES: readonly (readonly [string, string, string])[] = [
   ["The page's code and linlog", "EUPL-1.2", "/licenses/LICENSE.txt"],
   ["The written content", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"],
+  ["linlog's logo", "CC BY 4.0", "/logo/LICENSE.txt"],
   ["Euler Math, the formulas' font by default", "SIL OFL 1.1", "/fonts/Euler-Math-OFL.txt"],
   ["STIX Two Math, a font of the formulas", "SIL OFL 1.1", "/fonts/STIXTwoMath-OFL.txt"],
   ["Garamond-Math, a font of the formulas", "SIL OFL 1.1", "/fonts/Garamond-Math-OFL.txt"],
@@ -899,6 +901,7 @@ function AboutPane(props: { prover: Prover }) {
   return (
     <div class="cluster menu about" role="dialog" aria-label="About">
       <p class="kw-label h">About</p>
+      <Logo class="large" />
       <Written name="texts/about" />
       <p class="sub">
         linlog {about()?.linlog ?? ""}, reading session documents up to level {about()?.level ?? ""}
@@ -914,6 +917,10 @@ function AboutPane(props: { prover: Prover }) {
           )}
         </For>
       </ul>
+      <p class="sub">
+        The name linlog and its mark identify this project, and may not be used to suggest its
+        endorsement of anything else.
+      </p>
       <p class="sub privacy">
         No cookies, no tracking. GitHub, which serves this site, logs every visitor's IP address for
         security: <a href="/privacy/">the privacy page</a> says what that means, and what your

@@ -307,9 +307,28 @@ button.kw {
   min-width: 0;
 }
 .wordmark {
-  font: var(--font-weight-bold) var(--text-head) / var(--leading-none) var(--font-text);
-  letter-spacing: calc(-1 * var(--line) / 2);
   flex: none;
+}
+/* linlog's word mark, inline: the letters in ink, the ring in the logo's colour. */
+.logo {
+  display: block;
+  & svg {
+    display: block;
+    height: var(--size-wordmark);
+    width: auto;
+  }
+  & path:not([stroke]) {
+    fill: var(--color-ink);
+  }
+  & path[stroke] {
+    stroke: var(--color-logo);
+  }
+  &.large {
+    margin-bottom: var(--spacing-3);
+  }
+  &.large svg {
+    height: var(--size-wordmark-large);
+  }
 }
 .proofs {
   display: flex;

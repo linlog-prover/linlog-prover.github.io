@@ -32,8 +32,9 @@
 #               bundle's notices (Vite's build.license) naming every run-time
 #               dependency at its locked version, linlog-web's
 #               THIRD-PARTY-NOTICES.txt and the code's LICENSE byte for byte,
-#               each font beside its OFL text, and CC BY 4.0 on every page of
-#               written content (modules/_checks/licences.py)
+#               each font beside its OFL text, every image the logo's under
+#               logo/ beside its CC BY 4.0 notice, and CC BY 4.0 on every page
+#               of written content (modules/_checks/licences.py)
 #   pages-paths the site as Pages publishes it: a 404.html at its root, and
 #               nothing at /linlog or under it, where linlog's own Pages
 #               site (the rustdoc) lives on the same address

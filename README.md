@@ -73,6 +73,10 @@ since Pages sets no header.
 The code is licensed under the [EUPL-1.2](LICENSE). The written content (explanations,
 tutorials, worked examples and exercises, under `src/content/`) is licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as the pages that carry it say.
+linlog's logo (`src/logo/`, served at `/logo/` with every image drawn from it) is
+licensed under CC BY 4.0 too (`src/logo/LICENSE.txt`); the name linlog and its mark
+identify this project, and may not be used to suggest its endorsement of anything else.
+Its word is Figtree Bold outlined, so no font file goes with it.
 The fonts are under the SIL Open Font License 1.1: Euler Math, STIX Two Math,
 Garamond-Math and Asana Math (from linlog), Figtree and Space Mono (from Fontsource); New
 Computer Modern Math (from linlog) is under the GUST Font License, which is the LaTeX

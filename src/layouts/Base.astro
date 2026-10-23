@@ -5,8 +5,9 @@
 // The page's frame: the head, the fonts (Fontsource's packages, which Vite
 // copies into /_astro/ under hashed names; Euler Math is loaded by the island
 // from linlog's fonts, since its bytes also go to the PNG and PDF exports),
-// the stylesheet, and the theme applied before the first paint. The
-// Content-Security-Policy's <meta> is Astro's (astro.config.ts).
+// the stylesheet, the logo's icons and link preview (/logo/, written by
+// src/integrations/offline.ts), and the theme applied before the first
+// paint. The Content-Security-Policy's <meta> is Astro's (astro.config.ts).
 import "@fontsource-variable/figtree";
 import "@fontsource/space-mono/400.css";
 import { panelColors } from "../lib/colors";
@@ -21,6 +22,8 @@ interface Props {
 
 const { title, description } = Astro.props;
 const colors = panelColors(tokens);
+// A link preview fetches the image from elsewhere, so its address is absolute.
+const preview = new URL("/logo/og.png", Astro.site).href;
 ---
 
 <!doctype html>
@@ -30,7 +33,18 @@ const colors = panelColors(tokens);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/logo/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/logo/square-dark.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/logo/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="linlog" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={preview} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="linlog's logo: the word linlog, its i drawn as a lollipop" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content={colors.light} media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content={colors.dark} media="(prefers-color-scheme: dark)" />

@@ -5,10 +5,12 @@
  * Offline and installable: what the build writes once every other file of
  * the site is there.
  *
- * - `/icons/<name>.png`: the manifest's icons, drawn from public/icon.svg by
- *   linlog's own renderer (its WebAssembly module, run here in Node), at the
- *   192 and 512 pixels Chromium asks for, and a maskable one that fills its
- *   square to the edge.
+ * - `/logo/`: the logo, its SVGs (src/logo/, with their licence) and the
+ *   rasters the flake draws from them (modules/logo.nix, linked at
+ *   .cache/linlog-logo): the favicon's PNG fallback, the Apple touch icon,
+ *   the link preview's image, and the manifest's icons at the 192 and 512
+ *   pixels Chromium asks for, with a maskable one that fills its square to
+ *   the edge.
  * - `/manifest.webmanifest`: the web app manifest, linked by every page
  *   (layouts/Base.astro), with the panel's colour of tokens.css.
  * - `/sw.js`: the service worker (src/offline/sw.js) with the list of every
@@ -19,20 +21,17 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
 import { panelColors } from "../lib/colors";
-// Through the alias the config gives the site's own code; read when the
-// config loads, since its module runner is closed when the build is done.
-import { initSync, render } from "linlog-web/linlog_web.js";
 
-/** The manifest's icons: the two sizes Chromium's install criteria ask for, and a maskable one. */
+/** The manifest's icons under /logo/: the two sizes Chromium's install criteria ask for, and a maskable one. */
 export const ICONS = [
-  { name: "192", size: 192, purpose: "any" },
-  { name: "512", size: 512, purpose: "any" },
-  { name: "maskable-512", size: 512, purpose: "maskable" },
+  { name: "icon-192", size: 192, purpose: "any" },
+  { name: "icon-512", size: 512, purpose: "any" },
+  { name: "icon-maskable-512", size: 512, purpose: "maskable" },
 ] as const;
 
 /** Every file under a directory, by its path from there with forward slashes. */
@@ -51,18 +50,11 @@ export function offline(): AstroIntegration {
     hooks: {
       "astro:build:done": async ({ dir, logger }) => {
         const root = new URL("../../", import.meta.url);
-        initSync({ module: await readFile(new URL(".cache/linlog-web/linlog_web_bg.wasm", root)) });
-        const icon = await readFile(new URL("public/icon.svg", root), "utf8");
-        const font = await readFile(new URL(".cache/linlog-fonts/Euler-Math.otf", root));
-        await mkdir(new URL("icons/", dir), { recursive: true });
-        for (const { name, size, purpose } of ICONS) {
-          // A maskable icon is cut to the launcher's shape: no rounded corners of its own.
-          const svg = (purpose === "maskable" ? icon.replace(/ rx="\d+"/, "") : icon).replace(
-            "<svg ",
-            `<svg width="${size}" height="${size}" `,
-          );
-          const png = render(svg, "png", font, JSON.stringify({ styles: { png: { scale: 1 } } }));
-          await writeFile(new URL(`icons/${name}.png`, dir), png);
+        await mkdir(new URL("logo/", dir), { recursive: true });
+        for (const from of ["src/logo/", ".cache/linlog-logo/site/"]) {
+          for (const name of await readdir(new URL(from, root))) {
+            await copyFile(new URL(name, new URL(from, root)), new URL(`logo/${name}`, dir));
+          }
         }
 
         const colors = panelColors(await readFile(new URL("src/styles/tokens.css", root), "utf8"));
@@ -77,7 +69,7 @@ export function offline(): AstroIntegration {
           background_color: colors.dark,
           theme_color: colors.dark,
           icons: ICONS.map(({ name, size, purpose }) => ({
-            src: `/icons/${name}.png`,
+            src: `/logo/${name}.png`,
             sizes: `${size}x${size}`,
             type: "image/png",
             purpose,

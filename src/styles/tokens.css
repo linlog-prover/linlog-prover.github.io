@@ -37,6 +37,10 @@
   /* Selection and the active goal. */
   --color-accent: light-dark(#6b46cf, #958ad5);
   --color-accent-wash: light-dark(rgb(107 70 207 / 0.12), rgb(149 138 213 / 0.14));
+  /* The logo's ring: the violet of its files (src/logo/), fixed, a token of its
+     own so that a change of the accent never moves it, though the two are one
+     colour today. colours.test.ts keeps every colour of meaning clear of it. */
+  --color-logo: light-dark(#6b46cf, #958ad5);
   /* A checked proof, and nothing else. */
   --color-ok: light-dark(#0d430d, #06b68c);
   --color-ok-wash: light-dark(rgb(13 67 13 / 0.12), rgb(6 182 140 / 0.14));
@@ -154,6 +158,11 @@
   --size-control-small: 28px;
   --size-chip: 24px;
   --size-band: 48px;
+  /* The word mark's height (about its em) in the top band, larger than the
+     band's 18-pixel words so that the ring reads as a ring, and on About and
+     the 404 page. */
+  --size-wordmark: 24px;
+  --size-wordmark-large: 32px;
   --size-icon: 18px;
   --size-icon-small: 16px;
   --size-key: 18px;

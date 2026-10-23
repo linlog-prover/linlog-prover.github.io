@@ -7,10 +7,13 @@
 // on it is absolute. linlog's documentation at /linlog/ is a site of its own
 // on the same address and never reaches this page.
 import Base from "../layouts/Base.astro";
+// The word mark inline, so that the theme's tokens paint it (app.css's `.logo`).
+import wordmark from "../logo/wordmark-light.svg?raw";
 ---
 
 <Base title="Not found: linlog" description="No page of linlog's site is at this address.">
   <main class="page">
+    <a class="logo large" href="/"><Fragment set:html={wordmark} /></a>
     <h1>Not found</h1>
     <p>No page of this site is at this address.</p>
     <ul>

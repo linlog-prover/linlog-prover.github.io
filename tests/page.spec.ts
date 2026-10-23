@@ -1,6 +1,7 @@
 // linlog © Fabian Lukas Grubmüller 2026
 // Licensed under the EUPL
 
+import type { Locator } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
 test("the page loads without an error in both schemes", async ({ page }) => {
@@ -42,6 +43,29 @@ test("the policy is in force: inline code the build did not hash is refused", as
   });
   expect(outcome.ran).toBe(false);
   expect(outcome.blocked).toEqual(expect.arrayContaining(["script-src-elem", "style-src-attr"]));
+});
+
+test("the header and the 404 page show linlog's word mark, its ring in the logo's colour", async ({
+  page,
+}) => {
+  const ring = (mark: Locator) =>
+    mark.locator("path[stroke]").evaluate((path: Element) => getComputedStyle(path).stroke);
+  for (const [scheme, colour] of [
+    ["light", "rgb(107, 70, 207)"],
+    ["dark", "rgb(149, 138, 213)"],
+  ] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/");
+    const mark = page.locator("header.band.top").getByRole("img", { name: "linlog" });
+    await expect(mark).toBeVisible();
+    expect((await mark.boundingBox())?.height).toBeCloseTo(24, 0);
+    expect(await ring(mark)).toBe(colour);
+    await page.goto("/no-such-page");
+    const home = page.getByRole("link", { name: "linlog", exact: true });
+    await expect(home).toHaveAttribute("href", "/");
+    await expect(home.getByRole("img", { name: "linlog" })).toBeVisible();
+    expect(await ring(home)).toBe(colour);
+  }
 });
 
 test("the pictograms are Lucide's, hidden from a screen reader, each action named", async ({

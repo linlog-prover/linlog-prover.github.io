@@ -83,6 +83,13 @@ the page reads.
   around them. Each meaning has a word, a sign or a shape beside it: a tab's state is a shape
   (`STATE_MARKS`, a check, a cross, a question mark, a dotted circle, a dashed one), a
   hint's rungs a bar or a hairline. A new colour of meaning joins a group of the test.
+- **The logo's colour is fixed** (`--color-logo`, the violet of `src/logo/`'s files): a token
+  of its own, never `var(--color-accent)`, so a change of the accent never moves the logo.
+  A new colour of meaning keeps clear of it: `colours.test.ts` puts the logo in the bands'
+  group and pairs it with each colour seen with the band (ink, Learn's frame, the nets), and
+  a self-check shows a colour moved next to it fails. The one exemption is the pair logo and
+  accent, by name, and only while the two are equal (one violet by choice today); an accent
+  moved near the logo but not onto it fails like any other colour.
 - Colours come from CSS over the SVG's attributes (`.drawing svg text { fill: … }`), so a
   theme change needs no redraw; the exports keep linlog's own colours. The colours that
   mean something in a net are exempt from the ink, matched by the value linlog writes
@@ -313,9 +320,32 @@ the page reads.
 - **No `skipWaiting`**: a new worker waits until no page of the old one is open, so a page
   and the files it loads later (the module, its worker, Euler Math) come from one
   deployment; the old caches are deleted on activation, the `linlog-site-` ones only.
-- **The manifest and its icons** are written by the same integration, the icons drawn
-  from `public/icon.svg` by linlog's own `render` in Node (the maskable one without the
-  rounded corners); `tests/offline.spec.ts` asks Chromium's installability over CDP.
+- **The manifest and its icons** are written by the same integration, the icons taken
+  from the logo's rasters (below); `tests/offline.spec.ts` asks Chromium's installability
+  over CDP, and fetches every icon the page and the manifest name, at its size.
+
+## The logo (`src/logo/`, CC BY 4.0)
+
+- **The six SVGs are the one source**: the word mark and the square form, each light, dark
+  and one-colour (`currentColor`), the word Figtree Bold outlined. Every raster (the
+  favicon's PNG, the Apple touch icon, the manifest's icons, the maskable one with its figure
+  scaled into the safe circle, the link preview's `og.png`, GitHub's avatar and social
+  preview) is drawn from them by `modules/_logo/derive.py` with nixpkgs' resvg
+  (`modules/logo.nix`, `nix build .#logo`), linked at `.cache/linlog-logo`; never draw or
+  edit one by hand. The build copies `src/logo/` and the site's rasters to `/logo/`
+  (`offline.ts`), where linlog's README and rustdoc fetch them by URL: keep the paths
+  `/logo/wordmark-*.svg`, `/logo/square-dark.svg` and `/logo/favicon-32.png` stable.
+- **On the page the word mark is inline** (`Logo.tsx`, the 404 page's `set:html`), so the
+  theme's tokens paint it: the letters `--color-ink`, the ring `--color-logo` (`.logo` in
+  `app.css`); the drawing names itself "linlog". The band's mark is 24 pixels high
+  (`--size-wordmark`, at the band's 18 the ring was a dot) and is hidden on a phone as the
+  plain word was.
+- **Its licence**: `src/logo/LICENSE.txt` (served at `/logo/LICENSE.txt`, listed in About)
+  puts every file of the logo under CC BY 4.0 and says the name and mark may not suggest the
+  project's endorsement; About repeats that line. The `licences` check holds every image
+  the site serves to `logo/`, beside that notice, and every logo SVG to outlined text.
+  Figtree's OFL 1.1 asks nothing for an outlined logo (its condition 5 exempts a document
+  created with the font) and no font file goes with the SVGs; the notice names it anyway.
 - **`tests/serve.ts` serves `tests/linlog-docs/` at `/linlog/`**, as Pages serves the
   rustdoc beside the site, so the tests see the worker leave it alone.
 
