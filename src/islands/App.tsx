@@ -81,6 +81,9 @@ export default function App(props: {
     void font(chosen).catch(() => undefined);
   });
 
+  // While the link and the saved proofs load, a change of the active proof is
+  // the page starting, not the visitor's: a menu opened meanwhile stays open.
+  let starting = true;
   onMount(async () => {
     void font().catch(() => undefined);
     // The worker starts with the first call: this one, so that linlog's
@@ -117,6 +120,7 @@ export default function App(props: {
     }
     prover.prune();
     if (prover.store.proofs.length === 0) prover.add();
+    starting = false;
   });
 
   // Autosave: every change of a proof, a moment after it settles.
@@ -155,6 +159,7 @@ export default function App(props: {
     on(
       () => prover.store.active,
       () =>
+        !starting &&
         setUi({
           // An import opens its proof and keeps the panel, to say what it read.
           menu: ui.menu === "import" ? "import" : null,
