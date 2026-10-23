@@ -658,7 +658,7 @@ button svg.lucide {
   padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) var(--spacing-1);
   max-width: calc(100% - var(--spacing-5));
 }
-.calc.in-sheet {
+.calc.in-pop {
   position: static;
   box-shadow: none;
   backdrop-filter: none;
@@ -1115,15 +1115,11 @@ button svg.lucide {
 .facts dt {
   color: var(--color-dim);
 }
+/* The band's popovers are fixed under the active tab (placed in TopBand.tsx): the row of
+   tabs scrolls, and would clip them. */
 .status-pop,
 .calc-pop {
-  top: calc(100% + var(--spacing-1-5));
-}
-.status-pop {
-  left: var(--spacing-3);
-}
-.calc-pop {
-  left: 0;
+  position: fixed;
 }
 .restore {
   position: absolute;

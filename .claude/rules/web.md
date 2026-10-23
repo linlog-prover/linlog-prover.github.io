@@ -216,7 +216,8 @@ the page reads.
   `order` past 100 (`100 + 10 · lesson + k`) so that they follow the lesson's earlier ones
   without renumbering them.
 - **A goal opens in a new tab** (`openGoal`, the dock's arrow): its formulas as the field
-  reads them (`sequentText`, two-sided where they have sides), in the same calculus, the new
+  reads them (`sequentText`, two-sided where they have sides, a hypothesis written as the
+  dual of its one-sided formula, which is how linlog gives it), in the same calculus, the new
   proof's `origin` the tab and the goal's path (kept in the shelf). **A goal is filled from
   a tab** (`fill`, the dock's "Fill from tab N") when that tab's proof is finished and its
   sequent has the goal's formulas in any order (`fillable`: `keyOf` of each, the other
@@ -315,8 +316,17 @@ the page reads.
   8 between the calculus and the fragment); `tests/chip.spec.ts` measures the gaps on the
   text itself and that the phone's tab and `+` fit the row.
 - **On a phone** the bottom band keeps undo, redo, close all, hint, export and Learn;
-  `wide-only` actions move to More's sheet with the calculus's cluster (`Calculus
-  inSheet`). Tips follow a mouse or a keyboard, never a touch (`App.tsx`).
+  `wide-only` actions move to More's sheet. Tips follow a mouse or a keyboard, never a
+  touch (`App.tsx`).
+- **The calculus is each tab's** (`Proof.mode`, kept in the shelf; a new empty tab starts in
+  `lastMode`, the calculus last chosen in this visit, classical at a visit's start). A tab's
+  calculus mark opens its switches (`Calculus inPopover` in the "Logic" popover) at every
+  width, by a key too (the switches take the focus, Escape gives it back to the mark); on a
+  phone that is their only place. On a desktop the stage's cluster stays, hidden while the
+  popover is open, so that the switches and the restart warning (one `ui.pendingMode`) never
+  show twice. The band's popovers (Status, Logic) are `position: fixed` under the active tab
+  (`underTab`): the row of tabs scrolls (`overflow: auto`) and clipped them while they were
+  absolute, which no test saw until one asked what is drawn at the popover's middle.
 
 ## Tests
 

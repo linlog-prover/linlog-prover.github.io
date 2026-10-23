@@ -14,8 +14,22 @@ import { Moon, Plus, Sun, X } from "lucide-solid";
 import { createEffect, createSignal, For, on, onMount, Show } from "solid-js";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
 import { displayed } from "../lib/words";
+import { Calculus } from "./Calculus";
 import type { Proof, Prover } from "./state";
-import type { Ui } from "./ui";
+import { token, type Ui } from "./ui";
+
+/**
+ * Places a popover of the active tab under it, `inset` from its left and inside the window. The
+ * popovers are fixed, not absolute, since the row of tabs scrolls and would clip them.
+ */
+function underTab(pop: HTMLElement, inset: number) {
+  const tab = document.querySelector(".ptab[aria-current=true]");
+  if (!tab) return;
+  const r = tab.getBoundingClientRect();
+  const gap = token("--spacing-1-5");
+  pop.style.top = `${r.bottom + gap}px`;
+  pop.style.left = `${Math.max(gap, Math.min(r.left + inset, window.innerWidth - pop.offsetWidth - gap))}px`;
+}
 
 /** A proof's state as its dot shows it. */
 export function tone(proof: Proof): "ok" | "bad" | "warn" | "open" | "none" {
@@ -152,6 +166,9 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
   // The field follows a text set from elsewhere (a link's sequent).
   createEffect(on(() => props.proof.input, setDraft, { defer: true }));
   let field: HTMLInputElement | undefined;
+  let chip: HTMLButtonElement | undefined;
+  /** Whether the mark's switches were opened by a key, whose focus goes back to the mark. */
+  let keyed = false;
   let typing: ReturnType<typeof setTimeout> | undefined;
   /** The fragment beside the mark: the session's, or while typing the text's. */
   const fragment = () =>
@@ -162,6 +179,17 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         ]
       : undefined);
   const { ui, setUi } = props.ui;
+  // The mark's switches, opened by a key, closed with the focus lost (Escape): back to the mark.
+  createEffect(
+    on(
+      () => ui.menu,
+      (now, before) => {
+        const lost = document.activeElement === document.body || !document.activeElement;
+        if (before === "calculus" && now !== "calculus" && keyed && isActive() && lost)
+          chip?.focus();
+      },
+    ),
+  );
 
   const statusWords = () => {
     const p = props.proof;
@@ -242,9 +270,16 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         aria-expanded={isActive() && ui.menu === "calculus"}
         data-tip={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
         aria-label={`Calculus ${props.proof.mode}${props.proof.view ? `, fragment ${props.proof.view.fragment}` : ""}`}
-        onClick={() => {
+        ref={chip}
+        onClick={(event) => {
           props.prover.activate(props.proof.id);
           setUi("menu", ui.menu === "calculus" ? null : "calculus");
+          // Opened by a key (a click of no pointer), the switches take the focus.
+          keyed = event.detail === 0;
+          if (keyed && ui.menu === "calculus")
+            queueMicrotask(() =>
+              chip?.parentElement?.querySelector<HTMLElement>(".calc-pop button")?.focus(),
+            );
         }}
       >
         {mark(props.proof)}
@@ -262,7 +297,12 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
         <X aria-hidden="true" />
       </button>
       <Show when={isActive() && ui.menu === "calculus"}>
-        <div class="cluster pop calc-pop" role="dialog" aria-label="Logic">
+        <div
+          class="cluster pop calc-pop"
+          role="dialog"
+          aria-label="Logic"
+          ref={(pop) => queueMicrotask(() => underTab(pop, 0))}
+        >
           <fieldset class="seg" aria-label="Logic">
             <button type="button" class="seg-b" aria-pressed="true">
               Linear
@@ -277,10 +317,8 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
               Ordinary
             </button>
           </fieldset>
-          <p class="sub">
-            The calculus's switches are on the stage (on a phone, under More). Fragment:{" "}
-            {props.proof.view?.fragment ?? "not started"}.
-          </p>
+          <Calculus prover={props.prover} ui={props.ui} inPopover />
+          <p class="sub">Fragment: {props.proof.view?.fragment ?? "not started"}.</p>
         </div>
       </Show>
     </div>
@@ -290,7 +328,12 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
 function StatusDetails(props: { proof: Proof; prover: Prover; close: () => void }) {
   const v = () => props.proof.view;
   return (
-    <div class="cluster pop status-pop" role="dialog" aria-label="Status">
+    <div
+      class="cluster pop status-pop"
+      role="dialog"
+      aria-label="Status"
+      ref={(pop) => queueMicrotask(() => underTab(pop, token("--spacing-3")))}
+    >
       <Show when={v()} fallback={<p>Not started: type a sequent and press Enter.</p>}>
         {(view) => (
           <>

@@ -113,7 +113,8 @@ async function walk(page: Page, least: number, phone: boolean) {
   await tab.getByRole("button", { name: /^Calculus/ }).click();
   await measure("calculus mark");
   await page.keyboard.press("Escape");
-  if (phone) await page.locator("footer").getByRole("button", { name: "More" }).click();
+  // On a phone the switches are the tab's mark's alone.
+  if (phone) await tab.getByRole("button", { name: /^Calculus/ }).click();
   await page.getByRole("button", { name: "Intuitionistic", exact: true }).click();
   await expect(page.getByRole("alertdialog", { name: "Restart the proof" })).toBeVisible();
   await measure("restart warning");

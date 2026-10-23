@@ -8,8 +8,9 @@
  * two-sided presentation (greyed: linlog does not draw classical derivations
  * two-sided yet; intuitionistic ones are two-sided already, so there it is
  * not shown). A session is one sequent in one mode, so a change restarts the
- * proof, and the cluster says so first when the proof has steps. On a phone
- * the cluster folds into More's sheet (`inSheet`).
+ * proof, and the cluster says so first when the proof has steps. The tab's
+ * calculus mark opens the same switches in its popover (`inPopover`), at
+ * every width; on a phone that is their only place.
  */
 
 import { Show } from "solid-js";
@@ -24,7 +25,7 @@ export function modeOf(intuitionistic: boolean, mix: boolean, affine: boolean): 
   return mix ? "mix" : "classical";
 }
 
-export function Calculus(props: { prover: Prover; ui: Ui; inSheet?: boolean }) {
+export function Calculus(props: { prover: Prover; ui: Ui; inPopover?: boolean }) {
   const proof = () => props.prover.current();
   const mode = () => proof()?.mode ?? "classical";
   const intuitionistic = () => mode().startsWith("intuitionistic");
@@ -40,7 +41,7 @@ export function Calculus(props: { prover: Prover; ui: Ui; inSheet?: boolean }) {
   }
 
   return (
-    <fieldset class={`cluster calc${props.inSheet ? " in-sheet" : ""}`} aria-label="Calculus">
+    <fieldset class={`cluster calc${props.inPopover ? " in-pop" : ""}`} aria-label="Calculus">
       <fieldset class="seg" aria-label="Logic">
         <button
           type="button"

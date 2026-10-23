@@ -817,7 +817,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         </div>
       </div>
 
-      <Show when={proof()?.session}>
+      {/* While the tab's mark shows the switches, they are not shown twice. */}
+      <Show when={proof()?.session && ui.menu !== "calculus"}>
         <Calculus prover={props.prover} ui={props.ui} />
       </Show>
 

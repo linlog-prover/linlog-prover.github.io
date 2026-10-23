@@ -40,7 +40,6 @@ import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
 import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
-import { Calculus } from "./Calculus";
 import { DEFAULT_BUDGET, exportFont, type Prover, pathKey } from "./state";
 import { Written } from "./Learn";
 import { applyTheme } from "./TopBand";
@@ -798,11 +797,6 @@ function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
   ];
   return (
     <div class="cluster menu" role="dialog" aria-label="More">
-      <Show when={props.prover.current()?.session}>
-        <p class="kw-label h">Calculus</p>
-        <Calculus prover={props.prover} ui={props.ui} inSheet />
-        <div class="msep" />
-      </Show>
       <ul class="mlist">
         <For each={items}>
           {([label, menu, icon]) => (
