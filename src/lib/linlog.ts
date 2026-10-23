@@ -114,6 +114,8 @@ export interface View {
   readonly goals: readonly { readonly goal: number; readonly formulas: readonly GoalFormula[] }[];
   /** `inferences[n]` is the inference the drawing's `i<n>` is. */
   readonly inferences: readonly number[];
+  /** The inferences a step of an invertible rule closed, whoever took it, in order. */
+  readonly invertible: readonly number[];
   /** Why the sequent has no proof net, or null when it has one. */
   readonly net: Failure | null;
 }
@@ -200,6 +202,15 @@ export interface Engines {
 export interface Hint {
   readonly outcome: Outcome;
   readonly steps: readonly StepForm[] | null;
+  /** Whether the last step applies a rule invertible in the session's mode; null without steps. */
+  readonly invertible: boolean | null;
+}
+
+/** A call's answer after the invertible rules were applied by themselves: how many steps they took. */
+export interface Inverted extends Played {
+  readonly inverted: number;
+  /** The bound that stopped them, if one did; the steps taken stand. */
+  readonly inverted_refused?: Failure;
 }
 
 /**

@@ -56,6 +56,17 @@ the page reads.
   search no longer closes within the settings (it closed under a larger budget, "Try N
   units") replays from its own inferences as steps (the action's `graft`), so an undo
   elsewhere never reopens it; only its marking as the search's is lost.
+- **With the invertible rules applied by themselves** (`Settings.invertible`), undo takes
+  back the nearest step on the branch that is not one of them (`retract`'s `invertible`,
+  the view's list of the inferences an invertible rule closed), with every step since: the
+  visitor's last choice and the invertible steps that followed it. Taking one of those back
+  alone would only see it applied again at the next step. The session does not record who
+  took a step, so an invertible step the visitor took by hand is passed over too; where
+  every step on the branch is invertible there is nothing to undo.
+- **A replay runs without the invertible rules** (`replaying()` in `state.tsx`, for every
+  `replay` and `play`, and for a start that only reads the sequent): they are in the
+  session as the steps they were, and applied again after each replayed step they would
+  close the goals the recorded ones expand.
 - **Every replayed step must make the premises it made** (the action's `made`); one that
   does not is taken back with linlog's `undo` and its goal reported, never kept as a
   different proof.
@@ -146,6 +157,15 @@ the page reads.
   button closes and acts. A toggle must carry `aria-expanded`, or its own press would close
   its menu before its click opens it again. On a phone some sheets (About) cover the whole
   stage, so outside is the bands; `tests/dismiss.spec.ts` presses there then.
+- **The invertible rules' switch** is Settings' "Apply invertible rules by themselves",
+  after Budget (the proving behaviours), off by default, stored with the other settings;
+  `json()` adds `interactive.invertible` while it is on, so `start` and `apply` apply them.
+  Turning it on applies them at once to every open goal of every proof (`setInvertible`,
+  linlog's `invert_all`). Its tip (`INVERTIBLE_TIP`) says what an invertible rule is and why
+  applying one loses no proof; tips never follow a touch, so the line under it says what the
+  page does. The hint ladder's first rung reads linlog's judgement of the hinted rule
+  (`Hint.invertible`), not a list of names, and with the switch on says that the invertible
+  rules are done.
 - **One action that changes a proof at a time** (`guard`): each reads the session, waits on
   the worker and shows the answer, so a second begun meanwhile would build on a session
   the first replaces. An action asked for while one runs does nothing; the bottom band's

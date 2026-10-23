@@ -642,6 +642,10 @@ function ImportPanel(props: { prover: Prover; ui: Ui }) {
   );
 }
 
+/** What an invertible rule is and why applying one never loses a proof: the switch's tip. */
+export const INVERTIBLE_TIP =
+  "A rule is invertible when its premises are provable whenever its conclusion is: ⅋, ⊥, & and ⊤ always, ! when every other formula is a ?, and 1, ⊗ and the axiom when their formulas are the whole goal. So applying one never loses a proof, since every goal it leaves is provable if the goal before it was.";
+
 function SettingsPanel(props: {
   prover: Prover;
   theme: () => Theme;
@@ -669,6 +673,19 @@ function SettingsPanel(props: {
           Units of work a search may do, about{" "}
           {Math.round(props.prover.settings().budget / 68e6) || "under one"} second
           {props.prover.settings().budget >= 1.36e8 ? "s" : ""} here.
+        </p>
+        <label class="sw" data-tip={INVERTIBLE_TIP}>
+          <input
+            type="checkbox"
+            checked={props.prover.settings().invertible}
+            aria-describedby="invertible-sub"
+            onChange={(event) => void props.prover.setInvertible(event.currentTarget.checked)}
+          />
+          <span class="sw-t" aria-hidden="true" />
+          Apply invertible rules by themselves
+        </label>
+        <p class="sub" id="invertible-sub">
+          The page takes them after each of your steps, and undo takes them back with it.
         </p>
         <fieldset class="lbl col">
           <legend>Theme</legend>

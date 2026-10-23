@@ -258,28 +258,41 @@ export function verdict(outcome: Outcome, checked: boolean | null): Said & { ton
   };
 }
 
-/** The connective's kind a rule is for, the hint ladder's first rung. */
-export function ruleKind(rule: string): string {
-  if (["⅋", "&", "⊥", "⊤", "⊸R", "&R", "⊥L", "⊤R", "1L", "⊗L", "⊕L", "!L"].includes(rule)) {
-    return "an invertible rule";
-  }
-  if (["⊗", "mix", "⊗R", "⊸L"].includes(rule)) return "a split of the context";
-  if (rule.startsWith("⊕") || rule.startsWith("&L")) return "a choice of one side";
+/**
+ * The connective's kind a rule is for, the hint ladder's first rung; whether the rule is
+ * invertible in the goal's mode is linlog's to say (the hint's `invertible`).
+ */
+export function ruleKind(rule: string, invertible: boolean): string {
   if (rule === "ax") return "the axiom";
   if (["1", "1R"].includes(rule)) return "the unit 1";
+  if (invertible) return "an invertible rule";
+  if (["⊗", "mix", "⊗R", "⊸L"].includes(rule)) return "a split of the context";
+  if (rule.startsWith("⊕") || rule.startsWith("&L")) return "a choice of one side";
   if (rule.startsWith("?") || rule.startsWith("!")) return "an exponential rule";
   return `the rule ${rule}`;
 }
 
-/** The hint ladder's four rungs for a goal, from the steps the search proposes. */
-export function rungs(steps: readonly StepForm[], formulas: readonly GoalFormula[]): string[] {
+/**
+ * The hint ladder's four rungs for a goal, from the steps the search proposes, whether
+ * their rule is invertible, and whether the page applies the invertible rules by itself:
+ * then the first rung says that those are done, and what comes after them.
+ */
+export function rungs(
+  steps: readonly StepForm[],
+  formulas: readonly GoalFormula[],
+  invertible: boolean,
+  automatic: boolean,
+): string[] {
   const last = steps.at(-1);
   const first = steps[0];
   if (!last || !first) return [];
   const at = formula(formulas, first.position);
   const left = (first.left ?? []).map((p) => formula(formulas, p));
+  const kind = ruleKind(last.rule, invertible);
   return [
-    `Work on this goal: ${ruleKind(last.rule)} comes next.`,
+    automatic && !invertible
+      ? `The invertible rules are applied already; on this goal ${kind} comes next.`
+      : `Work on this goal: ${kind} comes next.`,
     `Look at ${at}.`,
     steps.length > 1
       ? `Apply ${steps.map((s) => s.rule).join(", then ")}, starting on ${at}.`

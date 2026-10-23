@@ -976,7 +976,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                   {l().hint === null
                     ? "Asking the search"
                     : l().hint?.steps
-                      ? rungs(l().hint?.steps ?? [], formulasOf(active() ?? 0))[l().rung - 1]
+                      ? rungs(
+                          l().hint?.steps ?? [],
+                          formulasOf(active() ?? 0),
+                          l().hint?.invertible === true,
+                          props.prover.settings().invertible,
+                        )[l().rung - 1]
                       : "The search found no proof of this goal, so there is no hint: close it to see why."}
                 </span>
                 <EngineChip outcome={l().hint?.outcome} ui={props.ui} />

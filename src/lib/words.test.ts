@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { MODES } from "./linlog";
-import { displayed, modeWords, pretty, SHORT, short, verdict } from "./words";
+import { displayed, modeWords, pretty, rungs, SHORT, short, verdict } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -67,5 +67,45 @@ describe("a tab's sequent, shortened to name the tab", () => {
     expect(Array.from(cut).length).toBeLessThanOrEqual(SHORT);
     expect(cut.endsWith("…")).toBe(true);
     expect(long.startsWith(cut.slice(0, -1))).toBe(true);
+  });
+});
+
+describe("the hint ladder's first rung", () => {
+  const formulas = [{ text: "A ⊗ ~B", occurrence: 0, side: null }];
+  const tensor = [{ position: 0, rule: "⊗", left: [] }];
+  it("names an invertible rule as linlog judges it, and a dereliction as no such rule", () => {
+    expect(rungs([{ position: 0, rule: "⅋" }], formulas, true, false)[0]).toBe(
+      "Work on this goal: an invertible rule comes next.",
+    );
+    expect(rungs([{ position: 0, rule: "!L" }], formulas, false, false)[0]).toBe(
+      "Work on this goal: an exponential rule comes next.",
+    );
+  });
+  it("takes whether a rule is invertible from linlog: not a dereliction, but \\R", () => {
+    const hinted = (text: string, mode: string) => {
+      const read = JSON.parse(linlog.read(text, ""));
+      const start = JSON.parse(linlog.start(JSON.stringify(read.sequent), mode, ""));
+      const goal = start.view.goals[0].goal as number;
+      const hint = JSON.parse(linlog.hint(JSON.stringify(start.session), goal, ""));
+      const formulas = start.view.goals[0].formulas;
+      return [hint.steps.at(-1).rule, rungs(hint.steps, formulas, hint.invertible, false)[0]];
+    };
+    expect(hinted("!A |- A", "intuitionistic")).toEqual([
+      "!L",
+      "Work on this goal: an exponential rule comes next.",
+    ]);
+    // A \\ A, one-sided ~A ⅋ A; the page's reader is commutative, and one formula has one order.
+    expect(hinted("|- ~A par A", "lambek-star")).toEqual([
+      "\\R",
+      "Work on this goal: an invertible rule comes next.",
+    ]);
+  });
+  it("says that the invertible rules are done when the page applies them", () => {
+    expect(rungs(tensor, formulas, false, true)[0]).toBe(
+      "The invertible rules are applied already; on this goal a split of the context comes next.",
+    );
+    expect(rungs(tensor, formulas, false, false)[0]).toBe(
+      "Work on this goal: a split of the context comes next.",
+    );
   });
 });

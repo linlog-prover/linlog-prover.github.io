@@ -53,6 +53,31 @@ describe("the step tree", () => {
     expect(after.session.inferences[goalAt(after.session, [0]) ?? -1]?.rule).toBe("⅋");
   });
 
+  it("with the invertible rules applied by themselves, undoes the step they followed", () => {
+    const on = JSON.stringify({ interactive: { invertible: true } });
+    const begin = (text: string): Played => {
+      const read = JSON.parse(linlog.read(text, S));
+      return JSON.parse(linlog.start(JSON.stringify(read.sequent), "classical", on));
+    };
+    // The visitor's ⊗ at the root; the axiom on its left premise and the ⅋ on its right
+    // one followed it by themselves.
+    const start = begin("|- A * (B par C), ~A, ~B, ~C");
+    const form = JSON.stringify({ position: 0, rule: "⊗", left: [1] });
+    const split = JSON.parse(linlog.apply(JSON.stringify(start.session), 0, form, on)) as Played & {
+      opened: number[];
+    };
+    const active = split.opened[0] ?? -1;
+    expect(retract(split.session, active)?.reopened).toEqual([1]);
+    const back = retract(split.session, active, new Set(split.view.invertible));
+    expect(back?.reopened).toEqual([]);
+    expect(back?.removed.map((a) => a.path)).toEqual([[], [0], [1]]);
+    // Where every step on the branch is one the page took, there is nothing to undo.
+    const root = begin("A -o B, B -o C |- A -o C");
+    const goal = root.view.goals[0]?.goal ?? -1;
+    expect(retract(root.session, goal)?.reopened).toEqual([]);
+    expect(retract(root.session, goal, new Set(root.view.invertible))).toBeUndefined();
+  });
+
   it("undoing past a split retracts the steps in its other premise too", () => {
     let p = started("A * B |- B * A");
     p = step(p, 0, 0, "⅋");

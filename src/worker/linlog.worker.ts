@@ -25,6 +25,7 @@ const calls = {
   split_passes: linlog.split_passes,
   apply: linlog.apply,
   undo: linlog.undo,
+  invert_all: linlog.invert_all,
   close: linlog.close,
   close_all: linlog.close_all,
   fill: linlog.fill,

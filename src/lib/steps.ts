@@ -219,15 +219,33 @@ export interface Retraction {
  * that step's premises. For an open goal that is the step that opened it;
  * with no goal (a finished proof) it is the last action of all. Undefined
  * when there is nothing to take back: the goal is the root, still open.
+ *
+ * With `invertible`, the inferences an invertible rule closed (the view's),
+ * as when the page applies those rules by itself: the step taken back is the
+ * nearest on the branch that is not one, so that undo takes back the
+ * visitor's last choice with the invertible steps that followed it, rather
+ * than one of those, which the page would only apply again. Undefined when
+ * every step on the branch is one.
  */
-export function retract(doc: SessionDoc, goal: number | undefined): Retraction | undefined {
+export function retract(
+  doc: SessionDoc,
+  goal: number | undefined,
+  invertible?: ReadonlySet<number>,
+): Retraction | undefined {
   const all = actions(doc);
+  const inverts = (path: Path) => {
+    const at = goalAt(doc, path);
+    return invertible !== undefined && at !== undefined && invertible.has(at);
+  };
   let reopened: Path | undefined;
   if (goal === undefined) {
-    reopened = all.at(-1)?.path;
+    reopened = all.findLast((a) => a.kind === "close" || !inverts(a.path))?.path;
   } else {
     const path = paths(doc).get(goal);
     if (path !== undefined && path.length > 0) reopened = path.slice(0, -1);
+    while (reopened !== undefined && inverts(reopened)) {
+      reopened = reopened.length > 0 ? reopened.slice(0, -1) : undefined;
+    }
   }
   if (reopened === undefined) return undefined;
   const under = reopened;

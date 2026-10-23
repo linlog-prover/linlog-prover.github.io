@@ -12,6 +12,7 @@ import type {
   Closed,
   ClosedAll,
   Hint,
+  Inverted,
   Mode,
   Offered,
   Outcome,
@@ -52,7 +53,7 @@ export function createApi(changed: (pending: number) => void) {
     defaults: () => json<{ limits: { work: number } }>("defaults"),
     read: (input: string, settings: string) => json<ReadResult>("read", input, settings),
     start: (sequent: SequentDoc, mode: Mode, settings: string) =>
-      json<Played>("start", JSON.stringify(sequent), mode, settings),
+      json<Inverted>("start", JSON.stringify(sequent), mode, settings),
     view: (session: SessionDoc, settings: string) =>
       json<Played["view"]>("view", doc(session), settings),
     rules: (session: SessionDoc, goal: number, position: number, settings: string) =>
@@ -60,7 +61,7 @@ export function createApi(changed: (pending: number) => void) {
     splitPasses: (session: SessionDoc, goal: number, step: StepForm, settings: string) =>
       client.call<boolean>("split_passes", doc(session), goal, JSON.stringify(step), settings),
     apply: (session: SessionDoc, goal: number, step: StepForm, settings: string) =>
-      json<Played & { opened: number[] }>(
+      json<Inverted & { opened: number[] }>(
         "apply",
         doc(session),
         goal,
@@ -71,6 +72,8 @@ export function createApi(changed: (pending: number) => void) {
       json<Closed>("close", doc(session), goal, settings),
     fill: (session: SessionDoc, goal: number, source: SessionDoc, settings: string) =>
       json<Played & { filled: number }>("fill", doc(session), goal, doc(source), settings),
+    invertAll: (session: SessionDoc, settings: string) =>
+      json<Inverted>("invert_all", doc(session), settings),
     closeAll: (session: SessionDoc, settings: string) =>
       json<ClosedAll>("close_all", doc(session), settings),
     hint: (session: SessionDoc, goal: number, settings: string) =>

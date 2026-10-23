@@ -113,6 +113,8 @@ export interface Settings {
   stageFont: MathFont;
   /** The math font the SVG, PNG and PDF exports are set in, `styles.svg.font`; null for the stage's. */
   font: MathFont | null;
+  /** Whether linlog applies every invertible rule by itself after each step, `interactive.invertible`. */
+  invertible: boolean;
 }
 
 /** The math font the exports are set in: the one chosen for them, else the stage's. */
@@ -144,6 +146,7 @@ function loadSettings(): Settings {
       engine: null,
       stageFont: MATH_FONTS.find((f) => f.key === stored.stageFont)?.key ?? "euler",
       font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
+      invertible: stored.invertible === true,
     };
   } catch {
     return {
@@ -153,6 +156,7 @@ function loadSettings(): Settings {
       engine: null,
       stageFont: "euler",
       font: null,
+      invertible: false,
     };
   }
 }
@@ -259,11 +263,24 @@ export function createProver(say: (text: string) => void = () => undefined) {
       return guard(run)(...args);
     };
 
-  /** The settings as linlog reads them: the tab's defaults with the budget, and the engine forced. */
-  const json = (budget = settings().budget) => {
+  /**
+   * The settings as linlog reads them: the tab's defaults with the budget, the engine forced,
+   * and the invertible rules applied by themselves when they are on.
+   */
+  const json = (budget = settings().budget, invertible = settings().invertible) => {
     const engine = settings().engine;
-    return JSON.stringify({ limits: { work: budget }, ...(engine ? { search: { engine } } : {}) });
+    return JSON.stringify({
+      limits: { work: budget },
+      ...(engine ? { search: { engine } } : {}),
+      ...(invertible ? { interactive: { invertible } } : {}),
+    });
   };
+  /**
+   * The settings of a replay, and of a start that only reads the sequent: without the
+   * invertible rules, which a replay plays as the steps they were, so that applying them
+   * again after each would leave the recorded ones no goal.
+   */
+  const replaying = () => json(settings().budget, false);
 
   const current = () => store.proofs.find((p) => p.id === store.active);
   const index = (id: string) => store.proofs.findIndex((p) => p.id === id);
@@ -284,7 +301,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     const known = keys.get(at);
     if (known !== undefined) return known;
     const started = await attempt(() =>
-      api.start(q.session?.sequent as SequentDoc, q.mode, json()),
+      api.start(q.session?.sequent as SequentDoc, q.mode, replaying()),
     );
     const root = started.ok ? started.value.view.goals[0] : undefined;
     if (!root) return null;
@@ -367,6 +384,22 @@ export function createProver(say: (text: string) => void = () => undefined) {
     current,
     activeGoal,
     json,
+
+    /**
+     * Turns the invertible rules applied by themselves on or off; on, they are applied at once to
+     * every open goal of every proof, as they would have been after each step.
+     */
+    setInvertible: guard(async (on: boolean) => {
+      actions.setSettings({ invertible: on });
+      if (!on) return;
+      for (const p of store.proofs) {
+        if (!p.session || p.view?.complete) continue;
+        const result = await attempt(() => api.invertAll(p.session as SessionDoc, replaying()));
+        if (!result.ok || result.value.inverted === 0) continue;
+        show(p.id, result.value, activeGoal({ ...p, ...result.value }));
+      }
+      save();
+    }),
 
     setSettings(change: Partial<Settings>) {
       const next = { ...settings(), ...change };
@@ -611,7 +644,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         if (blankId && blankId !== p?.id) actions.remove(blankId);
         if (!watch || !p?.session) return;
         const all = actionsOf(p.session);
-        const result = await attempt(() => api.replay(p.session as SessionDoc, [], json()));
+        const result = await attempt(() => api.replay(p.session as SessionDoc, [], replaying()));
         if (!result.ok) return;
         update(p.id, (q) => {
           q.input = example.sequent;
@@ -683,26 +716,40 @@ export function createProver(say: (text: string) => void = () => undefined) {
     undo: guard(async () => {
       const p = current();
       if (!p?.session) return;
-      const retracted = retract(p.session, p.view?.complete ? undefined : activeGoal(p));
+      // With the invertible rules on, undo takes back the visitor's last choice with the
+      // invertible steps after it: taking back one of those alone, the page would apply it again.
+      const invertible = settings().invertible ? new Set(p.view?.invertible ?? []) : undefined;
+      const retracted = retract(
+        p.session,
+        p.view?.complete ? undefined : activeGoal(p),
+        invertible,
+      );
       const back = retracted && {
         ...retracted,
         kept: actionsFor(p, retracted.kept),
         removed: actionsFor(p, retracted.removed),
       };
       if (!back) {
+        // Steps there are, but each one the page applied by itself.
+        const automatic =
+          invertible !== undefined && retract(p.session, activeGoal(p)) !== undefined;
         update(p.id, (q) => {
           q.note = {
             path: [],
             said: {
               keyword: "Nothing to undo on this branch",
-              sentence: "This goal is the sequent itself, with no step on it yet.",
+              sentence: automatic
+                ? "Every step on this branch is an invertible rule the page applied by itself."
+                : "This goal is the sequent itself, with no step on it yet.",
             },
             tone: "plain",
           };
         });
         return;
       }
-      const result = await attempt(() => api.replay(p.session as SessionDoc, back.kept, json()));
+      const result = await attempt(() =>
+        api.replay(p.session as SessionDoc, back.kept, replaying()),
+      );
       if (!result.ok) return;
       const reopened = goalAt(result.value.session, back.reopened);
       update(p.id, (q) => q.redo.push([...back.removed]));
@@ -718,7 +765,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
       const all = actionsFor(p, actionsOf(p.session));
       if (count >= all.length) return;
       const result = await attempt(() =>
-        api.replay(p.session as SessionDoc, all.slice(0, count), json()),
+        api.replay(p.session as SessionDoc, all.slice(0, count), replaying()),
       );
       if (!result.ok) return;
       const removed = all.slice(count);
@@ -735,7 +782,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
       const todo = p?.redo.at(-1);
       if (!p?.session || !p.view || !todo) return;
       const result = await attempt(() =>
-        api.play({ session: p.session as SessionDoc, view: p.view as View }, todo, json()),
+        api.play({ session: p.session as SessionDoc, view: p.view as View }, todo, replaying()),
       );
       if (!result.ok) return;
       update(p.id, (q) => q.redo.pop());
