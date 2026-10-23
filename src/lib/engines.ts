@@ -42,7 +42,7 @@ export const ENGINES: Readonly<Record<string, Engine>> = {
   additive: {
     name: "additive path",
     does: "decides two formulas of & and ⊕ by their pairs of subformulas",
-    source: "Whitman's word problem for lattices, as Day 1970 gives it",
+    source: "the additive rules of the Handbook of linear logic, Table 1.4",
   },
   horn: {
     name: "Horn engine",

@@ -81,9 +81,13 @@ Frank Pfenning, <a href="https://doi.org/10.1007/11538363_15">Focusing the
 inverse method for linear logic</a>, CSL 2005, LNCS 3634, 200–215.</dd>
 <dt id="engine-additive">Additive path</dt>
 <dd>For two formulas built of <code>&amp;</code>, <code>⊕</code>, their units
-and atoms: decides each pair of subformulas once, by the conditions with
-which Whitman solved the word problem for lattices, as Alan Day gives them:
-<a href="https://doi.org/10.4153/cmb-1970-051-0">A simple solution to the word
+and atoms: decides each pair of their subformulas by linear logic's additive
+rules, <code>&amp;</code>, <code>⊕</code> and <code>⊤</code>, with the axiom,
+remembering each answer. The rules: the LLHandbook project, <a
+href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
+of linear logic</a>, section 1.3.5, Table 1.4. Related: the word problem for
+lattices, which Whitman solved; Alan Day, <a
+href="https://doi.org/10.4153/cmb-1970-051-0">A simple solution to the word
 problem for lattices</a>, Canadian Mathematical Bulletin 13(2), 253–254,
 1970.</dd>
 <dt id="engine-classical">Classical refuter</dt>
