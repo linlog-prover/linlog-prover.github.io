@@ -251,7 +251,9 @@ the page reads.
 - **Settings' engine** is `search.engine` in every search's settings. Which engines take a
   sequent is asked of linlog with the bindings as they are: `prove` forced to each engine
   with a budget of one unit refuses before it searches (`engine_refused`, with `because`)
-  where the engine does not take it, the same test a search does before it starts.
+  where the engine does not take it, the same test a search does before it starts. A forced
+  engine lasts for the visit: `setSettings` stores every setting but it, and the page starts
+  on Automatic (`tests/engines.spec.ts` reloads to check).
 
 ## Learn, the tour, About
 

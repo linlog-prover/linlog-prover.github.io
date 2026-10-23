@@ -3,7 +3,8 @@
 
 // The engines on the page: every search names the engine that did its work
 // beside that work, with its source one gesture away; Settings forces one;
-// the inverse method's saturation is shown as a checked refutation. And the
+// the inverse method's saturation is shown as a checked refutation, and a
+// forced engine holds for the visit alone. And the
 // practice set, and the field's Enter while a search runs.
 
 import { expect, test } from "./fixtures";
@@ -81,6 +82,34 @@ test("Settings forces an engine: those that take the sequent, the others greyed 
   await page.getByRole("button", { name: "Close goal" }).click();
   await expect(page.locator(".dline .kw.bad")).toHaveText(
     "The proof-net search does not take this goal",
+  );
+});
+
+test("a forced engine holds for the visit: the next visit starts on Automatic, every other setting kept", async ({
+  page,
+}) => {
+  await start(page, "A * B |- B * A");
+  await page.locator("footer").getByRole("button", { name: "Settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await settings
+    .getByRole("radiogroup", { name: "Engine" })
+    .getByRole("radio", { name: /^Proof-net search/ })
+    .check();
+  await settings.getByRole("button", { name: "Compact" }).click();
+  await page.keyboard.press("Escape");
+  const stored = () =>
+    page.evaluate(() => JSON.parse(localStorage.getItem("linlog-settings") ?? "{}"));
+  expect(await stored()).toMatchObject({ net: "compact" });
+  expect(await stored()).not.toHaveProperty("engine");
+  await page.reload();
+  await expect(page.locator(".ptab")).not.toHaveCount(0);
+  await page.locator("footer").getByRole("button", { name: "Settings" }).click();
+  await expect(
+    settings.getByRole("radiogroup", { name: "Engine" }).getByRole("radio", { name: /^Automatic/ }),
+  ).toBeChecked();
+  await expect(settings.getByRole("button", { name: "Compact" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
 });
 

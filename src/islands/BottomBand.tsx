@@ -774,6 +774,7 @@ function EngineChoice(props: { prover: Prover }) {
       <Show when={!proof()?.session}>
         <p class="sub">Start a proof to see which engines take its sequent.</p>
       </Show>
+      <p class="sub">A forced engine holds for this visit; the page starts on Automatic.</p>
       <Show when={engine() !== null && refusalOf(engine() ?? "")}>
         <p class="sub">
           The {engineName(engine() ?? "")} does not take this proof's sequent: its searches are

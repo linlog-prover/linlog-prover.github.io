@@ -96,7 +96,7 @@ export interface Proof {
   origin: { readonly from: string; readonly path: Path } | null;
 }
 
-/** The visitor's settings, kept in the browser. */
+/** The visitor's settings, kept in the browser but for the engine, which holds for the visit. */
 export interface Settings {
   /** The search's work budget per call, `limits.work`. */
   budget: number;
@@ -104,7 +104,10 @@ export interface Settings {
   showKeys: boolean;
   /** How a net is drawn, `styles.svg.net`: every formula written, or compact. */
   net: NetDrawing;
-  /** The engine every search is forced to, `search.engine`; null for linlog's own choice. */
+  /**
+   * The engine every search is forced to, `search.engine`; null for linlog's own choice. Never
+   * stored: a forced engine refuses what it does not take, so every visit starts on linlog's.
+   */
   engine: string | null;
   /** The math font the stage's drawing, its formulas and the tabs' sequents are set in. */
   stageFont: MathFont;
@@ -138,7 +141,7 @@ function loadSettings(): Settings {
         typeof stored.budget === "number" && stored.budget > 0 ? stored.budget : DEFAULT_BUDGET,
       showKeys: stored.showKeys === true,
       net: stored.net === "compact" ? "compact" : "formulas",
-      engine: typeof stored.engine === "string" ? stored.engine : null,
+      engine: null,
       stageFont: MATH_FONTS.find((f) => f.key === stored.stageFont)?.key ?? "euler",
       font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
     };
@@ -369,7 +372,8 @@ export function createProver(say: (text: string) => void = () => undefined) {
       const next = { ...settings(), ...change };
       setSettingsSignal(next);
       try {
-        storage()?.setItem(SETTINGS_KEY, JSON.stringify(next));
+        const { engine: _, ...kept } = next;
+        storage()?.setItem(SETTINGS_KEY, JSON.stringify(kept));
       } catch {
         // The settings hold for this visit alone.
       }

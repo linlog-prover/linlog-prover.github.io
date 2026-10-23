@@ -26,7 +26,8 @@ sent to a server.
   the inverse method's saturated set among them, or unknown when the search gave up), and
   a four-rung hint ladder from the search. Every search names the engine that did its
   work beside that work, with the engine's source in the literature on hover and in
-  Learn's reference; Settings can force an engine, offering those that take the sequent.
+  Learn's reference; Settings can force an engine for the visit, offering those that take
+  the sequent.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
   a refuted goal has no proof), the drawings set in a math font chosen in the export menu
