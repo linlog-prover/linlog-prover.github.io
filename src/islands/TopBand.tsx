@@ -370,7 +370,11 @@ function StatusDetails(props: { proof: Proof; prover: Prover; close: () => void 
                 fallback={
                   <Show
                     when={props.proof.verdict}
-                    fallback={<span class="kw acc">{view().goals.length} open goals</span>}
+                    fallback={
+                      <span class="kw acc">
+                        {view().goals.length} open {view().goals.length === 1 ? "goal" : "goals"}
+                      </span>
+                    }
                   >
                     {(verdict) => (
                       <span class={`kw ${verdict().tone}`} data-tip={verdict().sentence}>
