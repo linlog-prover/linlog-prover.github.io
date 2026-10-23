@@ -35,17 +35,17 @@
   /* The search's rule labels, set apart from the student's. */
   --color-faint: light-dark(#5a6482, #7d88a8);
   /* Selection and the active goal. */
-  --color-accent: light-dark(#323abd, #a4b2fe);
-  --color-accent-wash: light-dark(rgb(50 58 189 / 0.12), rgb(164 178 254 / 0.14));
+  --color-accent: light-dark(#6b46cf, #958ad5);
+  --color-accent-wash: light-dark(rgb(107 70 207 / 0.12), rgb(149 138 213 / 0.14));
   /* A checked proof, and nothing else. */
-  --color-ok: light-dark(#027559, #08cda9);
-  --color-ok-wash: light-dark(rgb(2 117 89 / 0.12), rgb(8 205 169 / 0.14));
+  --color-ok: light-dark(#0d430d, #06b68c);
+  --color-ok-wash: light-dark(rgb(13 67 13 / 0.12), rgb(6 182 140 / 0.14));
   /* Unknown, and a search running or given up. */
-  --color-warn: light-dark(#915c01, #f2ba40);
-  --color-warn-wash: light-dark(rgb(145 92 1 / 0.12), rgb(242 186 64 / 0.14));
+  --color-warn: light-dark(#715301, #f5cb4d);
+  --color-warn-wash: light-dark(rgb(113 83 1 / 0.12), rgb(245 203 77 / 0.14));
   /* A refusal, and unprovable. */
-  --color-bad: light-dark(#8c0228, #ff7d6c);
-  --color-bad-wash: light-dark(rgb(140 2 40 / 0.1), rgb(255 125 108 / 0.13));
+  --color-bad: light-dark(#b23554, #ec6e52);
+  --color-bad-wash: light-dark(rgb(178 53 84 / 0.1), rgb(236 110 82 / 0.13));
   /* Control borders, at 3:1. */
   --color-line: light-dark(#7d86a0, #5e6a90);
   /* Hairlines. */
@@ -53,15 +53,16 @@
   /* The stage's dotted grid. */
   --color-dot: light-dark(#a9b2c8, #2e3858);
   /* Learn's frame, the page's one mode, and its panel. */
-  --color-learn: light-dark(#872684, #c26cbf);
+  --color-learn: light-dark(#730e73, #f197ed);
   --color-learn-wash: light-dark(#f3e6f5, #2a1e3a);
   /* The net's colours, each a hue of Okabe and Ito's palette at 4.5:1 on the
-     field: the ⅋ edges blue, the essential net's input side yellow, its
-     dominator lines reddish purple, and a witness's edges vermilion. */
-  --color-net-par: light-dark(#0170af, #3793d6);
-  --color-net-input: light-dark(#746d04, #e7db35);
-  --color-net-dominator: light-dark(#9e507d, #c673a1);
-  --color-net-highlight: light-dark(#793200, #d45e05);
+     field: the ⅋ edges of a net and the input side of an essential net blue
+     (the two never share a drawing), the dominator lines reddish purple, and
+     a witness's edges vermilion. */
+  --color-net-par: light-dark(#045383, #80c6ff);
+  --color-net-input: light-dark(#045383, #80c6ff);
+  --color-net-dominator: light-dark(#6d2351, #ef99c8);
+  --color-net-highlight: light-dark(#933f02, #d05c03);
   /* The drawing's glow on the dark field; none by day. */
   --color-glow: light-dark(rgb(52 70 200 / 0), rgb(170 185 255 / 0.35));
   --color-shadow-near: light-dark(rgb(18 26 46 / 0.06), rgb(0 0 0 / 0.3));

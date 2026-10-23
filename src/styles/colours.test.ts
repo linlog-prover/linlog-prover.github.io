@@ -47,20 +47,30 @@ const DEFICIENCIES: Readonly<Record<string, Matrix>> = {
 const SIMULATED = 8;
 const FULL = 15;
 
-/** Which colours are seen together, each pair of a group to stay apart. */
+/**
+ * Which colours are seen together, each pair of a group to stay apart: a
+ * drawing's colours with one another and with every colour of the bands
+ * around it, the tabs' states and the selection.
+ */
+const BANDS = ["ok", "warn", "bad", "accent", "line"];
 const GROUPS: Readonly<Record<string, readonly string[]>> = {
   // A proof's state: the tabs' marks side by side, the keywords, the dock's note.
-  verdicts: ["ok", "warn", "bad", "accent", "line"],
+  verdicts: BANDS,
   // The active goal and the selection among the other formulas, inside Learn's frame.
   focus: ["accent", "ink", "learn"],
-  // A net: its plain edges and every coloured kind of edge, in one drawing.
-  net: ["ink", "net-par", "net-input", "net-dominator", "net-highlight"],
+  // A net, under the bands: its plain edges and its ⅋ edges (a witness is never drawn here).
+  net: [...BANDS, "ink", "net-par"],
+  // An essential net, under the bands: its input side and its dominator lines.
+  essential: [...BANDS, "ink", "net-input", "net-dominator"],
+  // Every colour linlog may draw in one net, a witness's among them.
+  "net drawing": ["ink", "net-par", "net-highlight"],
+  "essential drawing": ["ink", "net-input", "net-dominator", "net-highlight"],
 };
 
 /** Okabe and Ito's colour-universal palette (https://jfly.uni-koeln.de/color/, Fig. 16), whose hue each net colour keeps. */
 const OKABE_ITO: Readonly<Record<string, string>> = {
   "net-par": "#0072b2", // blue
-  "net-input": "#f0e442", // yellow
+  "net-input": "#0072b2", // blue, as ⅋'s: the two never share a drawing
   "net-dominator": "#cc79a7", // reddish purple
   "net-highlight": "#d55e00", // vermilion
 };

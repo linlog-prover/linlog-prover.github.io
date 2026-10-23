@@ -556,7 +556,7 @@ test("Settings' net drawing writes every formula or draws the net compact, in th
   expect(svg.match(/<circle /g)?.length).toBe(2);
 });
 
-test("the essential net draws its input side in the Okabe–Ito palette's yellow, never green, in both themes", async ({
+test("the essential net draws its input side in the Okabe–Ito palette's blue, never green, in both themes", async ({
   page,
 }) => {
   await start(page, "A * B |- B * A");
@@ -568,8 +568,8 @@ test("the essential net draws its input side in the Okabe–Ito palette's yellow
   const edge = page.locator('.drawing svg g[stroke="#009e73"] path').first();
   // The hypothesis A ⊗ B, its edges and its literals, is the input side: --color-net-input, never the ink.
   for (const [colorScheme, colour] of [
-    ["light", "rgb(116, 109, 4)"],
-    ["dark", "rgb(231, 219, 53)"],
+    ["light", "rgb(4, 83, 131)"],
+    ["dark", "rgb(128, 198, 255)"],
   ] as const) {
     await page.emulateMedia({ colorScheme });
     await expect(input).toHaveCSS("fill", colour);

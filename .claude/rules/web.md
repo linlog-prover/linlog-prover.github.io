@@ -79,7 +79,8 @@ the page reads.
   Machado, Oliveira and Fernandes's matrices (severity 1.0, the authors' own table; their
   paper does not claim tritanopia, the matrix is used as published) on linear RGB and the
   distance in OKLab, 8 under a deficiency and 15 in full colour, by groups of colours seen
-  together. Each meaning has a word, a sign or a shape beside it: a tab's state is a shape
+  together: a net's colours with each other and with the bands' state and selection colours
+  around them. Each meaning has a word, a sign or a shape beside it: a tab's state is a shape
   (`STATE_MARKS`, a check, a cross, a question mark, a dotted circle, a dashed one), a
   hint's rungs a bar or a hairline. A new colour of meaning joins a group of the test.
 - Colours come from CSS over the SVG's attributes (`.drawing svg text { fill: … }`), so a
@@ -89,8 +90,8 @@ the page reads.
   side, `#cc79a7` its dominator lines, `#d55e00` a witness's edges) and repainted with
   `--color-net-*` at 4.5:1 on the field: a change of linlog's defaults fails the
   essential net's colour test rather than turning them to ink. The page's net colours are
-  hues of Okabe and Ito's palette (blue, yellow for the input side, reddish purple,
-  vermilion), each darkened or lightened for contrast; `⅋` is also dashed, a dominator line
+  hues of Okabe and Ito's palette (blue for `⅋` and for the input side, which never share
+  a drawing, reddish purple, vermilion), each darkened or lightened for contrast; `⅋` is also dashed, a dominator line
   dotted and the input side's edges point up, so no net colour is all that tells its kind.
   A witness is drawn only for a structure that is no proof net, which the page never
   draws (its nets are of finished proofs).
@@ -130,7 +131,7 @@ the page reads.
 - **Light dismiss** (`App.tsx`, one capture `pointerdown` on the document): a press outside
   what is open closes it as Escape does: the menu or pane (`ui.menu`, inside: `.menu`, the
   bands' popovers `.status-pop`/`.calc-pop`, and any `[aria-expanded=true]` toggle but a
-  formula's), the restart warning (inside: it and the calculus's cluster), and the rule
+  formula's), the restart warning (inside: it and the calculus's switches), and the rule
   popover or split chooser (inside: the stage's `.pop` and every formula's button, by which
   a rule or a side is chosen); the tour's caption is inside everything. A press on the stage
   that closes something does nothing else: its `pointerdown` stops there (no pan) and its
