@@ -68,7 +68,7 @@
 .noscript {
   padding: var(--spacing-5);
 }
-/* A page of text outside the prover: the 404 page. */
+/* A page of text outside the prover: the 404 page and the privacy notice. */
 .page {
   max-width: var(--size-text);
   margin: 0 auto;
@@ -76,10 +76,113 @@
   font-size: var(--text-panel);
 }
 .page h1 {
-  font: var(--font-weight-semibold) var(--text-head) / var(--leading-snug) var(--font-text);
+  font: var(--font-weight-semibold) var(--text-title) / var(--leading-none) var(--font-text);
+  margin: 0 0 var(--spacing-4);
+}
+.page p {
+  margin: 0 0 var(--spacing-3);
 }
 .page a {
   color: var(--color-accent);
+}
+.page h2 {
+  font: var(--font-weight-semibold) var(--text-panel) / var(--leading-snug) var(--font-text);
+  margin: var(--spacing-6) 0 var(--spacing-2);
+}
+.page h3 {
+  font: var(--font-weight-semibold) var(--text-body) / var(--leading-snug) var(--font-text);
+  margin: var(--spacing-5) 0 var(--spacing-2);
+}
+.page p,
+.page li {
+  max-width: var(--size-text);
+}
+.page code {
+  font: var(--text-small) / var(--leading-snug) var(--font-mono);
+  overflow-wrap: anywhere;
+}
+/* The way back to the prover, where the band's word mark stands on the prover's page. */
+.page-home {
+  margin: 0 0 var(--spacing-5);
+}
+.page-home a {
+  font: var(--font-weight-bold) var(--text-head) / var(--leading-none) var(--font-text);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+.lede {
+  font-size: var(--text-head);
+  line-height: var(--leading-snug);
+}
+/* Who has which data, at a glance: the page's one figure, read like an
+   instrument's readout, a row per holder. */
+.ledger {
+  margin: var(--spacing-5) 0;
+  border: var(--line) solid var(--color-edge);
+  border-left: var(--line-strong) solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background: var(--color-panel);
+}
+.ledger > div {
+  display: grid;
+  grid-template-columns: var(--size-ledger-label) 1fr;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+.ledger > div + div {
+  border-top: var(--line) solid var(--color-edge);
+}
+.ledger dt {
+  font-weight: var(--font-weight-semibold);
+}
+.ledger dd {
+  margin: 0;
+  color: var(--color-dim);
+}
+.kept {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+}
+.kept th,
+.kept td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) 0;
+  border-bottom: var(--line) solid var(--color-edge);
+}
+.kept th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-dim);
+}
+.kept td:first-child {
+  width: var(--size-ledger-label);
+}
+.cite {
+  font-size: var(--text-small);
+  white-space: nowrap;
+}
+.sources {
+  list-style: decimal;
+  padding-left: var(--spacing-5);
+  font-size: var(--text-small);
+  color: var(--color-dim);
+}
+.sources li + li {
+  margin-top: var(--spacing-1-5);
+}
+.sources li:target {
+  color: var(--color-ink);
+  background: var(--color-accent-wash);
+}
+@media (max-width: 640px) {
+  .ledger > div {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
+  }
+  .kept td:first-child {
+    width: auto;
+  }
 }
 kbd {
   font: var(--font-weight-semibold) var(--text-label) / var(--leading-none) var(--font-text);
@@ -313,7 +416,7 @@ button.kw {
 .btn.icon {
   padding: 0;
 }
-button svg.lucide {
+:is(button, a.btn, a.mi) svg.lucide {
   width: var(--size-icon);
   height: var(--size-icon);
   flex: none;

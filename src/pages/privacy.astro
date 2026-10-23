@@ -1,0 +1,242 @@
+---
+// linlog © Fabian Lukas Grubmüller 2026
+// Licensed under the EUPL
+
+// The privacy notice, at /privacy/: who is responsible, what the site
+// collects (nothing), what GitHub logs as its host and under which
+// safeguard it goes to the United States, what the browser keeps and how to
+// clear it, and the visitor's rights, each statement citing the source it
+// was read in. It is written to the Swiss Federal Act on Data Protection's
+// duty to inform (Art. 19) and the GDPR's (Art. 13), and says that it is
+// information, not legal advice. A page of its own, outside the prover, so
+// that it is reached and read without the module; its links are absolute.
+import Base from "../layouts/Base.astro";
+
+/** The sources, in the order the page cites them: [n] is SOURCES[n - 1]. */
+const SOURCES = [
+  {
+    title:
+      "Federal Act on Data Protection (FADP), SR 235.1, status of 1 September 2023; the English text is a translation without legal force",
+    href: "https://www.fedlex.admin.ch/eli/cc/2022/491/en",
+  },
+  {
+    title: "Data Protection Ordinance (DPO), SR 235.11, Annex 1, status of 15 September 2024",
+    href: "https://www.fedlex.admin.ch/eli/cc/2022/568/en",
+  },
+  {
+    title: "Telecommunications Act (TCA), SR 784.10, Art. 45c",
+    href: "https://www.fedlex.admin.ch/eli/cc/1997/2187_2187_2187/en",
+  },
+  {
+    title:
+      "Federal Data Protection and Information Commissioner (FDPIC), New Swiss-US Data Privacy Framework, 15 August 2024",
+    href: "https://www.edoeb.admin.ch/en/15082024-new-swiss-us-data-privacy-framework",
+  },
+  {
+    title: "FDPIC, Submitting a complaint",
+    href: "https://www.edoeb.admin.ch/en/submitting-a-complaint",
+  },
+  {
+    title: "General Data Protection Regulation (GDPR), Regulation (EU) 2016/679",
+    href: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679",
+  },
+  {
+    title:
+      "Commission Implementing Decision (EU) 2023/1795 of 10 July 2023 on the EU-US Data Privacy Framework",
+    href: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023D1795",
+  },
+  {
+    title: "GitHub Docs, About GitHub Pages: Data collection",
+    href: "https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection",
+  },
+  {
+    title: "GitHub Privacy Statement, effective 27 April 2026",
+    href: "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+  },
+  {
+    title: "Data Privacy Framework List, the entry of GitHub, read on 23 October 2026",
+    href: "https://www.dataprivacyframework.gov/participant/6174",
+  },
+] as const;
+---
+
+<Base
+  title="Privacy: linlog"
+  description="What linlog's site collects (nothing), what GitHub logs as its host, and what your browser keeps."
+>
+  <main class="page privacy-page">
+    <p class="page-home"><a href="/">linlog</a></p>
+    <h1>Privacy</h1>
+    <p class="lede">
+      linlog's prover runs in your browser. The site sets no cookies, tracks nothing and
+      sends nothing you type anywhere. GitHub, which hosts it, logs your IP address.
+    </p>
+
+    <dl class="ledger" aria-label="Who has which of your data">
+      <div>
+        <dt>This site</dt>
+        <dd>Nothing. No cookies, no analytics, nothing loaded from another server.</dd>
+      </div>
+      <div>
+        <dt>GitHub, the host</dt>
+        <dd>Your IP address, logged for security, in the United States among other places.</dd>
+      </div>
+      <div>
+        <dt>Your browser</dt>
+        <dd>Your settings and open proofs, and the site's files for offline use. Never sent.</dd>
+      </div>
+    </dl>
+
+    <h2>Who is responsible</h2>
+    <p>
+      Fabian Lukas Grubmüller runs this site. Write to{" "}
+      <a href="mailto:privacy@grubmueller.dev">privacy@grubmueller.dev</a> about anything on
+      this page. The Swiss Federal Act on Data Protection asks for the controller's identity and
+      contact details, the purpose of processing and its recipients, and, where data go
+      abroad, the state and its safeguard <a href="#source-1" class="cite">[1, Art. 19]</a>; the
+      GDPR, where it applies, asks for the same and the legal basis, how long data are kept
+      and your rights <a href="#source-6" class="cite">[6, Art. 13]</a>. This page gives them.
+    </p>
+
+    <h2>What the site does not do</h2>
+    <p>
+      It sets no cookies and runs no analytics or tracking. Every file it loads comes from its
+      own address: its Content-Security-Policy, in the head of every page, starts with{" "}
+      <code>default-src 'none'</code> and allows only the site itself. The prover is linlog's
+      library compiled to WebAssembly, running in your browser: the sequents you type and the
+      proofs you make are computed there and sent nowhere.
+    </p>
+
+    <h2>What GitHub logs</h2>
+    <p>
+      The site is served by GitHub Pages. GitHub says: “When a GitHub Pages site is visited,
+      the visitor's IP address is logged and stored for security purposes, regardless of
+      whether the visitor has signed into GitHub or not” <a href="#source-8" class="cite">[8]</a>.
+      For its practices GitHub points to its privacy statement, which names the United States
+      among the places where GitHub stores and processes personal data, and gives its privacy
+      contact <a href="#source-9" class="cite">[9]</a>.
+      Your browser has to send your IP address to fetch any page, so the site cannot be loaded
+      without it.
+    </p>
+    <p>
+      Where the GDPR applies, this rests on a legitimate interest{" "}
+      <a href="#source-6" class="cite">[6, Art. 6(1)(f)]</a>: a site cannot be served without
+      its visitor's address, and its host keeps the address to keep the service secure. For how
+      long, GitHub's statement says it retains personal data as needed to fulfil contractual
+      obligations, comply with legal requirements, resolve disputes and enforce agreements{" "}
+      <a href="#source-9" class="cite">[9]</a>.
+    </p>
+
+    <h3>The safeguard for the United States</h3>
+    <p>
+      Swiss law lets personal data go to a state the Federal Council has found adequate{" "}
+      <a href="#source-1" class="cite">[1, Art. 16(1)]</a>. For the United States, its list
+      grants this for data processed by organisations certified under the Swiss-US Data
+      Privacy Framework <a href="#source-2" class="cite">[2, Annex 1]</a>, from 15 September
+      2024 <a href="#source-4" class="cite">[4]</a>. The European Commission found the same for
+      organisations on the framework's list, under the EU-US framework{" "}
+      <a href="#source-7" class="cite">[7, Art. 1]</a>; the GDPR allows a transfer under such a
+      decision <a href="#source-6" class="cite">[6, Art. 45(1)]</a>. GitHub states that it
+      complies with the EU-US framework, its UK extension and the Swiss-US framework{" "}
+      <a href="#source-9" class="cite">[9]</a>.
+    </p>
+    <p>
+      GitHub's entry on the framework's list, read on 23 October 2026, shows the organisation
+      “GitHub”, of San Francisco, with all three certifications active (EU-US, its UK
+      extension, and Swiss-US), each covering data other than human-resources data and running
+      to 3 August 2027 <a href="#source-10" class="cite">[10]</a>.
+    </p>
+
+    <h2>What your browser keeps</h2>
+    <p>
+      To remember your work, the page writes to your browser's own storage. Nothing of it
+      leaves the browser, and none of it identifies you.
+    </p>
+    <table class="kept">
+      <thead>
+        <tr><th scope="col">Kept as</th><th scope="col">What, and why</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>linlog-settings</code></td>
+          <td>
+            Your settings (the search's budget, the net's drawing, the fonts, keys shown), so
+            they hold on your next visit. A forced engine is not kept.
+          </td>
+        </tr>
+        <tr>
+          <td><code>linlog-theme</code></td>
+          <td>Light or dark, when you pinned one, so the page opens in it.</td>
+        </tr>
+        <tr>
+          <td><code>linlog-proofs:…</code>, <code>linlog-proofs-previous</code></td>
+          <td>
+            Your open proofs, saved as you work, one set per browser tab, so the next visit can
+            bring them back.
+          </td>
+        </tr>
+        <tr>
+          <td>The service worker's cache, <code>linlog-site-…</code></td>
+          <td>
+            The site's own files, so the prover works without a network after one visit; a
+            math font you choose is added the first time you use it.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Swiss law allows data to be kept on your device when you are told what is kept and why,
+      and that you may refuse <a href="#source-3" class="cite">[3, Art. 45c]</a>. You may: clear
+      the site's data in your browser's settings for <code>linlog-prover.github.io</code>,
+      which removes all of the above, the service worker included; or block site data, or use
+      a private window. The prover works the same, only it remembers nothing between visits.
+    </p>
+
+    <h2>Your rights</h2>
+    <p>
+      Under the Swiss Act you may ask whether data about you are processed and receive them,
+      free of charge, as a rule within 30 days <a href="#source-1" class="cite">[1, Art. 25]</a>;
+      have incorrect data corrected, and in an action before a court ask that a processing or
+      a disclosure be prohibited or that data be deleted{" "}
+      <a href="#source-1" class="cite">[1, Art. 32]</a>. You may report a processing you think
+      breaks the Act to the Federal Data Protection and Information Commissioner, who opens an
+      investigation where there are sufficient indications{" "}
+      <a href="#source-1" class="cite">[1, Art. 49]</a>; the Commissioner asks that you write to
+      the controller first <a href="#source-5" class="cite">[5]</a>. Where the GDPR applies, you
+      have the rights of access, rectification, erasure, restriction, portability and objection{" "}
+      <a href="#source-6" class="cite">[6, Arts. 15 to 18, 20, 21]</a>, and may lodge a complaint
+      with a supervisory authority, in particular where you live or work{" "}
+      <a href="#source-6" class="cite">[6, Art. 77]</a>.
+    </p>
+    <p>
+      This site holds no data about you, so a request to me will usually find none. For
+      GitHub's logs, write to GitHub through the contact its privacy statement gives{" "}
+      <a href="#source-9" class="cite">[9]</a>.
+    </p>
+
+    <h2>When you write</h2>
+    <p>
+      An e-mail to the address above is read and kept only to answer it. An issue on GitHub
+      is GitHub's service, under its privacy statement <a href="#source-9" class="cite">[9]</a>.
+      A link to another site (the licences, the papers cited in Learn) leaves this one; that
+      site's own rules apply there.
+    </p>
+
+    <p class="sub">
+      This page says how the site handles data, checked against the sources below on 23 October
+      2026. It is information, not legal advice. Where a statement here goes beyond what its
+      source says word for word, it is this page's reading of that source.
+    </p>
+
+    <h2 id="sources">Sources</h2>
+    <ol class="sources">
+      {
+        SOURCES.map((source, i) => (
+          <li id={`source-${i + 1}`}>
+            <a href={source.href}>{source.title}</a>
+          </li>
+        ))
+      }
+    </ol>
+  </main>
+</Base>

@@ -61,3 +61,39 @@ test("the pictograms are Lucide's, hidden from a screen reader, each action name
   await page.getByRole("button", { name: "New proof" }).focus();
   await expect(page.getByRole("tooltip")).toHaveText(/A new proof/);
 });
+
+test("the privacy page is served, names who is responsible, cites a source for each statement, and About and the band link it", async ({
+  page,
+}) => {
+  const response = await page.goto("/privacy/");
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+  const main = page.locator("main");
+  await expect(main).toContainText("Fabian Lukas Grubmüller");
+  await expect(page.getByRole("link", { name: "privacy@grubmueller.dev" })).toHaveAttribute(
+    "href",
+    "mailto:privacy@grubmueller.dev",
+  );
+  await expect(main).not.toContainText("Impressum");
+  // Every citation leads to a listed source, and every source is cited.
+  const cited = new Set(
+    await page.locator("a.cite").evaluateAll((links) => links.map((a) => a.getAttribute("href"))),
+  );
+  const listed = await page
+    .locator(".sources li")
+    .evaluateAll((items) => items.map((li) => `#${li.id}`));
+  expect([...cited].sort()).toEqual([...listed].sort());
+  await expect(main).toContainText("information, not legal advice");
+
+  await page.goto("/");
+  await page.locator("footer").getByRole("link", { name: "Privacy" }).click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  await page.goto("/");
+  await page.locator("footer").getByRole("button", { name: "About" }).click();
+  const line = page.getByRole("dialog", { name: "About" }).locator(".privacy");
+  await expect(line).toContainText("logs every visitor's IP address");
+  await line.getByRole("link", { name: "the privacy page" }).click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  await page.goto("/no/such/page");
+  await expect(page.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy/");
+});

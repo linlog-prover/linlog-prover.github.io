@@ -36,3 +36,10 @@ test("Learn's frame takes the lower half at a phone's width, with no sideways sc
   );
   expect(overflow).toBe(0);
 });
+
+test("More's sheet links the privacy page at a phone's width", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("footer").getByRole("button", { name: "More" }).click();
+  await page.getByRole("dialog", { name: "More" }).getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+});

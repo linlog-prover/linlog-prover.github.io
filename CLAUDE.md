@@ -73,7 +73,8 @@ which its flake, its tooling and its Claude Code setup are taken.
 (dendritic flake-parts: one concern per file, never an imports list). `astro.config.ts`
 and `src/` are the site:
 - `src/pages/index.astro`: the one page, the island placed `client:only`, the written
-  content rendered into templates; `404.astro` the page Pages serves for a missing path.
+  content rendered into templates; `404.astro` the page Pages serves for a missing path;
+  `privacy.astro` the privacy notice, every statement citing its source.
 - `src/content/`: the written content (CC BY 4.0), Markdown in content collections
   (`src/content.config.ts`): the examples with their sessions, the tour, About and Learn.
 - `src/integrations/licences.ts`: the licences written into the build.

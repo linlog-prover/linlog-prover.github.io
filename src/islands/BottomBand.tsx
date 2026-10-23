@@ -9,7 +9,8 @@
  * Learn, the tour, Keys and About. The menus open above the band. On a
  * phone the row keeps undo, redo, close all, hint, export and Learn, and
  * More opens a sheet with the other actions: steps, import, settings, the
- * tour, keys and About.
+ * tour, keys and About, and the privacy page's link, which the wide band
+ * shows at its end.
  */
 
 import {
@@ -23,6 +24,7 @@ import {
   ListOrdered,
   Menu as MenuIcon,
   Redo2,
+  Shield,
   SlidersHorizontal,
   Undo2,
   Upload,
@@ -231,10 +233,18 @@ export function BottomBand(props: {
             show={key}
             labelled={labelled}
           />
+          <a
+            class="btn act wide-only"
+            href="/privacy/"
+            data-tip="What the site keeps of you (nothing), what GitHub logs, what your browser keeps"
+          >
+            <Shield aria-hidden="true" />
+            {labelled("Privacy")}
+          </a>
           <Action
             label="More"
             icon={<MenuIcon aria-hidden="true" />}
-            tip="Steps, import, settings, the tour, keys and About"
+            tip="Steps, import, settings, the tour, keys, About and privacy"
             keyName=""
             phone
             expanded={ui.menu === "more"}
@@ -786,7 +796,7 @@ function EngineChoice(props: { prover: Prover }) {
   );
 }
 
-/** More's sheet on a phone: the actions the band leaves out. */
+/** More's sheet on a phone: the actions the band leaves out, and the privacy page. */
 function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
   const { setUi } = props.ui;
   const items: readonly (readonly [string, Menu | "tour", () => JSX.Element])[] = [
@@ -815,6 +825,12 @@ function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
             </li>
           )}
         </For>
+        <li>
+          <a class="mi icon-row" href="/privacy/">
+            <Shield aria-hidden="true" />
+            <span>Privacy</span>
+          </a>
+        </li>
       </ul>
     </div>
   );
@@ -899,11 +915,9 @@ function AboutPane(props: { prover: Prover }) {
         </For>
       </ul>
       <p class="sub privacy">
-        No tracking. GitHub, which serves this site, logs every visitor's IP address, as{" "}
-        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">
-          GitHub's privacy statement
-        </a>{" "}
-        says.
+        No cookies, no tracking. GitHub, which serves this site, logs every visitor's IP address for
+        security: <a href="/privacy/">the privacy page</a> says what that means, and what your
+        browser keeps.
       </p>
     </div>
   );

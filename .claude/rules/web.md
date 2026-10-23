@@ -280,7 +280,15 @@ the page reads.
   stop in the live region, and marks what it points at with `data-tour-spot`.
 - **About** is a menu of the bottom band: its text, linlog's version from `about`, every
   licence the site serves (linked, `tests/learn.spec.ts` fetches each) and the line that
-  GitHub logs visitors' addresses.
+  GitHub logs visitors' addresses, which links the privacy page.
+- **The privacy page** (`src/pages/privacy.astro`, at `/privacy/`) is a page of its own,
+  linked from About, from the bottom band's end (More's sheet on a phone) and from the 404
+  page. Each statement cites one of its numbered sources (`SOURCES`), every one cited and
+  read in itself (Fedlex, the FDPIC, EUR-Lex, GitHub's documents, the Data Privacy
+  Framework list); `tests/page.spec.ts` holds the citations to the list. A change of what
+  the browser keeps, of the hosting or of the policy changes the page, from the sources
+  read again. Astro's HTML compression drops a line break before an inline element: a
+  line that ends in a word before a link ends in `{" "}`.
 
 ## Offline and installable (`src/offline/sw.js`, `src/integrations/offline.ts`)
 

@@ -91,15 +91,16 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* The type scale: the interface's five steps, and the logic's three in
-     Euler Math (a tab's sequent, a premise, a popover's formula and a rule's
-     name). */
+  /* The type scale: the interface's five steps, a page's title, and the
+     logic's three in Euler Math (a tab's sequent, a premise, a popover's
+     formula and a rule's name). */
   --text-*: initial;
   --text-label: 11px;
   --text-small: 12.5px;
   --text-body: 14px;
   --text-panel: 15px;
   --text-head: 18px;
+  --text-title: 32px;
   --text-math: 17px;
   --text-math-large: 20px;
 
@@ -175,6 +176,7 @@
   --size-frame: 360px;
   --size-tour: 320px;
   --size-text: 640px;
+  --size-ledger-label: 160px;
   --size-number: 160px;
   --size-textarea: 84px;
   --size-learn-sheet: 46vh;

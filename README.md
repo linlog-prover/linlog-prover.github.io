@@ -46,8 +46,9 @@ sent to a server.
   their literature; a tour of the page that proves a sequent as it goes; About, with every
   licence the site serves.
 - After one visit the page works with no network, and it can be installed as an app.
-  No tracking: GitHub, which serves the site, logs visitors' IP addresses, as its privacy
-  statement says.
+  No cookies, no tracking: GitHub, which serves the site, logs visitors' IP addresses, and
+  the privacy page (`/privacy/`) says what that means and what the browser keeps, citing
+  the law and the documents it rests on.
 
 ## Building
 
