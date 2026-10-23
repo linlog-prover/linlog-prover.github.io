@@ -317,3 +317,8 @@ export function displayed(input: string): string {
 export function formulaText(text: string): string {
   return text.replace(/~([A-Za-z0-9_']+)/g, "$1⊥");
 }
+
+/** A goal's formula as the page shows it: as its reading writes it, else its one-sided text in signs. */
+export function shown(formula: { readonly text: string; readonly reading?: string }): string {
+  return formula.reading ?? formulaText(formula.text);
+}

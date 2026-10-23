@@ -180,18 +180,20 @@ const keyOf = (formulas: readonly GoalFormula[]) =>
     .join("\n");
 
 /**
- * A goal's sequent as the sequent field reads it: two-sided where the formulas have sides, the
- * hypotheses left of ⊢ as what they are, the duals of their one-sided formulas.
+ * A goal's sequent as the sequent field reads it: two-sided where the formulas have sides, each
+ * formula as its reading writes it (a hypothesis `A ⊸ B`), the dual of its one-sided formula
+ * only where linlog gives no reading.
  */
 const sequentText = (formulas: readonly GoalFormula[]) => {
-  // A hypothesis is the one-sided formula's dual: linlog writes every formula one-sided, the
-  // hypothesis A as A⊥. A negated atom loses its negation; any other formula is negated whole.
+  // A formula as its reading writes it, which linlog gives in intuitionistic mode. Without one, a
+  // hypothesis is its one-sided formula's dual (linlog's `text` writes the hypothesis A as A⊥): a
+  // negated atom loses its negation, any other formula is negated whole.
   const dual = (text: string) => {
     const atom = /^~\s*([\p{L}_][\p{L}\p{N}_']*)$/u.exec(text);
     return atom ? atom[1] : `~(${text})`;
   };
-  const left = formulas.filter((f) => f.side === "input").map((f) => dual(f.text));
-  const right = formulas.filter((f) => f.side !== "input").map((f) => f.text);
+  const left = formulas.filter((f) => f.side === "input").map((f) => f.reading ?? dual(f.text));
+  const right = formulas.filter((f) => f.side !== "input").map((f) => f.reading ?? f.text);
   return `${left.join(", ")}${left.length ? " " : ""}|- ${right.join(", ")}`;
 };
 

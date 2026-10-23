@@ -26,9 +26,9 @@ for (const [label, sequent, switches, shown, formula, name, left] of [
     "A, A -o B |- B",
     ["Intuitionistic"],
     "ILL",
-    /^A ⊗ B⊥, formula/,
+    /^A ⊸ B, formula/,
     "⊸L",
-    /^A⊥, formula/,
+    /^A, formula/,
   ],
   ["Mix", "|- A * B, ~A, ~B", ["Mix"], "LL+mix", /^A ⊗ B, formula/, "⊗", null],
   ["affine", "|- A * B, ~A, ~B, C", ["Affine"], "LL+aff", /^A ⊗ B, formula/, "⊗", null],
@@ -37,9 +37,9 @@ for (const [label, sequent, switches, shown, formula, name, left] of [
     "A, A -o B, C |- B",
     ["Intuitionistic", "Affine"],
     "ILL+aff",
-    /^A ⊗ B⊥, formula/,
+    /^A ⊸ B, formula/,
     "⊸L",
-    /^A⊥, formula/,
+    /^A, formula/,
   ],
 ] as const) {
   test(`a goal of a tab in ${label} logic opens in a new tab in the same calculus`, async ({
@@ -140,3 +140,28 @@ for (const phone of [false, true]) {
     });
   });
 }
+
+test("a goal's hypothesis A ⊸ B opens in a new tab as A ⊸ B, and the split chooser lists the formulas as they read", async ({
+  page,
+}) => {
+  await start(page, "A -o B |- A -o B");
+  await calculus(page, ["Intuitionistic"]);
+  // The formulas' buttons are named as they read: the hypothesis and the goal both A ⊸ B.
+  await expect(page.getByRole("button", { name: /^A ⊸ B, formula/ })).toHaveCount(2);
+  await rule(page, /^A ⊸ B, formula 2/, "⊸R");
+  await page.getByRole("button", { name: "Open this goal in a new tab" }).click();
+  await expect(page.locator(".ptab")).toHaveCount(2);
+  await expect(page.locator(".ptab[aria-current=true] .pt-go .m")).toHaveText("A ⊸ B, A ⊢ B");
+  await expect(mark(page)).toContainText("ILL");
+  // The split of ⊸L in the new tab: the lists say A and B, not their one-sided forms.
+  await rule(page, /^A ⊸ B, formula/, "⊸L");
+  const split = page.getByRole("dialog", { name: "Split" });
+  await expect(split.locator(".prem").first()).toHaveText(/^Left\s*nothing else$/);
+  await expect(split.locator(".prem").last()).toHaveText(/^Right\s*A, B$/);
+  await page
+    .getByRole("button", { name: /^A, formula/ })
+    .first()
+    .click();
+  await expect(split.locator(".prem").first()).toHaveText(/^Left\s*A$/);
+  await expect(split.locator(".prem").last()).toHaveText(/^Right\s*B$/);
+});

@@ -92,6 +92,8 @@ export interface GoalFormula {
   readonly occurrence: number;
   /** In intuitionistic mode, which side of `⊢` the formula is on. */
   readonly side: "input" | "output" | null;
+  /** In intuitionistic mode, the formula as the reading writes it (a hypothesis `A ⊸ B`, whose `text` is `A ⊗ ~B`). */
+  readonly reading?: string;
 }
 
 /** The library's error, as a call throws it. */

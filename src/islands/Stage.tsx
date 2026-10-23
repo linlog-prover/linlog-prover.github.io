@@ -32,7 +32,7 @@ import {
 import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
 import { failure, type MathFont, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
-import { formulaText, rungs } from "../lib/words";
+import { rungs, shown } from "../lib/words";
 import { Calculus } from "./Calculus";
 import { type NetDrawing, type Prover, pathKey } from "./state";
 import { ladderKey, phone, token, type Ui } from "./ui";
@@ -257,7 +257,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         return [
           {
             position,
-            text: formulaText(formula.text),
+            text: shown(formula),
             left: (r.left - origin.left) / k,
             right: (r.right - origin.left) / k,
             top: (r.top - origin.top) / k,
@@ -1008,9 +1008,10 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           <p class="pop-h">
             <span class="kw-label">Rules</span>
             <span class="m">
-              {formulaText(
-                formulasOf(ui.selected?.goal ?? 0)[ui.selected?.position ?? 0]?.text ?? "",
-              )}
+              {(() => {
+                const formula = formulasOf(ui.selected?.goal ?? 0)[ui.selected?.position ?? 0];
+                return formula ? shown(formula) : "";
+              })()}
             </span>
           </p>
           <Show when={ui.offered} fallback={<p class="sub">Asking linlog</p>}>
@@ -1053,7 +1054,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 <span class="m">
                   {formulasOf(split().goal)
                     .filter((_, i) => split().left.includes(i))
-                    .map((f) => formulaText(f.text))
+                    .map(shown)
                     .join(", ") || "nothing else"}
                 </span>
               </p>
@@ -1062,7 +1063,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 <span class="m">
                   {formulasOf(split().goal)
                     .filter((_, i) => i !== split().position && !split().left.includes(i))
-                    .map((f) => formulaText(f.text))
+                    .map(shown)
                     .join(", ") || "nothing else"}
                 </span>
               </p>

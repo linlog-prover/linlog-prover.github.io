@@ -104,6 +104,11 @@ the page reads.
 
 ## The state (`src/islands/state.tsx`)
 
+- **A goal's formula is shown as it reads** (`shown` in `src/lib/words.ts`): in
+  intuitionistic mode linlog's `reading` (a hypothesis `A ⊸ B`), else the one-sided `text` in
+  signs. The formulas' buttons are named so (`A ⊸ B, formula 2 of goal 1`), and the rules
+  popover and the split chooser's lists write them so; a step still names a formula by its
+  position.
 - **A tab shows its sequent as typed, in signs** (`displayed` in `src/lib/words.ts`, in
   Euler Math): `A⊥` for `~A` and `A^`, which linlog's parser does not read, so the link
   keeps `pretty`'s text, which it does.
@@ -216,8 +221,9 @@ the page reads.
   `order` past 100 (`100 + 10 · lesson + k`) so that they follow the lesson's earlier ones
   without renumbering them.
 - **A goal opens in a new tab** (`openGoal`, the dock's arrow): its formulas as the field
-  reads them (`sequentText`, two-sided where they have sides, a hypothesis written as the
-  dual of its one-sided formula, which is how linlog gives it), in the same calculus, the new
+  reads them (`sequentText`, two-sided where they have sides, each formula as its reading,
+  linlog's `reading`, the dual of its one-sided `text` only where there is none), in the same
+  calculus, the new
   proof's `origin` the tab and the goal's path (kept in the shelf). **A goal is filled from
   a tab** (`fill`, the dock's "Fill from tab N") when that tab's proof is finished and its
   sequent has the goal's formulas in any order (`fillable`: `keyOf` of each, the other
