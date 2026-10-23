@@ -133,14 +133,16 @@ test("the hint ladder climbs four rungs, and the last applies the step", async (
   ]);
 });
 
-test("the finished MLL proof's net is drawn, and the net tab says why it is greyed elsewhere", async ({
+test("the finished MLL and MELL proofs' nets are drawn, and the net tab says why it is greyed elsewhere", async ({
   page,
 }) => {
-  await start(page, "!A |- A");
-  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute(
-    "data-tip",
-    /exist for MLL without units only/,
-  );
+  await start(page, "A & B |- A");
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("data-tip", /exist for/);
+  await start(page, "!A |- A", false);
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  await page.getByRole("tab", { name: "Tree" }).click();
   await start(page, "A * B |- B * A", false);
   await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("button", { name: "Close goal" }).click();
