@@ -39,14 +39,14 @@ sent to a server.
   meaning told apart under simulated colour-vision deficiencies and shown with a word, a
   sign or a shape beside it. On a phone every control is at least 44 by 44 pixels, and the
   rarer actions are under More. Each tab keeps its own calculus.
-- One store of problems (`src/content/problems/`, 424 of them), each decided by linlog's
+- One store of problems (`src/content/problems/`, 425 of them), each decided by linlog's
   command, which a flake check runs over them all: its sequent, calculus, verdict, a level
   of difficulty from easy to very hard, the categories it is found under and its fragment,
   and for a provable one a session that linlog's `proof` accepts. Most are generated from a
   chosen proof shape and kept at the level they aimed at; others are the classic sequents
   of the literature, each with its source.
 - Practice, a place of its own reached from the bottom band at every width: the store's
-  391 provable problems, filtered by their connectives, their logic, their source and
+  392 provable problems, filtered by their connectives, their logic, their source and
   their difficulty, or one at random within the filters, each opened as a proof on a new
   tab; the problems proved are marked, also on the next visit.
 - Learn, a frame around the page with the tutorial: the lessons' places, each with its

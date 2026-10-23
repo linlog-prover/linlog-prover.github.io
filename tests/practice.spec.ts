@@ -6,7 +6,7 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { goto, start } from "./prover";
+import { goto, rule, start } from "./prover";
 
 interface Problem {
   id: string;
@@ -95,7 +95,7 @@ test("a random problem is one the filters show, and opens on a new tab beside th
   await expect(page.getByRole("button", { name: /, formula 1 of goal 1/ })).toBeVisible();
 });
 
-test("a problem opens on a new tab, and once proved it is marked, also on the next visit", async ({
+test("a problem opens on a new tab, and once the visitor proves it, it is marked, also on the next visit", async ({
   page,
 }) => {
   await start(page, "A |- A");
@@ -105,7 +105,8 @@ test("a problem opens on a new tab, and once proved it is marked, also on the ne
   await row.click();
   await expect(page.locator(".ptab")).toHaveCount(2);
   await expect(page.locator(".ptab[aria-current=true] .pt-go .m")).toHaveText("A & B ⊢ A");
-  await page.locator("footer").getByRole("button", { name: "Close all" }).click();
+  await rule(page, /^A⊥ ⊕ B⊥, formula/, "⊕₁");
+  await rule(page, /^A⊥, formula/, "ax");
   await expect(
     page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
   ).toBeVisible();
@@ -118,6 +119,20 @@ test("a problem opens on a new tab, and once proved it is marked, also on the ne
   await expect(
     practice.getByRole("button", { name: /^Prove A & B ⊢ A, Easy, proved before/ }),
   ).toBeVisible();
+});
+
+test("a problem the search closes is not marked proved", async ({ page }) => {
+  await goto(page);
+  let practice = await openPractice(page);
+  await practice.getByRole("button", { name: /^Prove A ⊗ B ⊢ B ⊗ A,/ }).click();
+  await page.locator("footer").getByRole("button", { name: "Close all" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+  practice = await openPractice(page);
+  await expect(practice.getByRole("button", { name: /^Prove A ⊗ B ⊢ B ⊗ A,/ })).not.toContainText(
+    "Proved",
+  );
 });
 
 test("Practice is in the bottom band at every desktop width", async ({ page }) => {

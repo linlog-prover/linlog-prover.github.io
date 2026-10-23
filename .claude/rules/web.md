@@ -249,7 +249,9 @@ the page reads.
   under 6, Moderate under 14, Hard under 30, Very hard from 30. The generators, the measure
   and its validation by agents of two strengths live outside the repository (linlog's
   `plan/reports/43-learn-lessons.md` says where); an unprovable problem keeps the level set
-  by hand. A new problem is measured the same way before it is filed.
+  by hand, and a variant built from a measured problem (an unused hypothesis for weakening, two
+  proofs side by side under Mix) takes its source's score plus one step. A new problem is
+  measured the same way before it is filed.
 - **Categories** are the connectives' families the sequent uses (`multiplicatives`,
   `additives`, `units`, `exponentials`), its logic (`classical`, `intuitionistic`, and
   `structural` for weakening or Mix) and `literature` for a classic with its source read in
@@ -265,8 +267,10 @@ the page reads.
   width, key P) is a sheet over the stage, outside Learn's frame, so light dismiss and
   Escape close it as any menu. A problem opens through `prover.example`, a proof of its
   own, replacing only the page's empty tab. `createPractice` lives as long as the island:
-  a tab that finishes a proof of a problem's sequent in its calculus marks the problem
-  proved, kept with the filters under `linlog-practice` (the privacy page lists it).
+  the tab a problem opened on marks it proved when it finishes the proof of the problem's
+  sequent with no goal closed by the search (`engines` empty: Close and Close all are not
+  the visitor's proof), kept with the filters under `linlog-practice` (the privacy page
+  lists it).
 - **A goal opens in a new tab** (`openGoal`, the dock's arrow): its formulas as the field
   reads them (`sequentText`, two-sided where they have sides, each formula as its reading,
   linlog's `reading`, the dual of its one-sided `text` only where there is none), in the same

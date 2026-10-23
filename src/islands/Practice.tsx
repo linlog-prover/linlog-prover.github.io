@@ -6,7 +6,8 @@
  * store's provable problems, filtered by category and level, one at random
  * within the filters, each opening as a proof on a new tab. The browser
  * keeps the filters and which problems the visitor has proved (a problem is
- * proved when a tab holding its sequent in its calculus finishes its proof).
+ * proved when the tab it opened on finishes its proof with no goal closed by
+ * the search).
  */
 
 import { CircleCheck, Dice5 } from "lucide-solid";
@@ -51,17 +52,21 @@ export function createPractice(prover: Prover) {
     saveKept(storage(), kept());
   };
 
-  // A finished proof of a problem's sequent in its calculus proves the problem.
+  /** The problem each tab opened from Practice holds, by the tab's proof's id. */
+  const opened = new Map<string, Problem>();
+
+  // A problem is proved when its tab finishes the proof of its sequent in its calculus
+  // by the visitor's own steps: a goal the search closed (Close, Close all) is in `engines`.
   createEffect(() => {
-    const all = problems();
-    if (!all) return;
-    const byKey = new Map(all.map((p) => [keyOf(p.mode, p.sequent), p.id]));
     const proved = new Set(kept().proved);
     let added = false;
     for (const proof of prover.store.proofs) {
-      if (!proof.view?.complete) continue;
-      const id = byKey.get(keyOf(proof.mode, proof.input));
-      if (id && !proved.has(id)) {
+      if (!proof.view?.complete || Object.keys(proof.engines).length > 0) continue;
+      const problem = opened.get(proof.id);
+      if (!problem || keyOf(problem.mode, problem.sequent) !== keyOf(proof.mode, proof.input))
+        continue;
+      const id = problem.id;
+      if (!proved.has(id)) {
         proved.add(id);
         added = true;
       }
@@ -72,6 +77,8 @@ export function createPractice(prover: Prover) {
   return {
     /** Asks for the problems, once. */
     want: () => setWanted(true),
+    /** Notes that a tab's proof holds a problem opened from Practice. */
+    opened: (proof: string, problem: Problem) => opened.set(proof, problem),
     problems,
     kept,
     keep,
@@ -97,6 +104,8 @@ export function PracticePlace(props: { prover: Prover; ui: Ui; practice: Practic
       { sequent: problem.sequent, mode: problem.mode, session: null },
       false,
     );
+    const tab = props.prover.current();
+    if (tab) props.practice.opened(tab.id, problem);
     setUi("live", `${displayed(problem.sequent)}: opened on a new tab.`);
   };
 
