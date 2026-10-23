@@ -8,7 +8,8 @@
  * the link), Import (a file, a paste, or a drop onto the stage), Settings;
  * Learn, the tour, Keys and About. The menus open above the band. On a
  * phone the row keeps undo, redo, close all, hint, export and Learn, and
- * More opens a sheet with the calculus's switches and the other actions.
+ * More opens a sheet with the other actions: steps, import, settings, the
+ * tour, keys and About.
  */
 
 import {
@@ -233,7 +234,7 @@ export function BottomBand(props: {
           <Action
             label="More"
             icon={<MenuIcon aria-hidden="true" />}
-            tip="The calculus, steps, import, settings, the tour, keys and About"
+            tip="Steps, import, settings, the tour, keys and About"
             keyName=""
             phone
             expanded={ui.menu === "more"}
@@ -785,7 +786,7 @@ function EngineChoice(props: { prover: Prover }) {
   );
 }
 
-/** More's sheet on a phone: the calculus's switches and the actions the band leaves out. */
+/** More's sheet on a phone: the actions the band leaves out. */
 function MoreSheet(props: { prover: Prover; ui: Ui; tour: () => void }) {
   const { setUi } = props.ui;
   const items: readonly (readonly [string, Menu | "tour", () => JSX.Element])[] = [
