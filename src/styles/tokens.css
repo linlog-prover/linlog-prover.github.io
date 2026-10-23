@@ -161,7 +161,7 @@
   /* The word mark's height (about its em) in the top band, larger than the
      band's 18-pixel words so that the ring reads as a ring, and on About and
      the 404 page. */
-  --size-wordmark: 24px;
+  --size-wordmark: 30px;
   --size-wordmark-large: 32px;
   --size-icon: 18px;
   --size-icon-small: 16px;

@@ -58,7 +58,7 @@ test("the header and the 404 page show linlog's word mark, its ring in the logo'
     await page.goto("/");
     const mark = page.locator("header.band.top").getByRole("img", { name: "linlog" });
     await expect(mark).toBeVisible();
-    expect((await mark.boundingBox())?.height).toBeCloseTo(24, 0);
+    expect((await mark.boundingBox())?.height).toBeCloseTo(30, 0);
     expect(await ring(mark)).toBe(colour);
     await page.goto("/no-such-page");
     const home = page.getByRole("link", { name: "linlog", exact: true });
