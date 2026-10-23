@@ -741,11 +741,6 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   };
 
   const goalNumber = (goal: number) => goal + 1;
-  const position = () => {
-    const goal = active();
-    const goals = view()?.goals ?? [];
-    return goals.findIndex((g) => g.goal === goal) + 1;
-  };
 
   const verdictOf = () => note()?.outcome?.verdict;
 
@@ -859,7 +854,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
               <ChevronLeft aria-hidden="true" />
             </button>
             <span class="gn">
-              Goal {goalNumber(active() ?? 0)} ({position()} of {openCount()} open)
+              Goal {goalNumber(active() ?? 0)} · {openCount()} open
             </span>
             <button
               type="button"

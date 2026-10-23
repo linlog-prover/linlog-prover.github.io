@@ -44,7 +44,7 @@ test("the split chooser sends formulas left and says whether the split can close
   await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
   await expect(split.getByText("Passes")).toBeVisible();
   await split.getByRole("button", { name: "Apply" }).click();
-  await expect(page.getByText("Goal 3 (1 of 2 open)")).toBeVisible();
+  await expect(page.locator(".dock .gn")).toHaveText("Goal 3 · 2 open");
 });
 
 test("a refused step says the library's reason at the goal", async ({ page }) => {
