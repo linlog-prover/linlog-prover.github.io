@@ -45,7 +45,17 @@ import { writeLink } from "../lib/link";
 import { actions, goalAt } from "../lib/steps";
 import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
-import { DEFAULT_BUDGET, exportFont, type Prover, pathKey } from "./state";
+import {
+  DEFAULT_BUDGET,
+  exportFont,
+  LINLOG_LOOK,
+  lookJson,
+  type NetLook,
+  type Prover,
+  pathKey,
+  sameLook,
+  TEXTBOOK_LOOK,
+} from "./state";
 import { Written } from "./Learn";
 import { Logo } from "./Logo";
 import { type Practice, PracticePlace } from "./Practice";
@@ -370,6 +380,7 @@ function ExportMenu(props: {
           ids: false,
           essential: proof()?.mode.startsWith("intuitionistic") ?? false,
           net: props.prover.settings().net,
+          net_look: lookJson(props.prover.settings().netLook),
           font: exportFont(props.prover.settings()),
         },
       },
@@ -646,6 +657,48 @@ function ImportPanel(props: { prover: Prover; ui: Ui }) {
 export const INVERTIBLE_TIP =
   "A rule is invertible when its premises are provable whenever its conclusion is: ⅋, ⊥, & and ⊤ always, ! when every other formula is a ?, and 1, ⊗ and the axiom when their formulas are the whole goal. So applying one never loses a proof, since every goal it leaves is provable if the goal before it was.";
 
+/**
+ * A row of Settings' net drawing: a field of the net's look (`styles.svg.net_look`) and its
+ * values, or with no field a choice of whole looks, each pressed when the look is it.
+ */
+function LookRow<K extends keyof NetLook>(props: {
+  prover: Prover;
+  label: string;
+  field?: K;
+  options: readonly (readonly [NetLook[K] | NetLook, string, string])[];
+}) {
+  const look = () => props.prover.settings().netLook;
+  const choose = (value: NetLook[K] | NetLook) =>
+    props.prover.setSettings({
+      netLook:
+        props.field === undefined
+          ? (value as NetLook)
+          : { ...look(), [props.field]: value as NetLook[K] },
+    });
+  const isPressed = (value: NetLook[K] | NetLook) =>
+    props.field === undefined ? sameLook(look(), value as NetLook) : look()[props.field] === value;
+  return (
+    <div class="lbl">
+      <span>{props.label}</span>
+      <fieldset class="seg" aria-label={props.label}>
+        <For each={props.options}>
+          {([value, name, tip]) => (
+            <button
+              type="button"
+              class="seg-b"
+              aria-pressed={isPressed(value)}
+              data-tip={tip}
+              onClick={() => choose(value)}
+            >
+              {name}
+            </button>
+          )}
+        </For>
+      </fieldset>
+    </div>
+  );
+}
+
 function SettingsPanel(props: {
   prover: Prover;
   theme: () => Theme;
@@ -728,6 +781,57 @@ function SettingsPanel(props: {
               )}
             </For>
           </fieldset>
+          <LookRow
+            prover={props.prover}
+            label="Look"
+            options={[
+              [
+                LINLOG_LOOK,
+                "linlog",
+                "linlog's own: switched edges dashed, a ! with doors a row up, one ? node",
+              ],
+              [
+                TEXTBOOK_LOOK,
+                "Textbook",
+                "As the textbooks draw nets: every edge plain, every conclusion at the bottom, a ? as its rules' nodes",
+              ],
+            ]}
+          />
+          <LookRow
+            prover={props.prover}
+            label="Edges into ⅋, ?"
+            field="premises"
+            options={[
+              ["dashed", "Dashed", "Dashed and blue, since a switching keeps one of them"],
+              ["plain", "Plain", "Drawn as every other edge"],
+            ]}
+          />
+          <LookRow
+            prover={props.prover}
+            label="A ! with doors"
+            field="conclusions"
+            options={[
+              ["raised", "A row up", "Written under its door, above the ? nodes its wires reach"],
+              ["bottom", "At the bottom", "On the bottom row with every other conclusion"],
+            ]}
+          />
+          <LookRow
+            prover={props.prover}
+            label="A ? node"
+            field="whyNot"
+            options={[
+              ["node", "One node", "One ? with every copy and wire as a premise"],
+              [
+                "rules",
+                "Its rules",
+                "A dereliction ?d under each copy, contractions ?c, a weakening ?w",
+              ],
+            ]}
+          />
+          <p class="sub">
+            Textbook draws every edge plain, every conclusion at the bottom and a ? as the nodes of
+            its rules: ?d, ?c and ?w.
+          </p>
         </fieldset>
         <fieldset class="lbl col">
           <legend>Font of the formulas</legend>

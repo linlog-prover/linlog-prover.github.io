@@ -117,6 +117,13 @@ the page reads.
   occurrence written, or `compact`), in the view and the net's exports alike. The stage
   fits the drawing afresh whenever what it draws changes (another proof, the tree or the
   net, the net's drawing), since the net with its formulas is far larger than the tree.
+- **The net's look** is `Settings.netLook` (`styles.svg.net_look`, linlog's `NetLook`, sent
+  as its three fields by `lookJson`), stored with the other settings, each field read back as
+  linlog's default where the stored value is not one of its own (`storedLook`). Settings' "Net
+  drawing" shows it as a row "Look" (linlog, Textbook: `LINLOG_LOOK`, `TEXTBOOK_LOOK`, each
+  pressed only while all three fields are its own) and a row per field (`LookRow`), each
+  button with its tip and a line under them for a touch. The stage and the exports draw with
+  it, and the stage refits when it changes (a look can add rows).
 - The split chooser sits under the goal's row, never beside a formula of it (the
   formulas are what it is clicked on); on a stage under 640 px both popovers are a sheet
   at its bottom.

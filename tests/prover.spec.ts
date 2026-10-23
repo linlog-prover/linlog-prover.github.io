@@ -558,6 +558,70 @@ test("Settings' net drawing writes every formula or draws the net compact, in th
   expect(svg.match(/<circle /g)?.length).toBe(2);
 });
 
+test("Settings' net look draws the net as the textbooks do, by the preset or field by field, in the view and the export", async ({
+  page,
+}) => {
+  // ⊢ ?a⊥, ?b⊥, !a: a box with a copy of ?a⊥ in it, and ?b⊥ weakened.
+  await start(page, "!a, !b |- !a");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  const weakening = page.locator(".drawing svg text", { hasText: "?w" });
+  const dashed = page.locator(".drawing svg [stroke-dasharray]");
+  await expect(weakening).toHaveCount(0);
+  await expect(dashed).toHaveCount(1);
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  const pressed = (name: string) => settings.getByRole("button", { name, exact: true });
+  await page.getByRole("button", { name: "Settings" }).click();
+  for (const name of ["linlog", "Dashed", "A row up", "One node"]) {
+    await expect(pressed(name)).toHaveAttribute("aria-pressed", "true");
+  }
+  await pressed("Textbook").click();
+  for (const name of ["Textbook", "Plain", "At the bottom", "Its rules"]) {
+    await expect(pressed(name)).toHaveAttribute("aria-pressed", "true");
+  }
+  await page.keyboard.press("Escape");
+  // The weakening is a ?w node, the copy's dereliction a ?d, and no edge is dashed.
+  await expect(weakening).toHaveCount(1);
+  await expect(page.locator(".drawing svg text", { hasText: "?d" })).toHaveCount(1);
+  await expect(dashed).toHaveCount(0);
+  await page.getByRole("button", { name: "Export" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: /^SVG/ }).click();
+  const svg = await readFile(await (await download).path(), "utf8");
+  expect(svg).toContain(">?w<");
+  expect(svg).not.toContain("stroke-dasharray");
+  // One field changed: the look is neither preset, and that field alone differs.
+  await page.getByRole("button", { name: "Settings" }).click();
+  await pressed("Dashed").click();
+  await expect(pressed("Textbook")).toHaveAttribute("aria-pressed", "false");
+  await expect(pressed("linlog")).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("Escape");
+  await expect(dashed).toHaveCount(1);
+  await expect(weakening).toHaveCount(1);
+});
+
+test("the net's look is kept with the other settings for the next visit", async ({ page }) => {
+  await goto(page);
+  await page.getByRole("button", { name: "Settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await settings.getByRole("button", { name: "Its rules", exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Sequent" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings" }).click();
+  for (const [name, on] of [
+    ["Its rules", "true"],
+    ["One node", "false"],
+    ["Dashed", "true"],
+    ["A row up", "true"],
+  ] as const) {
+    await expect(settings.getByRole("button", { name, exact: true })).toHaveAttribute(
+      "aria-pressed",
+      on,
+    );
+  }
+});
+
 test("the essential net draws its input side in the Okabe–Ito palette's blue, never green, in both themes", async ({
   page,
 }) => {

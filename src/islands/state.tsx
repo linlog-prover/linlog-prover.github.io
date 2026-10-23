@@ -104,6 +104,8 @@ export interface Settings {
   showKeys: boolean;
   /** How a net is drawn, `styles.svg.net`: every formula written, or compact. */
   net: NetDrawing;
+  /** How a net looks, `styles.svg.net_look`: linlog's own look, the textbooks', or a mix. */
+  netLook: NetLook;
   /**
    * The engine every search is forced to, `search.engine`; null for linlog's own choice. Never
    * stored: a forced engine refuses what it does not take, so every visit starts on linlog's.
@@ -122,6 +124,44 @@ export const exportFont = (settings: Settings): MathFont => settings.font ?? set
 
 /** linlog's two drawings of a net: every formula occurrence written, or only the literals and the conclusions. */
 export type NetDrawing = "formulas" | "compact";
+
+/**
+ * How a net looks, linlog's `svg::NetLook`: the edges into a ⅋ or ? dashed or plain; a ! with
+ * auxiliary doors a row up or with every conclusion at the bottom; a ? one node or its rules'
+ * nodes ?d, ?c and ?w.
+ */
+export interface NetLook {
+  readonly premises: "dashed" | "plain";
+  readonly conclusions: "raised" | "bottom";
+  readonly whyNot: "node" | "rules";
+}
+
+/** linlog's own look, its default. */
+export const LINLOG_LOOK: NetLook = { premises: "dashed", conclusions: "raised", whyNot: "node" };
+
+/** The look the textbooks share, linlog's preset `textbook`. */
+export const TEXTBOOK_LOOK: NetLook = { premises: "plain", conclusions: "bottom", whyNot: "rules" };
+
+/** Whether two looks are the same. */
+export const sameLook = (a: NetLook, b: NetLook) =>
+  a.premises === b.premises && a.conclusions === b.conclusions && a.whyNot === b.whyNot;
+
+/** A look as linlog's settings write it, `styles.svg.net_look`. */
+export const lookJson = (look: NetLook) => ({
+  premises: look.premises,
+  conclusions: look.conclusions,
+  why_not: look.whyNot,
+});
+
+/** A stored look, each field linlog's default where it is not one of its values. */
+const storedLook = (stored: unknown): NetLook => {
+  const look = (typeof stored === "object" && stored !== null ? stored : {}) as Partial<NetLook>;
+  return {
+    premises: look.premises === "plain" ? "plain" : "dashed",
+    conclusions: look.conclusions === "bottom" ? "bottom" : "raised",
+    whyNot: look.whyNot === "rules" ? "rules" : "node",
+  };
+};
 
 /** The tab's default work budget: linlog's tab default, about a second of search. */
 export const DEFAULT_BUDGET = 2 ** 26;
@@ -143,6 +183,7 @@ function loadSettings(): Settings {
         typeof stored.budget === "number" && stored.budget > 0 ? stored.budget : DEFAULT_BUDGET,
       showKeys: stored.showKeys === true,
       net: stored.net === "compact" ? "compact" : "formulas",
+      netLook: storedLook(stored.netLook),
       engine: null,
       stageFont: MATH_FONTS.find((f) => f.key === stored.stageFont)?.key ?? "euler",
       font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
@@ -153,6 +194,7 @@ function loadSettings(): Settings {
       budget: DEFAULT_BUDGET,
       showKeys: false,
       net: "formulas",
+      netLook: LINLOG_LOOK,
       engine: null,
       stageFont: "euler",
       font: null,
