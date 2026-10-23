@@ -2,23 +2,15 @@
 // Licensed under the EUPL
 
 // The calculus is each tab's own: a goal opened in a new tab keeps the whole mode of the tab
-// it came from, and a change of one tab's mode leaves the others alone, across a reload.
+// it came from, and a change of one tab's mode leaves the others alone, across a reload. Its
+// switches are on the tab's mark alone.
 
 import { devices, type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { rule, start } from "./prover";
+import { calculus, rule, start } from "./prover";
 
 /** The current tab's calculus mark. */
 const mark = (page: Page) => page.locator(".ptab[aria-current=true] .pt-mark");
-
-/** Sets the current tab's calculus by the stage's switches, before any step. */
-async function calculus(page: Page, switches: readonly string[]) {
-  for (const name of switches) {
-    const button = page.locator(".stage .calc").getByRole("button", { name, exact: true });
-    if (await button.count()) await button.click();
-    else await page.locator(".stage .calc label.sw", { hasText: name }).click();
-  }
-}
 
 for (const [label, sequent, switches, shown, formula, name, left] of [
   [
@@ -97,6 +89,19 @@ for (const phone of [false, true]) {
       const { defaultBrowserType: _, ...pixel } = devices["Pixel 7"];
       test.use(pixel);
     }
+
+    test("the calculus's switches are on the tab's mark alone, never on the stage", async ({
+      page,
+    }) => {
+      await start(page, "A, A -o B |- B");
+      const calculusGroup = page.getByRole("group", { name: "Calculus" });
+      await expect(page.locator(".stage .fb").first()).toBeVisible();
+      await expect(calculusGroup).toHaveCount(0);
+      const pop = await openMark(page, false);
+      await expect(pop.getByRole("group", { name: "Calculus" })).toBeVisible();
+      await expect(calculusGroup).toHaveCount(1);
+      await expect(page.locator(".stage").getByRole("group", { name: "Calculus" })).toHaveCount(0);
+    });
 
     test("the tab's calculus mark opens its switches, by a press and by a key", async ({
       page,

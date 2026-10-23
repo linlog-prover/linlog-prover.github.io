@@ -654,24 +654,13 @@ button svg.lucide {
   background-image: linear-gradient(var(--color-warn-wash), var(--color-warn-wash));
 }
 
-/* The calculus's cluster. */
+/* The calculus's switches, in the tab's mark's popover. */
 .calc {
-  position: absolute;
-  top: var(--spacing-3);
-  left: var(--spacing-3);
-  z-index: var(--layer-hud);
   display: flex;
-  gap: var(--spacing-3);
   align-items: center;
   flex-wrap: wrap;
-  padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) var(--spacing-1);
-  max-width: calc(100% - var(--spacing-5));
-}
-.calc.in-pop {
-  position: static;
-  box-shadow: none;
-  backdrop-filter: none;
-  max-width: none;
+  margin: 0;
+  border: 0;
   padding: var(--spacing-2);
   gap: var(--spacing-2) var(--spacing-3);
 }

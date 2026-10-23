@@ -6,7 +6,7 @@
 
 import { readFile } from "node:fs/promises";
 import { expect, test } from "./fixtures";
-import { goto, proveCommuted, rule, start } from "./prover";
+import { calculus, goto, proveCommuted, rule, start, switches } from "./prover";
 
 test("the sequent field starts a proof, and marks where a sequent does not parse", async ({
   page,
@@ -440,16 +440,18 @@ test("the calculus's switches restart the proof after a warning, and two-sided s
 }) => {
   await start(page, "A, B |- A * B");
   // Classical derivations are drawn one-sided: the switch is there, greyed.
-  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
+  await expect((await switches(page)).getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
+  await page.keyboard.press("Escape");
   await rule(page, /^A ⊗ B/, "⊗");
   await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
   await page.getByRole("dialog", { name: "Split" }).getByRole("button", { name: "Apply" }).click();
-  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await (await switches(page)).getByRole("button", { name: "Intuitionistic" }).click();
   await page.getByRole("button", { name: "Restart" }).click();
   await expect(page.locator(".pt-mark")).toContainText("ILL");
   await expect(page.getByRole("button", { name: /^A ⊗ B, formula 3 of goal 1/ })).toBeVisible();
   // Intuitionistic derivations are two-sided already: the switch is not shown.
-  await expect(page.getByRole("checkbox", { name: "Two-sided" })).toHaveCount(0);
+  await expect((await switches(page)).getByRole("checkbox", { name: "Two-sided" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await start(page, "A |- B, C", false);
   await expect(page.getByRole("alert")).toContainText("2 formulas right of ⊢");
 });
@@ -500,7 +502,7 @@ test("the fragment shows beside the calculus while the sequent is typed", async 
 
 test("a finished intuitionistic proof's essential net is drawn", async ({ page }) => {
   await start(page, "A, B |- A * B");
-  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await calculus(page, ["Intuitionistic"]);
   await expect(page.locator(".pt-mark")).toContainText("ILL");
   await page.getByRole("button", { name: "Close goal" }).click();
   await page.getByRole("tab", { name: "Net" }).click();
@@ -535,7 +537,7 @@ test("Settings' net drawing writes every formula or draws the net compact, in th
 
 test("the essential net keeps its input side's colour in both themes", async ({ page }) => {
   await start(page, "A * B |- B * A");
-  await page.getByRole("button", { name: "Intuitionistic" }).click();
+  await calculus(page, ["Intuitionistic"]);
   await expect(page.locator(".pt-mark")).toContainText("ILL");
   await page.getByRole("button", { name: "Close goal" }).click();
   await page.getByRole("tab", { name: "Net" }).click();
@@ -645,7 +647,7 @@ test("a goal is filled from another tab's finished proof as one step named with 
   // A proof under Mix, offered for the same formulas, is refused in classical logic.
   await start(page, "|- A, ~A, B, ~B", false);
   await start(page, "|- A, ~A, B, ~B", false);
-  await page.locator(".calc label.sw", { hasText: "Mix" }).click();
+  await calculus(page, ["Mix"]);
   await expect(page.locator(".ptab[aria-current=true] .pt-mark")).toContainText("LL+mix");
   await page.locator("footer").getByRole("button", { name: "Close all" }).click();
   await expect(page.getByText("Proved: every goal is closed")).toBeVisible();

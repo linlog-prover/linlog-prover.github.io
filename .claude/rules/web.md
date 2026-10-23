@@ -326,11 +326,11 @@ the page reads.
   touch (`App.tsx`).
 - **The calculus is each tab's** (`Proof.mode`, kept in the shelf; a new empty tab starts in
   `lastMode`, the calculus last chosen in this visit, classical at a visit's start). A tab's
-  calculus mark opens its switches (`Calculus inPopover` in the "Logic" popover) at every
-  width, by a key too (the switches take the focus, Escape gives it back to the mark); on a
-  phone that is their only place. On a desktop the stage's cluster stays, hidden while the
-  popover is open, so that the switches and the restart warning (one `ui.pendingMode`) never
-  show twice. The band's popovers (Status, Logic) are `position: fixed` under the active tab
+  calculus mark opens its switches (`Calculus` in the "Logic" popover) at every width, by a
+  key too (the switches take the focus, Escape gives it back to the mark); that is their
+  only place, the stage has none (`tests/modes.spec.ts`), and the restart warning
+  (`ui.pendingMode`) is inside the popover. Tests set a calculus through `calculus()` and
+  `switches()` in `tests/prover.ts`. The band's popovers (Status, Logic) are `position: fixed` under the active tab
   (`underTab`): the row of tabs scrolls (`overflow: auto`) and clipped them while they were
   absolute, which no test saw until one asked what is drawn at the popover's middle.
 

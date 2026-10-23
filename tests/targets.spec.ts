@@ -53,7 +53,7 @@ async function tooSmall(page: Page, least: number): Promise<string[]> {
  * calculus, the restart warning, Learn's three places, the tour, a field's
  * parse error, and the restore bar.
  */
-async function walk(page: Page, least: number, phone: boolean) {
+async function walk(page: Page, least: number) {
   const found: string[] = [];
   const measure = async (state: string) => {
     for (const small of await tooSmall(page, least)) found.push(`${state}: ${small}`);
@@ -113,13 +113,13 @@ async function walk(page: Page, least: number, phone: boolean) {
   await tab.getByRole("button", { name: /^Calculus/ }).click();
   await measure("calculus mark");
   await page.keyboard.press("Escape");
-  // On a phone the switches are the tab's mark's alone.
-  if (phone) await tab.getByRole("button", { name: /^Calculus/ }).click();
+  // The switches are the tab's mark's alone.
+  await tab.getByRole("button", { name: /^Calculus/ }).click();
   await page.getByRole("button", { name: "Intuitionistic", exact: true }).click();
   await expect(page.getByRole("alertdialog", { name: "Restart the proof" })).toBeVisible();
   await measure("restart warning");
   await page.getByRole("button", { name: "Keep the proof" }).click();
-  if (phone) await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
   await band("Learn");
   for (const place of ["Practice", "Tutorial", "Reference"]) {
     await page.getByRole("tab", { name: place }).click();
@@ -158,7 +158,7 @@ async function fonts(page: Page, least: number): Promise<string[]> {
 test("every control is a target of 24 by 24 pixels at least, at a desktop's width", async ({
   page,
 }) => {
-  expect(await walk(page, 24, false)).toEqual([]);
+  expect(await walk(page, 24)).toEqual([]);
 });
 
 test.describe("at a phone's width", () => {
@@ -166,7 +166,7 @@ test.describe("at a phone's width", () => {
   test.use(pixel);
 
   test("every control is a target of 44 by 44 pixels at least", async ({ page }) => {
-    expect(await walk(page, 44, true)).toEqual([]);
+    expect(await walk(page, 44)).toEqual([]);
   });
 
   test("the stage's controls stay 44 by 44 pixels in every math font", async ({ page }) => {

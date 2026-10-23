@@ -7,11 +7,11 @@
 // practice set, and the field's Enter while a search runs.
 
 import { expect, test } from "./fixtures";
-import { goto, start } from "./prover";
+import { calculus, goto, start } from "./prover";
 
 /** Sends the visible proof to intuitionistic mode before any step. */
 async function intuitionistic(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Intuitionistic", exact: true }).click();
+  await calculus(page, ["Intuitionistic"]);
   await expect(page.locator(".ptab[aria-current=true] .pt-mark")).toContainText("ILL");
 }
 

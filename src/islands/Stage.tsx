@@ -33,7 +33,6 @@ import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
 import { failure, type MathFont, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
 import { rungs, shown } from "../lib/words";
-import { Calculus } from "./Calculus";
 import { type NetDrawing, type Prover, pathKey } from "./state";
 import { ladderKey, phone, token, type Ui } from "./ui";
 
@@ -344,7 +343,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const H = stage.clientHeight;
     if (!w || !h) return;
     const margin = token("--spacing-7");
-    const top = hudBottom() + token("--spacing-8");
+    const top = token("--spacing-8");
     const fit = Math.max(0.2, Math.min(1, (W - margin) / w, (H - top - margin) / h));
     const k = Math.max(fit, floor());
     if (k > fit) {
@@ -365,12 +364,6 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     return Number.isFinite(narrowest) && narrowest > 0 ? Math.min(4, (least / narrowest) * k) : 0;
   }
 
-  /** The bottom of what floats at the stage's top (the calculus), in the stage's pixels. */
-  function hudBottom(): number {
-    const calc = stage.querySelector<HTMLElement>(".calc");
-    return calc?.offsetParent ? calc.offsetTop + calc.offsetHeight : 0;
-  }
-
   /** Pans so that the active goal is in view (the other goals stay, dimmed). */
   function bringIntoView(smooth = true) {
     const goal = active();
@@ -380,7 +373,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const r = element.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
     const edge = token("--spacing-4");
-    const above = hudBottom() + token("--spacing-8");
+    const above = token("--spacing-8");
     const below = token("--spacing-8");
     let { x, y } = camera();
     // A goal wider than the stage shows its start.
@@ -439,9 +432,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     );
     const goalTop = Math.min(r.top, ...buttons.map((b) => b.top));
     const goalBottom = Math.max(r.bottom, ...buttons.map((b) => b.bottom));
-    // Above the goal, or below it where the calculus's cluster leaves no room.
+    // Above the goal, or below it where the stage's top leaves no room.
     const above = goalTop - s.top - height - gap;
-    const top = above >= hudBottom() + gap ? above : goalBottom - s.top + gap;
+    const top = above >= gap ? above : goalBottom - s.top + gap;
     dock.style.visibility = "visible";
     dock.style.left = `${left}px`;
     dock.style.top = `${top}px`;
@@ -816,11 +809,6 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           </For>
         </div>
       </div>
-
-      {/* While the tab's mark shows the switches, they are not shown twice. */}
-      <Show when={proof()?.session && ui.menu !== "calculus"}>
-        <Calculus prover={props.prover} ui={props.ui} />
-      </Show>
 
       <Show when={proof()?.banner}>
         {(banner) => (

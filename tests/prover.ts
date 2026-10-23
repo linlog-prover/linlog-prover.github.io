@@ -21,6 +21,26 @@ export async function start(page: Page, sequent: string, fresh = true) {
   await expect(page.locator(".stage .fb, [role=alert]").first()).toBeVisible();
 }
 
+/** The current tab's calculus switches, opened from its mark if they are not open yet. */
+export async function switches(page: Page) {
+  const pop = page.getByRole("dialog", { name: "Logic" });
+  if (!(await pop.isVisible())) await page.locator(".ptab[aria-current=true] .pt-mark").click();
+  await expect(pop).toBeVisible();
+  return pop;
+}
+
+/** Sets the current tab's calculus by its mark's switches, before any step, and closes them. */
+export async function calculus(page: Page, names: readonly string[]) {
+  const pop = await switches(page);
+  for (const name of names) {
+    const button = pop.getByRole("button", { name, exact: true });
+    if (await button.count()) await button.click();
+    else await pop.locator("label.sw", { hasText: name }).click();
+  }
+  await page.keyboard.press("Escape");
+  await expect(pop).toBeHidden();
+}
+
 /** Applies a rule to the active goal's formula whose name matches. */
 export async function rule(page: Page, formula: RegExp, name: string) {
   await page.getByRole("button", { name: formula }).first().click();

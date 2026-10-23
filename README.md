@@ -9,8 +9,9 @@ sent to a server.
 ## What the page does
 
 - A sequent typed in the field (ASCII such as `A * B |- B * A`, or the signs `⊗ ⅋ ⊸ ⊕ ⊢`),
-  proved in classical linear logic or, by the switches on the stage, intuitionistic, with
-  Mix or affine weakening; the fragment linlog detects is shown beside it.
+  proved in classical linear logic or, by the switches its tab's calculus mark opens,
+  intuitionistic, with Mix or affine weakening; the fragment linlog detects is shown beside
+  it.
 - The derivation drawn as linlog draws it, under a camera that zooms and pans: a pinch of
   two fingers, a trackpad's pinch or ctrl with the wheel zooms the drawing about where it
   happens, one finger or the mouse pans it, and outside the drawing the browser's own zoom

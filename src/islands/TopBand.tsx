@@ -317,7 +317,7 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
               Ordinary
             </button>
           </fieldset>
-          <Calculus prover={props.prover} ui={props.ui} inPopover />
+          <Calculus prover={props.prover} ui={props.ui} />
           <p class="sub">Fragment: {props.proof.view?.fragment ?? "not started"}.</p>
         </div>
       </Show>

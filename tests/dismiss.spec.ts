@@ -89,18 +89,14 @@ async function dismissals(page: Page, touch: boolean) {
   await rules.getByRole("button", { name: /^⅋/ }).click();
   await expect(page.getByRole("button", { name: /^A⊥, formula/ })).toBeVisible();
   // The restart warning: a press outside keeps the proof, as Escape does.
-  // On a phone the switches are the tab's mark's alone.
-  if (touch) await tab.getByRole("button", { name: /^Calculus/ }).click();
+  // The switches are the tab's mark's alone; the warning is inside its popover, and a press
+  // outside closes both.
+  await tab.getByRole("button", { name: /^Calculus/ }).click();
   await page.getByRole("button", { name: "Intuitionistic", exact: true }).click();
   const warning = page.getByRole("alertdialog", { name: "Restart the proof" });
   await expect(warning).toBeVisible();
-  if (touch) {
-    // In the mark's popover the warning is inside it; a tap outside closes both.
-    await pressField(page, touch);
-    await expect(page.getByRole("dialog", { name: "Logic" })).toBeHidden();
-  } else {
-    await pressField(page, touch);
-  }
+  await pressField(page, touch);
+  await expect(page.getByRole("dialog", { name: "Logic" })).toBeHidden();
   await expect(warning).toBeHidden();
   await expect(page.getByRole("button", { name: /^A⊥, formula/ })).toBeVisible();
   // A press on another of the band's buttons closes the open menu and opens its own.
