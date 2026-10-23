@@ -103,3 +103,23 @@ test("About says what the page is, and every licence it lists is served", async 
     expect((await response.text()).length, href).toBeGreaterThan(500);
   }
 });
+
+test("with Learn on, the bottom band keeps its actions in one row at 1280 pixels", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await page.locator("footer").getByRole("button", { name: "Learn", exact: true }).click();
+  await expect(page.getByRole("complementary", { name: "Learn" })).toBeVisible();
+  const rows = await page
+    .locator("footer .act")
+    .evaluateAll(
+      (actions) =>
+        new Set(
+          actions
+            .filter((a) => (a as HTMLElement).offsetParent)
+            .map((a) => Math.round(a.getBoundingClientRect().top)),
+        ).size,
+    );
+  expect(rows).toBe(1);
+});
