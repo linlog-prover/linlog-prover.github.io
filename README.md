@@ -35,9 +35,10 @@ sent to a server.
   default the stage's, which Settings chooses among the same five; the proof in the link's fragment; every open proof saved
   in the browser and offered back on the next visit; import of a session or a sequent as
   linlog writes them; everything by keyboard (`?` lists the keys); a menu, sheet or popover
-  closed by Escape or by a press outside it; light and dark. On a
-  phone every control is at least 44 by 44 pixels, and the rarer actions are under More.
-  Each tab keeps its own calculus, whose switches its calculus mark opens.
+  closed by Escape or by a press outside it; light and dark, every colour that carries a
+  meaning told apart under simulated colour-vision deficiencies and shown with a word, a
+  sign or a shape beside it. On a phone every control is at least 44 by 44 pixels, and the
+  rarer actions are under More. Each tab keeps its own calculus.
 - Learn, a frame around the page with the tutorial's places, practice along the lessons
   (73 sequents, each decided by linlog, provable and unprovable mixed, graded by
   difficulty; each opened as a proof, its answer kept until asked, and a provable one's

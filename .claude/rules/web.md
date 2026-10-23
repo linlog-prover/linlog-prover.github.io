@@ -73,13 +73,27 @@ the page reads.
   and every formula of an open goal gets an HTML button over it, placed from the
   element `#i<n>-<p>`'s box (`view.inferences[n]` is the goal `i<n>` draws). The drawing
   is asked with `styles.svg.font_size` 30, so a formula is a 24-pixel target at 100 %.
+- **Colours that carry a meaning** (the verdicts, the selection and active goal, Learn's
+  frame, the nets) stay apart from the colours seen with them under simulated protanopia,
+  deuteranopia and tritanopia: `src/styles/colours.test.ts` holds the tokens to it, with
+  Machado, Oliveira and Fernandes's matrices (severity 1.0, the authors' own table; their
+  paper does not claim tritanopia, the matrix is used as published) on linear RGB and the
+  distance in OKLab, 8 under a deficiency and 15 in full colour, by groups of colours seen
+  together. Each meaning has a word, a sign or a shape beside it: a tab's state is a shape
+  (`STATE_MARKS`, a check, a cross, a question mark, a dotted circle, a dashed one), a
+  hint's rungs a bar or a hairline. A new colour of meaning joins a group of the test.
 - Colours come from CSS over the SVG's attributes (`.drawing svg text { fill: … }`), so a
   theme change needs no redraw; the exports keep linlog's own colours. The colours that
   mean something in a net are exempt from the ink, matched by the value linlog writes
   for its default `Style` (`#0072b2` the `⅋` edges, `#009e73` the essential net's input
   side, `#cc79a7` its dominator lines, `#d55e00` a witness's edges) and repainted with
   `--color-net-*` at 4.5:1 on the field: a change of linlog's defaults fails the
-  essential net's colour test rather than turning them to ink.
+  essential net's colour test rather than turning them to ink. The page's net colours are
+  hues of Okabe and Ito's palette (blue, yellow for the input side, reddish purple,
+  vermilion), each darkened or lightened for contrast; `⅋` is also dashed, a dominator line
+  dotted and the input side's edges point up, so no net colour is all that tells its kind.
+  A witness is drawn only for a structure that is no proof net, which the page never
+  draws (its nets are of finished proofs).
 - The net is drawn as Settings' "Net drawing" says (`styles.svg.net`: `formulas`, every
   occurrence written, or `compact`), in the view and the net's exports alike. The stage
   fits the drawing afresh whenever what it draws changes (another proof, the tree or the

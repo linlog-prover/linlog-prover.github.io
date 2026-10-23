@@ -16,7 +16,10 @@
  * `color-scheme' (below): the system's preference, unless <html data-theme>
  * pins one. Contrast (WCAG): every text role is AA on the field and on a
  * panel in both schemes; --line meets 3:1 for control borders (1.4.11);
- * --edge and --dot are decorative.
+ * --edge and --dot are decorative. Every colour that carries a meaning stays
+ * apart from the colours seen with it under simulated protanopia,
+ * deuteranopia and tritanopia (colours.test.ts), and has a word, a sign or a
+ * shape beside it.
  */
 @theme static {
   --color-*: initial;
@@ -32,17 +35,17 @@
   /* The search's rule labels, set apart from the student's. */
   --color-faint: light-dark(#5a6482, #7d88a8);
   /* Selection and the active goal. */
-  --color-accent: light-dark(#3446c8, #9aa8ff);
-  --color-accent-wash: light-dark(rgb(52 70 200 / 0.12), rgb(154 168 255 / 0.14));
+  --color-accent: light-dark(#323abd, #a4b2fe);
+  --color-accent-wash: light-dark(rgb(50 58 189 / 0.12), rgb(164 178 254 / 0.14));
   /* A checked proof, and nothing else. */
-  --color-ok: light-dark(#127a47, #4ccb8a);
-  --color-ok-wash: light-dark(rgb(18 122 71 / 0.12), rgb(76 203 138 / 0.14));
+  --color-ok: light-dark(#027559, #08cda9);
+  --color-ok-wash: light-dark(rgb(2 117 89 / 0.12), rgb(8 205 169 / 0.14));
   /* Unknown, and a search running or given up. */
-  --color-warn: light-dark(#8f5600, #f0b43c);
-  --color-warn-wash: light-dark(rgb(143 86 0 / 0.12), rgb(240 180 60 / 0.14));
+  --color-warn: light-dark(#915c01, #f2ba40);
+  --color-warn-wash: light-dark(rgb(145 92 1 / 0.12), rgb(242 186 64 / 0.14));
   /* A refusal, and unprovable. */
-  --color-bad: light-dark(#bf2a2a, #ff7a73);
-  --color-bad-wash: light-dark(rgb(191 42 42 / 0.1), rgb(255 122 115 / 0.13));
+  --color-bad: light-dark(#8c0228, #ff7d6c);
+  --color-bad-wash: light-dark(rgb(140 2 40 / 0.1), rgb(255 125 108 / 0.13));
   /* Control borders, at 3:1. */
   --color-line: light-dark(#7d86a0, #5e6a90);
   /* Hairlines. */
@@ -50,15 +53,15 @@
   /* The stage's dotted grid. */
   --color-dot: light-dark(#a9b2c8, #2e3858);
   /* Learn's frame, the page's one mode, and its panel. */
-  --color-learn: light-dark(#8e3a9e, #d98be6);
+  --color-learn: light-dark(#872684, #c26cbf);
   --color-learn-wash: light-dark(#f3e6f5, #2a1e3a);
-  /* The net's ⅋ edges. */
-  --color-net-par: light-dark(#0072b2, #6fb3ee);
-  /* The essential net's input side, its dominator lines and a witness's
-     edges: linlog's own hues (#009e73, #cc79a7, #d55e00), at 4.5:1 on the field. */
-  --color-net-input: light-dark(#00765a, #3fc79c);
-  --color-net-dominator: light-dark(#a8457f, #e59ac4);
-  --color-net-highlight: light-dark(#b04a00, #ff9447);
+  /* The net's colours, each a hue of Okabe and Ito's palette at 4.5:1 on the
+     field: the ⅋ edges blue, the essential net's input side yellow, its
+     dominator lines reddish purple, and a witness's edges vermilion. */
+  --color-net-par: light-dark(#0170af, #3793d6);
+  --color-net-input: light-dark(#746d04, #e7db35);
+  --color-net-dominator: light-dark(#9e507d, #c673a1);
+  --color-net-highlight: light-dark(#793200, #d45e05);
   /* The drawing's glow on the dark field; none by day. */
   --color-glow: light-dark(rgb(52 70 200 / 0), rgb(170 185 255 / 0.35));
   --color-shadow-near: light-dark(rgb(18 26 46 / 0.06), rgb(0 0 0 / 0.3));
@@ -153,7 +156,6 @@
   --size-icon-small: 16px;
   --size-key: 18px;
   --size-badge: 16px;
-  --size-dot: 8px;
   --size-lamp: 10px;
   --size-switch: 32px;
   --size-switch-height: 18px;

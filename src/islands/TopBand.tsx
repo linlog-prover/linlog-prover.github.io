@@ -3,15 +3,26 @@
 
 /**
  * The top band, one row: what I am working on. The open proofs as tabs,
- * each its verdict as a dot (the details on a click), its sequent in the
+ * each its verdict as a coloured mark of its own shape (the details on a click), its sequent in the
  * formulas' font (the sequent field when clicked, or for a new proof), its calculus
  * and fragment as a small mark, and its close; then the new proof's `+` and
  * the light and dark toggle. Under the band, the field's problem with its
  * place marked.
  */
 
-import { Moon, Plus, Sun, X } from "lucide-solid";
+import {
+  CircleCheck,
+  CircleDashed,
+  CircleDot,
+  CircleQuestionMark,
+  CircleX,
+  Moon,
+  Plus,
+  Sun,
+  X,
+} from "lucide-solid";
 import { createEffect, createSignal, For, on, onMount, Show } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { effective, parseTheme, THEME_KEY, type Theme, toggled } from "../lib/theme";
 import { displayed, modeWords } from "../lib/words";
 import { Calculus } from "./Calculus";
@@ -39,6 +50,15 @@ export function tone(proof: Proof): "ok" | "bad" | "warn" | "open" | "none" {
   if (proof.verdict?.tone === "warn") return "warn";
   return "open";
 }
+
+/** Each state's shape, so that its colour is never all that tells it: checked, refused, unknown, open, not started. */
+const STATE_MARKS = {
+  ok: CircleCheck,
+  bad: CircleX,
+  warn: CircleQuestionMark,
+  open: CircleDot,
+  none: CircleDashed,
+} as const;
 
 /** The calculus's short mark. */
 export function mark(proof: Proof): string {
@@ -214,7 +234,12 @@ function ProofTab(props: { proof: Proof; prover: Prover; ui: Ui }) {
           setUi("menu", ui.menu === "status" ? null : "status");
         }}
       >
-        <span class="dot" data-tone={tone(props.proof)} />
+        <Dynamic
+          component={STATE_MARKS[tone(props.proof)]}
+          class="dot"
+          data-tone={tone(props.proof)}
+          aria-hidden="true"
+        />
       </button>
       <Show
         when={props.proof.editing && isActive()}

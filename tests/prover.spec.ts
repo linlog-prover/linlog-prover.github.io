@@ -377,6 +377,27 @@ test("autosave keeps every open proof, and the restore bar brings them back", as
   await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 2/ })).toBeVisible();
 });
 
+test("a proof's state is told by its mark's shape as well as its colour", async ({ page }) => {
+  const shape = (n: number) => page.locator(".ptab").nth(n).locator("svg.dot");
+  await start(page, "A |- A");
+  await expect(shape(0)).toHaveClass(/lucide-circle-dot/);
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(shape(0)).toHaveClass(/lucide-circle-check/);
+  await start(page, "A |- B", false);
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(shape(1)).toHaveClass(/lucide-circle-x/);
+  await page.locator("footer").getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("spinbutton").fill("1");
+  await page.getByRole("spinbutton").press("Enter");
+  await page.keyboard.press("Escape");
+  await start(page, "!(a -o a * a), a |- a * a * a * a", false);
+  await calculus(page, ["Intuitionistic"]);
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await expect(shape(2)).toHaveClass(/lucide-circle-question-mark/);
+  await page.getByRole("button", { name: "New proof" }).click();
+  await expect(shape(3)).toHaveClass(/lucide-circle-dashed/);
+});
+
 test("several proofs are open at once, each with its own state", async ({ page }) => {
   await start(page, "A * B |- B * A");
   await page.getByRole("button", { name: "New proof" }).click();
@@ -535,7 +556,9 @@ test("Settings' net drawing writes every formula or draws the net compact, in th
   expect(svg.match(/<circle /g)?.length).toBe(2);
 });
 
-test("the essential net keeps its input side's colour in both themes", async ({ page }) => {
+test("the essential net draws its input side in the Okabe–Ito palette's yellow, never green, in both themes", async ({
+  page,
+}) => {
   await start(page, "A * B |- B * A");
   await calculus(page, ["Intuitionistic"]);
   await expect(page.locator(".pt-mark")).toContainText("ILL");
@@ -545,8 +568,8 @@ test("the essential net keeps its input side's colour in both themes", async ({ 
   const edge = page.locator('.drawing svg g[stroke="#009e73"] path').first();
   // The hypothesis A ⊗ B, its edges and its literals, is the input side: --color-net-input, never the ink.
   for (const [colorScheme, colour] of [
-    ["light", "rgb(0, 118, 90)"],
-    ["dark", "rgb(63, 199, 156)"],
+    ["light", "rgb(116, 109, 4)"],
+    ["dark", "rgb(231, 219, 53)"],
   ] as const) {
     await page.emulateMedia({ colorScheme });
     await expect(input).toHaveCSS("fill", colour);
