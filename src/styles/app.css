@@ -42,9 +42,13 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* Math text in its font's one weight: a math font has no bold, so a
+   heavier weight around it would be faked by the browser. */
 .m,
 .m-in {
   font-family: var(--font-math);
+  font-weight: var(--font-weight-normal);
+  font-synthesis: none;
 }
 .grow {
   flex: 1;
@@ -501,10 +505,15 @@ button svg.lucide {
   display: block;
   overflow: visible;
   fill: var(--color-ink);
+}
+/* The glow lifts the line art off the field; the formulas stay without it,
+   which on their strokes read as a heavier weight. */
+.drawing svg g[stroke] {
   filter: drop-shadow(0 0 var(--spacing-1-5) var(--color-glow));
 }
 .drawing svg text {
   fill: var(--color-ink);
+  font-synthesis: none;
 }
 .drawing svg path,
 .drawing svg circle,
@@ -1221,6 +1230,8 @@ button svg.lucide {
 .ex-seq {
   font-family: var(--font-math);
   font-size: var(--text-panel);
+  font-weight: var(--font-weight-normal);
+  font-synthesis: none;
 }
 .written a,
 .about a,
