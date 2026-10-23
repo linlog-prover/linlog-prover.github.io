@@ -179,9 +179,18 @@ const keyOf = (formulas: readonly GoalFormula[]) =>
     .sort()
     .join("\n");
 
-/** A goal's sequent as the sequent field reads it: two-sided where the formulas have sides. */
+/**
+ * A goal's sequent as the sequent field reads it: two-sided where the formulas have sides, the
+ * hypotheses left of ⊢ as what they are, the duals of their one-sided formulas.
+ */
 const sequentText = (formulas: readonly GoalFormula[]) => {
-  const left = formulas.filter((f) => f.side === "input").map((f) => f.text);
+  // A hypothesis is the one-sided formula's dual: linlog writes every formula one-sided, the
+  // hypothesis A as A⊥. A negated atom loses its negation; any other formula is negated whole.
+  const dual = (text: string) => {
+    const atom = /^~\s*([\p{L}_][\p{L}\p{N}_']*)$/u.exec(text);
+    return atom ? atom[1] : `~(${text})`;
+  };
+  const left = formulas.filter((f) => f.side === "input").map((f) => dual(f.text));
   const right = formulas.filter((f) => f.side !== "input").map((f) => f.text);
   return `${left.join(", ")}${left.length ? " " : ""}|- ${right.join(", ")}`;
 };
