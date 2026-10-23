@@ -16,6 +16,8 @@ interface Problem {
 }
 
 async function openPractice(page: Page) {
+  // After a reload the band is drawn before its island hydrates; a press before that is lost.
+  await expect(page.locator("astro-island[ssr]")).toHaveCount(0);
   await page.locator("footer").getByRole("button", { name: "Practice", exact: true }).click();
   const practice = page.getByRole("dialog", { name: "Practice" });
   await expect(practice.locator(".pr-row").first()).toBeVisible();
