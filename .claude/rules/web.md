@@ -337,9 +337,9 @@ the page reads.
   `/logo/wordmark-*.svg`, `/logo/square-dark.svg` and `/logo/favicon-32.png` stable.
 - **On the page the word mark is inline** (`Logo.tsx`, the 404 page's `set:html`), so the
   theme's tokens paint it: the letters `--color-ink`, the ring `--color-logo` (`.logo` in
-  `app.css`); the drawing names itself "linlog". The band's mark is 24 pixels high
-  (`--size-wordmark`, at the band's 18 the ring was a dot) and is hidden on a phone as the
-  plain word was.
+  `app.css`); the drawing names itself "linlog". The band's mark is 30 pixels high
+  (`--size-wordmark`, the author's choice; at the band's 18 the ring was a dot) and is
+  hidden on a phone as the plain word was.
 - **Its licence**: `src/logo/LICENSE.txt` (served at `/logo/LICENSE.txt`, listed in About)
   puts every file of the logo under CC BY 4.0 and says the name and mark may not suggest the
   project's endorsement; About repeats that line. The `licences` check holds every image
