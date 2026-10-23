@@ -1422,7 +1422,7 @@ button.kw {
   flex-direction: column;
   gap: var(--spacing-2);
 }
-.lessons li {
+.lessons > li {
   display: flex;
   justify-content: space-between;
   gap: var(--spacing-2);
@@ -1431,7 +1431,7 @@ button.kw {
   border-radius: var(--radius-control);
   counter-increment: lesson;
 }
-.lessons li span:first-child::before {
+.lessons > li > span:first-child::before {
   content: counter(lesson) ". ";
 }
 .lesson {
@@ -1493,7 +1493,7 @@ button.kw {
   font-size: var(--text-small);
   white-space: nowrap;
 }
-.lessons li:has(details) {
+.lessons > li:has(details) {
   display: block;
   border-style: solid;
 }

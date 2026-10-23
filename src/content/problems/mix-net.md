@@ -4,7 +4,7 @@ sequent: "A * B |- A | B"
 mode: "mix"
 verdict: "provable"
 level: 2
-categories: [multiplicatives, classical, structural]
+categories: [multiplicatives, classical, structural, literature]
 fragment: "MLL"
 lesson: 8
 order: 52

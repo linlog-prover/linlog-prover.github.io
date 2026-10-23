@@ -4,7 +4,7 @@ sequent: "A * B |- B * A"
 mode: "classical"
 verdict: "provable"
 level: 1
-categories: [multiplicatives, classical]
+categories: [multiplicatives, classical, literature]
 fragment: "MLL"
 lesson: 2
 order: 6

@@ -4,7 +4,7 @@ sequent: "A |- A * 1"
 mode: "classical"
 verdict: "provable"
 level: 1
-categories: [multiplicatives, units, classical]
+categories: [multiplicatives, units, classical, literature]
 fragment: "MLL with units"
 lesson: 4
 order: 20

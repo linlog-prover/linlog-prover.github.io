@@ -4,7 +4,7 @@ sequent: "!A * !B |- !(A & B)"
 mode: "classical"
 verdict: "provable"
 level: 3
-categories: [multiplicatives, additives, exponentials, classical]
+categories: [multiplicatives, additives, exponentials, classical, literature]
 fragment: "LL"
 lesson: 5
 order: 153

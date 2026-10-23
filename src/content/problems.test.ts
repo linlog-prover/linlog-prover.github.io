@@ -28,6 +28,7 @@ const entries = readdirSync(here)
       fragment: field("fragment") ?? "",
       lesson: field("lesson") === undefined ? null : Number(field("lesson")),
       order: Number(field("order")),
+      source: field("source"),
     };
   });
 const provable = entries.filter((e) => e.verdict === "provable");
@@ -62,8 +63,9 @@ describe("the store of problems", () => {
     expect(seen.size).toBe(entries.length);
   });
 
-  it("files every problem under the connectives it uses and its logic", () => {
+  it("files every problem under the connectives it uses and its logic, and under the literature when it cites a source", () => {
     for (const e of entries) {
+      expect(e.categories.includes("literature"), e.id).toBe(e.source !== undefined);
       expect(
         e.categories.filter((c) => c !== "literature"),
         e.id,

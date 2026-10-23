@@ -4,7 +4,7 @@ sequent: "A | (B * C) |- (A | B) * C"
 mode: "classical"
 verdict: "unprovable"
 level: 3
-categories: [multiplicatives, classical]
+categories: [multiplicatives, classical, literature]
 fragment: "MLL"
 lesson: 8
 order: 181

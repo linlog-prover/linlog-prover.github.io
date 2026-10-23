@@ -4,7 +4,7 @@ sequent: "(A & B) * C |- (A * C) & (B * C)"
 mode: "classical"
 verdict: "provable"
 level: 3
-categories: [multiplicatives, additives, classical]
+categories: [multiplicatives, additives, classical, literature]
 fragment: "MALL"
 lesson: 3
 order: 17
