@@ -1,0 +1,19 @@
+linlog's logo
+
+The files of this directory are linlog's logo: the word mark
+(wordmark-light.svg, wordmark-dark.svg, wordmark-mono.svg), its square form
+(square-light.svg, square-dark.svg, square-mono.svg), and the images drawn
+from them (the favicon, the app icons, the Apple touch icon, the link
+preview's image).
+
+linlog's logo © Fabian Lukas Grubmüller 2026, licensed under the Creative
+Commons Attribution 4.0 International licence (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+The name "linlog" and its mark identify the linlog project
+(https://github.com/linlog-prover/linlog). They may not be used in a way
+that suggests that the project or its author endorses anything else.
+
+The word is set in Figtree Bold and outlined, so no font file goes with
+these files. Figtree is under the SIL Open Font License 1.1, whose
+condition 5 exempts a document created using the font from that licence.

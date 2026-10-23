@@ -79,7 +79,8 @@
           done
         '';
 
-        # The bindings and the fonts, where astro.config.ts's aliases look.
+        # The bindings and the fonts, where astro.config.ts's aliases look, and
+        # the logo's rasters, which the build copies (src/integrations/offline.ts).
         # `nix-store --add-root' makes the link itself the root.
         devshell.startup.linlog.deps = [ "prj-root" ];
         devshell.startup.linlog.text = ''
@@ -88,6 +89,8 @@
             || echo "could not link linlog-web at .cache/linlog-web" >&2
           nix-store --add-root "$PRJ_ROOT/.cache/linlog-fonts" --realise ${config.linlogFonts} >/dev/null \
             || echo "could not link the fonts at .cache/linlog-fonts" >&2
+          nix-store --add-root "$PRJ_ROOT/.cache/linlog-logo" --realise ${config.logoFiles} >/dev/null \
+            || echo "could not link the logo's rasters at .cache/linlog-logo" >&2
         '';
 
         env = [

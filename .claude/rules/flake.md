@@ -28,7 +28,8 @@ never through `specialArgs`. The scheme is the author's learning sites'
   only ever names a commit on linlog's `main`.
 - **The bindings and fonts reach the site through `.cache/`**: the dev shell links
   `.cache/linlog-web` and `.cache/linlog-fonts` (each a garbage collector's root), and
-  `npmTask` links the same in the sandbox; `astro.config.ts`, `vitest.config.ts` and
+  `.cache/linlog-logo` (the logo's rasters, `logo.nix`'s `logoFiles`), and `npmTask` links
+  the same in the sandbox; `astro.config.ts`, `vitest.config.ts` and
   `tsconfig.json` alias `linlog-web` and `linlog-fonts` to them.
 - **Every derivation reads only its files** (`lib.fileset`): `fileSets.site` is what
   `astro build` reads; a check adds its own. A new file that the build or a check reads
