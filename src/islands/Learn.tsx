@@ -786,6 +786,11 @@ function Attempt(props: {
                       <span class="hinge-dot" aria-hidden="true" />
                       <span>
                         Step {i() + 1}, <span class="m">{s.rule}</span>
+                        {/* Its reason here too, so that the visitor need not find the step on the stage. */}
+                        <br />
+                        <span class="sub">
+                          <Words text={s.reason} />
+                        </span>
                       </span>
                     </label>
                   )}

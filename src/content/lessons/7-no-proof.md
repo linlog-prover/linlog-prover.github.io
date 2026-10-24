@@ -42,7 +42,7 @@ faded: 1
 explain:
   after: 1
   prompt: "Count the atoms of the goal after the attempt's `⊕₁` and after this `⊕₂`. Why could the attempt never be closed, whatever came after?"
-  answer: "After `⊕₁` the goal is `⊢ A⊥, C⊥, C ⊗ (B ⊕ D)`: `A⊥` occurs and `A` does not. Every derivation ends in axioms, each pairing an atom with its dual, so an atom without its dual is never used up. After `⊕₂`, `B⊥` can meet the `B` of `B ⊕ D` and `C⊥` meets `C`; `D`, inside `⊕`, need not be chosen."
+  answer: "After `⊕₁` the goal is `⊢ A⊥, C⊥, C ⊗ (B ⊕ D)`: `A⊥` occurs and `A` does not. The goal has no `⊤` and no `?`, nothing that can drop a formula, so every derivation of it ends in axioms, each pairing an atom with its dual: an atom without its dual is never used up. After `⊕₂`, `B⊥` can meet the `B` of `B ⊕ D` and `C⊥` meets `C`; `D`, inside `⊕`, need not be chosen."
 gallery:
   title: "No proof, and why"
   act: "ask"
@@ -61,7 +61,7 @@ unknown:
 hinge:
   question: "Why has `A ⊗ B ⊢ A` no proof?"
   options:
-    - text: "`B` is never used: every proof pairs each atom with its dual in an axiom"
+    - text: "`B` is never used, and with no `⊤` and no `?` nothing can drop it: every proof pairs each atom with its dual in an axiom"
       why: "One-sided the sequent is `⊢ A⊥ ⅋ B⊥, A`: `B⊥` occurs and `B` does not. linlog's answer is the atom balance."
     - text: "Read as ordinary logic, it is false"
       misconception: "A sequent with no proof is false when read as ordinary logic."
@@ -81,6 +81,7 @@ way.
 An attempt that gets stuck proves nothing about the sequent: a wrong step loses one
 attempt, and another may succeed. "No proof" is a claim about every attempt, so it needs
 a reason that holds for all of them. linlog's reasons: an atom whose duals do not pair
-off (every proof ends in axioms, each pairing an atom with its dual); a classical
+off (where no `⊤` and no `?` can drop a formula, every proof ends in axioms, each
+pairing an atom with its dual); a classical
 countermodel (read as ordinary logic the sequent is false, and every provable sequent
 reads as true); and an exhausted search, which tried every way and found none.
