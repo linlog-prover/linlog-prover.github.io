@@ -485,7 +485,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const at = r && session ? goalAt(session, r.path) : undefined;
     const label =
       at === undefined ? null : host.querySelector(`#i${drawingIndex(at)}`)?.nextElementSibling;
-    if (!(label instanceof SVGTextElement) || ui.tab === "net") {
+    // The rule label is a text, or a group where its name has a subscript (⊕₁, &L₂).
+    if (!(label instanceof SVGGraphicsElement) || ui.tab === "net") {
       box.style.visibility = "hidden";
       return;
     }
