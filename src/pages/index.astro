@@ -12,8 +12,9 @@
 // The written content (src/content.config.ts) is rendered here into inert
 // templates, each marked data-written, which the island clones where it
 // shows them (Learn, Practice, the tour, About); Learn's problems (those of
-// the store with a lesson, with their sessions) and the tour's data go to
-// the island as props. Practice's problems come from /problems.json. The licence of the written content is a template
+// the store with a lesson, with their sessions), its lessons (their openings
+// rendered here, the rest data), the rules and the tour's data go to the
+// island as props. Practice's problems come from /problems.json. The licence of the written content is a template
 // of its own, shown with it.
 import asana from "linlog-fonts/Asana-Math.otf?url";
 import euler from "linlog-fonts/Euler-Math.otf?url";
@@ -22,7 +23,7 @@ import newcm from "linlog-fonts/NewCMMath-Book.otf?url";
 import stix from "linlog-fonts/STIXTwoMath-Regular.otf?url";
 import { getCollection, render } from "astro:content";
 import App from "../islands/App";
-import type { Example, Stop } from "../lib/content";
+import type { Example, Lesson, Rule, Stop } from "../lib/content";
 import Base from "../layouts/Base.astro";
 
 const sessions = import.meta.glob<string>("../content/problems/*.session.json", {
@@ -35,6 +36,8 @@ const examples = (await getCollection("problems"))
   .sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0));
 const stops = (await getCollection("tour")).sort((a, b) => a.id.localeCompare(b.id));
 const texts = await getCollection("texts");
+const lessons = (await getCollection("lessons")).sort((a, b) => a.data.lesson - b.data.lesson);
+const rules = (await getCollection("rules")).sort((a, b) => a.id.localeCompare(b.id));
 
 const exampleData: Example[] = examples.map((e) => ({
   id: e.id,
@@ -52,8 +55,14 @@ const stopData: Stop[] = stops.map((s) => ({
   target: s.data.target,
   act: s.data.act,
 }));
+const lessonData: Lesson[] = lessons.map((l) => ({
+  id: l.id,
+  ...l.data,
+  detour: l.data.detour ?? null,
+}));
+const ruleData: Rule[] = rules.map((r) => ({ id: r.id, ...r.data }));
 const rendered = await Promise.all(
-  [...examples, ...stops, ...texts].map(async (entry) => ({
+  [...examples, ...stops, ...texts, ...lessons].map(async (entry) => ({
     key: `${entry.collection}/${entry.id}`,
     Content: (await render(entry)).Content,
   })),
@@ -68,6 +77,8 @@ const rendered = await Promise.all(
       fonts={{ euler, "stix-two": stix, garamond, asana, "new-computer-modern": newcm }}
       examples={exampleData}
       stops={stopData}
+      lessons={lessonData}
+      rules={ruleData}
     >
       <p slot="fallback" class="noscript">
         linlog proves sequents of linear logic in the browser; the page needs JavaScript and

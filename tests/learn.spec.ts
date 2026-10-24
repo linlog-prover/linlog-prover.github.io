@@ -44,7 +44,7 @@ test("a lesson's problem opens at once, and Watch plays its proof one step at a 
   await expect(page.locator(".ptab")).toHaveCount(1);
   await expect(page.locator(".ptab .pt-go .m")).toHaveText("A, A ⊸ B ⊢ B");
   await expect(page.getByRole("button", { name: /, formula 1 of goal 1/ })).toBeVisible();
-  await page.getByText("2. The multiplicatives").click();
+  await page.getByRole("button", { name: "Lesson 2: The multiplicatives" }).click();
   await page.getByText("Answer").and(page.getByLabel("The answer to Tensor commutes")).click();
   await page.getByRole("button", { name: "Watch Tensor commutes" }).click();
   await expect(page.locator(".ptab")).toHaveCount(2);

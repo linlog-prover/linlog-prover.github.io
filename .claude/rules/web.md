@@ -264,7 +264,8 @@ the page reads.
   `categories`, the `fragment` linlog detects; `lesson`/`order` for a lesson's practice,
   `source`/`url` for one from the literature; a provable one's proof beside it as
   `<id>.session.json`), `tour/` (the stops in order, each with the element it points at
-  and the step it performs), `texts/` (About, Practice's opening and Learn's two openings).
+  and the step it performs), `texts/` (About, Practice's opening and Learn's two openings),
+  `lessons/` (Learn's written lessons) and `rules/` (the one-sided rules as schemas).
 - **Rendered by `index.astro` into `<template data-written data-content="…">`** and cloned
   by the island (`Written` in `Learn.tsx`), never set from strings: the content is in the
   built HTML, where `no-style-attributes`, `csp` and `licences` read it. Only Learn's
@@ -298,6 +299,37 @@ the page reads.
   `structural` for weakening or Mix) and `literature` for a classic with its source read in
   the work. Practice filters by groups (`GROUPS`): any chosen within a group, every group at
   once, and the levels.
+- **A written lesson** (`lessons/<n>-<name>.md`, `LessonView` in `Learn.tsx`) is D56's
+  sequence: its opening (the body), the worked proof (`worked`, a store problem of the same
+  lesson, played from its session: `steps` holds one rule and reason per entry of the
+  session's history, in its order, and `lessons.test.ts` holds them equal, so a session
+  rewritten in another order fails it), the predictions among `choices`, the faded proof
+  (`faded`: the steps the page plays before the student takes over), the self-explanation
+  prompt after the step `explain.after`, an optional dead end (`detour`: a legal split shown
+  in the split chooser, which `split_passes` must refuse), and the hinge question (one
+  option without a `misconception`; an option's `problem`, when named, is provable exactly
+  when the option is right). Every sequent a lesson shows as a problem is a store problem
+  with that lesson, so the store's checks cover it. Formulas in a lesson's or a rule's text
+  stand between backticks and are set in the math font (`Words` in `ui.tsx`).
+- **The worked proof plays on a tab of its own** (`prover.worked`: the session replayed to
+  its first steps, the rest on the redo stack for a worked proof or left to the visitor for
+  the faded one; the same tab while it still holds the problem's sequent, so a lesson piles
+  up no tabs). A step is played by the prover's Redo; when the visitor worked on the tab
+  meanwhile, the lesson replays it to where it stands first.
+- **A step's reason stands beside its inference** (`ui.reason`, the `.because` note in
+  `Stage.tsx`, with Learn on): on the rule label's row past the drawing's right edge, under
+  the drawing where the stage has no room there, above the stage's controls on a phone. Never
+  in Learn's panel (D22); the panel says only whether the prediction was right.
+- **Learn's hover explanations** (D47) are on only with Learn on: a formula's button gets
+  `data-tip`, its last connective's name and reading (`readingOf`; `READINGS` in
+  `words.ts`, which `lessons.test.ts` holds to the reference table's reading column), and a
+  rule of the popover `data-rule`, whose tip in `App.tsx` draws the rule's schema
+  (`Schema`) from the `rules` collection, a two-sided name by the one-sided rule it names
+  (`ruleNamed`). A verdict's reason is the note's and the status's tip, as before.
+- **The reference's rules** are `rules/<nn>-<name>.md` (linlog's name, the premises and the
+  conclusion as the Handbook's Table 1.4 writes them, linlog's two-sided names from its
+  `ClassicalRule` table, the lesson), drawn by `Rules` into the reference's `<div
+  data-rules>` through a portal, after the text is cloned (`Written`'s `ready`).
 - **Learn's practice is a lesson's**: the problems with a `lesson`, under the tutorial's
   lesson, easiest first, provable and unprovable mixed, never three alike in a row
   (`problems.test.ts`); a card keeps its verdict and explanation under "Answer". Every
@@ -352,7 +384,8 @@ the page reads.
 - **Learn** (`Learn.tsx`) is `ui.learn`, the place shown or null (the tutorial or the reference): a frame of `--color-learn`
   around the window (`.app[data-learn]`, the window is `.win`) with the panel beside it,
   under it on a phone; with it on every action shows its label. Off, nothing of it is on
-  the page. The tutorial's lessons are places (`LESSONS`), each holding its practice, until they are written. With Learn on, the band packs tighter (`.app[data-learn] .act`) to keep one row at 1280 pixels (`learn.spec.ts`).
+  the page. The tutorial lists the lessons (`LESSONS`): a written one opens its lesson
+  (`ui.lesson`), one not yet written is a place holding its practice. With Learn on, the band packs tighter (`.app[data-learn] .act`) to keep one row at 1280 pixels (`learn.spec.ts`).
 - **The tour** (`Tour.tsx`) runs on `ui.tour`: each stop's `act` is performed once, on the
   way forward, through the state's own actions; the caption takes the focus, says each
   stop in the live region, and marks what it points at with `data-tour-spot`.
@@ -443,6 +476,9 @@ the page reads.
   control's height on screen, and `fitView` never zooms out below the size at which the
   active goal's formulas are a control wide (`floor`); a step that leaves them narrower
   zooms in to the floor unless the visitor zoomed by hand since the last fit (`byHand`).
+  `floor` solves for the zoom per button: a button's padding past its formula's ends stays
+  the same on screen while the formula scales (`Hit.fixed`), so the ratio of the narrowest
+  width to a control's undershoots, which a lesson's step on a phone showed (39 pixels).
   The test measures the stage in every math font too: Garamond-Math's narrower `B⊥` fell
   to 43 pixels on a phone before a step re-applied the floor.
 - **A tab's calculus mark** stands apart from the sequent (`.pt-mark`: 12 pixels before it,

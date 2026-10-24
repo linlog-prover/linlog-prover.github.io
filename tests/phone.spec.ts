@@ -26,7 +26,7 @@ test("Learn's frame takes the lower half at a phone's width, with no sideways sc
   await page.goto("/");
   await page.locator("footer").getByRole("button", { name: "Learn" }).click();
   const frame = page.getByRole("complementary", { name: "Learn" });
-  await frame.getByText("2. The multiplicatives").click();
+  await frame.getByRole("button", { name: "Lesson 2: The multiplicatives" }).click();
   await frame.getByRole("button", { name: "Prove Tensor commutes" }).click();
   await expect(page.locator(".ptab .pt-go .m")).toHaveText("A ⊗ B ⊢ B ⊗ A");
   const [frameBox, stage] = [await frame.boundingBox(), await page.locator(".stage").boundingBox()];

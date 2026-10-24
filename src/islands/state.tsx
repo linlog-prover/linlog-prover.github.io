@@ -700,6 +700,56 @@ export function createProver(say: (text: string) => void = () => undefined) {
       },
     ),
 
+    /**
+     * Shows a lesson's worked proof after its first `played` steps, on the tab `tab` while
+     * that tab still holds the problem's sequent, else on a new tab as `example` opens one.
+     * With `watch` the steps after are on the redo stack, each by itself, so that Redo plays
+     * them; without, the rest of the proof is the visitor's. Returns the tab's id.
+     */
+    worked: guard(
+      async (
+        example: Pick<Example, "sequent" | "mode" | "session">,
+        played: number,
+        watch: boolean,
+        tab: string | null,
+      ): Promise<string | null> => {
+        if (!example.session) return null;
+        let p = store.proofs.find(
+          (q) =>
+            q.id === tab && q.session && q.mode === example.mode && q.input === example.sequent,
+        );
+        if (p) actions.activate(p.id);
+        else {
+          const empty = current();
+          const blankId = empty && !empty.session && !empty.input.trim() ? empty.id : null;
+          const opened = await actions.open(example.session, example.mode);
+          if ("problem" in opened) return null;
+          p = current();
+          if (blankId && blankId !== p?.id) actions.remove(blankId);
+        }
+        if (!p?.session) return null;
+        const all = actionsOf(JSON.parse(example.session) as SessionDoc);
+        const result = await attempt(() =>
+          api.replay(p.session as SessionDoc, all.slice(0, played), replaying()),
+        );
+        if (!result.ok) return null;
+        const id = p.id;
+        update(id, (q) => {
+          q.input = example.sequent;
+          q.redo = watch
+            ? all
+                .slice(played)
+                .toReversed()
+                .map((action) => [action])
+            : [];
+        });
+        const next = all[played];
+        show(id, result.value, next ? goalAt(result.value.session, next.path) : undefined);
+        save();
+        return id;
+      },
+    ),
+
     /** Notes a line on the stage that is no goal's. */
     banner(id: string, said: Said | null) {
       update(id, (p) => (p.banner = said));

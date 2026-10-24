@@ -3,27 +3,40 @@
 
 /**
  * Learn: a frame around the window, on only when the visitor turns it on,
- * holding two places. The tutorial (its opening, the tour of the page, and
- * the lessons, each with its practice: problems of the store, proved by the
- * visitor or watched step by step, provable and not mixed; the lessons'
- * worked examples come when they are written) and the reference (the
- * connectives). The texts are the page's written content, cloned from its
+ * holding two places. The tutorial: its opening, the tour of the page, and
+ * the lessons. A written lesson is a worked proof played on the stage one
+ * inference at a time, the rule predicted before each and its reason shown
+ * beside it, the same proof with its last steps left to the visitor, its
+ * practice (problems of the store, provable and not mixed), a
+ * self-explanation prompt and a hinge question whose answer offers the next
+ * lesson or the faded proof again; a lesson not yet written has its practice
+ * alone. The reference: the connectives, the rules drawn as schemas, the
+ * engines. The texts are the page's written content, cloned from its
  * templates, with their licence.
  */
 
-import { Compass, Play, X } from "lucide-solid";
-import { createEffect, For, Match, Show, Switch } from "solid-js";
-import { type Example, type Level, written } from "../lib/content";
+import { ArrowLeft, Compass, Play, X } from "lucide-solid";
+import { createEffect, createSignal, For, Match, Show, Switch } from "solid-js";
+import { Portal } from "solid-js/web";
+import { type Example, type Lesson, type Level, type Rule, written } from "../lib/content";
+import type { SessionDoc } from "../lib/linlog";
 import { LEVEL_NAMES } from "../lib/practice";
+import { actions as actionsOf, goalAt } from "../lib/steps";
 import { displayed } from "../lib/words";
 import type { Prover } from "./state";
-import type { Rubric, Ui } from "./ui";
+import { type Rubric, type Ui, Words } from "./ui";
 
 /**
  * A written text of the page, by its template's name; `spot`, the id of an
  * element in it, is brought into view and marked.
  */
-export function Written(props: { name: string; class?: string; spot?: string | null }) {
+export function Written(props: {
+  name: string;
+  class?: string;
+  spot?: string | null;
+  /** Called with the text's element once its content is in. */
+  ready?: (host: HTMLElement) => void;
+}) {
   let host!: HTMLDivElement;
   createEffect(() => {
     const spot = props.spot;
@@ -41,13 +54,16 @@ export function Written(props: { name: string; class?: string; spot?: string | n
       class={`written ${props.class ?? ""}`}
       ref={(el) => {
         host = el;
-        queueMicrotask(() => el.replaceChildren(written(props.name)));
+        queueMicrotask(() => {
+          el.replaceChildren(written(props.name));
+          props.ready?.(el);
+        });
       }}
     />
   );
 }
 
-/** The lessons to come, in their order: the places of the tutorial. */
+/** The lessons in their order: the places of the tutorial. */
 export const LESSONS = [
   "Reading a sequent",
   "The multiplicatives",
@@ -77,13 +93,58 @@ export function Stairs(props: { level: Level }) {
   );
 }
 
+/** A rule drawn as its schema: the premises over a bar over the conclusion, its name beside the bar. */
+export function Schema(props: { rule: Rule }) {
+  return (
+    <span
+      class="schema m"
+      role="img"
+      aria-label={`${props.rule.name}: from ${props.rule.premises.join(" and ") || "nothing"} to ${props.rule.conclusion}`}
+    >
+      <span class="sch-fig">
+        <span class="sch-prem">
+          <For each={props.rule.premises}>{(premise) => <span>{premise}</span>}</For>
+        </span>
+        <span class="sch-concl">{props.rule.conclusion}</span>
+      </span>
+      <span class="sch-name">{props.rule.name}</span>
+    </span>
+  );
+}
+
+/** The rules as the reference lists them: each schema, its names and what it does. */
+function Rules(props: { rules: readonly Rule[] }) {
+  return (
+    <ul class="rule-list">
+      <For each={props.rules}>
+        {(rule) => (
+          <li id={`rule-${rule.id.replace(/^\d+-/, "")}`}>
+            <Schema rule={rule} />
+            <p>
+              <span class="rule-title">{rule.title}</span> <Words text={rule.says} />
+            </p>
+            <p class="sub">
+              Two-sided: <span class="m">{rule.twoSided.join(", ")}</span>. Lesson {rule.lesson}.
+            </p>
+          </li>
+        )}
+      </For>
+    </ul>
+  );
+}
+
 export function LearnFrame(props: {
   prover: Prover;
   ui: Ui;
   examples: readonly Example[];
+  lessons: readonly Lesson[];
+  rules: readonly Rule[];
   tour: () => void;
 }) {
   const { ui, setUi } = props.ui;
+  const [rulesAt, setRulesAt] = createSignal<HTMLElement>();
+  const open = (lesson: number | null) => setUi({ lesson, reason: null });
+  const opened = () => props.lessons.find((l) => l.lesson === ui.lesson);
   return (
     <aside class="frame" aria-label="Learn">
       <div class="frame-head">
@@ -118,6 +179,22 @@ export function LearnFrame(props: {
       </div>
       <div class="frame-body" id="frame-panel" role="tabpanel" aria-labelledby={`ftab-${ui.learn}`}>
         <Switch>
+          <Match when={ui.learn === "tutorial" && opened()}>
+            {(lesson) => (
+              <Show when={lesson()} keyed>
+                {(l) => (
+                  <LessonView
+                    lesson={l}
+                    next={props.lessons.find((n) => n.lesson === l.lesson + 1) ?? null}
+                    examples={props.examples}
+                    prover={props.prover}
+                    ui={props.ui}
+                    open={open}
+                  />
+                )}
+              </Show>
+            )}
+          </Match>
           <Match when={ui.learn === "tutorial"}>
             <Written name="texts/tutorial" />
             <button type="button" class="btn" onClick={() => props.tour()}>
@@ -128,8 +205,7 @@ export function LearnFrame(props: {
               <For each={LESSONS.map((name, i) => [name, i + 1] as const)}>
                 {([name, lesson]) => (
                   <li>
-                    <Show
-                      when={props.examples.some((e) => e.lesson === lesson)}
+                    <Switch
                       fallback={
                         <>
                           <span>{name}</span>
@@ -137,32 +213,421 @@ export function LearnFrame(props: {
                         </>
                       }
                     >
-                      <details class="lesson" open={lesson === 1}>
-                        <summary class="prac-h">
-                          {lesson}. {name}
-                        </summary>
-                        <p class="sub">Practice: decide first whether each has a proof.</p>
-                        <ul class="prac">
-                          <For each={props.examples.filter((e) => e.lesson === lesson)}>
-                            {(example) => (
-                              <Exercise example={example} prover={props.prover} ui={props.ui} />
-                            )}
-                          </For>
-                        </ul>
-                      </details>
-                    </Show>
+                      <Match when={props.lessons.some((l) => l.lesson === lesson)}>
+                        <button
+                          type="button"
+                          class="lesson-open"
+                          aria-label={`Lesson ${lesson}: ${name}`}
+                          onClick={() => open(lesson)}
+                        >
+                          <span class="lesson-n" aria-hidden="true">
+                            {lesson}
+                          </span>
+                          <span class="lesson-name">{name}</span>
+                          <span class="sub">A worked proof, your turn, practice, a check</span>
+                        </button>
+                      </Match>
+                      <Match when={props.examples.some((e) => e.lesson === lesson)}>
+                        <details class="lesson">
+                          <summary class="prac-h">
+                            {lesson}. {name}
+                          </summary>
+                          <Practice
+                            lesson={lesson}
+                            examples={props.examples}
+                            prover={props.prover}
+                            ui={props.ui}
+                          />
+                        </details>
+                      </Match>
+                    </Switch>
                   </li>
                 )}
               </For>
             </ol>
           </Match>
           <Match when={ui.learn === "reference"}>
-            <Written name="texts/reference" spot={ui.spot} />
+            <Written
+              name="texts/reference"
+              spot={ui.spot}
+              ready={(host) =>
+                setRulesAt(host.querySelector<HTMLElement>("[data-rules]") ?? undefined)
+              }
+            />
+            <Show when={rulesAt()}>
+              {(at) => (
+                <Portal mount={at()}>
+                  <Rules rules={props.rules} />
+                </Portal>
+              )}
+            </Show>
           </Match>
         </Switch>
         <Written name="licence" class="frame-licence" />
       </div>
     </aside>
+  );
+}
+
+/** A lesson's practice: its problems of the store, easiest first. */
+function Practice(props: { lesson: number; examples: readonly Example[]; prover: Prover; ui: Ui }) {
+  return (
+    <>
+      <p class="sub">Practice: decide first whether each has a proof.</p>
+      <ul class="prac">
+        <For each={props.examples.filter((e) => e.lesson === props.lesson)}>
+          {(example) => <Exercise example={example} prover={props.prover} ui={props.ui} />}
+        </For>
+      </ul>
+    </>
+  );
+}
+
+/**
+ * A written lesson: its opening, the worked proof played on the stage (each rule predicted, then
+ * played, its reason beside the inference), the self-explanation prompt after its densest step,
+ * the faded proof, the practice and the hinge question.
+ */
+function LessonView(props: {
+  lesson: Lesson;
+  next: Lesson | null;
+  examples: readonly Example[];
+  prover: Prover;
+  ui: Ui;
+  open: (lesson: number | null) => void;
+}) {
+  const { setUi } = props.ui;
+  const worked = props.examples.find((e) => e.id === props.lesson.worked);
+  const all = worked?.session ? actionsOf(JSON.parse(worked.session) as SessionDoc) : [];
+  const steps = props.lesson.steps;
+  /** The tab the lesson's proof is on, while it is open. */
+  const [tab, setTab] = createSignal<string | null>(null);
+  /** What the tab shows: the worked proof, played up to `played`, or the faded one. */
+  const [part, setPart] = createSignal<"worked" | "faded" | null>(null);
+  const [played, setPlayed] = createSignal(0);
+  /** What was said of the last step played: the rule and the guess before it. */
+  const [said, setSaid] = createSignal<{ rule: string; guess: string | null } | null>(null);
+  const [detoured, setDetoured] = createSignal(false);
+  const [compared, setCompared] = createSignal(false);
+  const [chosen, setChosen] = createSignal<number | null>(null);
+  let faded!: HTMLElement;
+
+  const onTab = () => props.prover.current()?.id === tab();
+  const finished = () => onTab() && props.prover.current()?.view?.complete === true;
+
+  async function start(at: number, watch: boolean) {
+    if (!worked) return;
+    const id = await props.prover.worked(worked, at, watch, tab());
+    if (!id) return;
+    setTab(id);
+    setUi({ reason: null, split: null, selected: null });
+  }
+
+  async function begin() {
+    await start(0, true);
+    setPart("worked");
+    setPlayed(0);
+    setSaid(null);
+    setDetoured(false);
+  }
+
+  /** Plays the next step of the worked proof, after the visitor's guess (or none). */
+  async function reveal(guess: string | null) {
+    const at = played();
+    const step = steps[at];
+    // One action at a time: a press while one runs does nothing, as the prover's own do.
+    if (!step || props.prover.busy()) return;
+    const p = props.prover.current();
+    // The visitor may have worked on the tab meanwhile: take it back to where the lesson is.
+    if (!onTab() || p?.redo.length !== all.length - at) await start(at, true);
+    setUi({ split: null, selected: null });
+    const path = all[at]?.path ?? [];
+    await props.prover.redo();
+    const id = tab();
+    if (id) setUi("reason", { tab: id, path, text: `${step.rule}: ${step.reason}` });
+    setUi("live", `${step.rule}. ${step.reason.replaceAll("`", "")}`);
+    setSaid({ rule: step.rule, guess });
+    setPlayed(at + 1);
+  }
+
+  /** Shows the lesson's legal split that leads nowhere in the split chooser, with linlog's verdict on it. */
+  async function detour() {
+    const d = props.lesson.detour;
+    const action = all[played()];
+    const session = props.prover.current()?.session;
+    if (!d || !action || action.kind !== "step" || !onTab() || !session) return;
+    const goal = goalAt(session, action.path);
+    if (goal === undefined) return;
+    const step = { position: action.step.position, rule: action.step.rule, left: d.left };
+    setUi({ selected: null, split: { goal, ...step, passes: null } });
+    const passes = await props.prover.splitPasses(goal, step);
+    setUi("split", (s) => (s ? { ...s, passes } : s));
+    setDetoured(true);
+  }
+
+  async function fade() {
+    await start(props.lesson.faded, false);
+    setPart("faded");
+    faded.scrollIntoView({ block: "start" });
+  }
+
+  const step = () => steps[played()];
+  const option = () => {
+    const i = chosen();
+    return i === null ? undefined : props.lesson.hinge.options[i];
+  };
+
+  return (
+    <article class="lesson-view" aria-labelledby="lesson-title">
+      <button type="button" class="btn btn-s" onClick={() => props.open(null)}>
+        <ArrowLeft aria-hidden="true" />
+        All lessons
+      </button>
+      <h2 id="lesson-title" class="lesson-title">
+        <span class="lesson-n" aria-hidden="true">
+          {props.lesson.lesson}
+        </span>
+        {props.lesson.title}
+      </h2>
+      <Written name={`lessons/${props.lesson.id}`} />
+
+      <section class="part" aria-labelledby="part-worked">
+        <h3 id="part-worked">A worked proof</h3>
+        <p class="m ex-seq">{worked ? displayed(worked.sequent) : ""}</p>
+        <Show
+          when={part() === "worked" && onTab()}
+          fallback={
+            <button type="button" class="btn btn-primary" onClick={() => void begin()}>
+              Start the worked proof
+            </button>
+          }
+        >
+          <Show when={said()}>
+            {(s) => (
+              <p class="said" role="status">
+                <Show
+                  when={s().guess === null}
+                  fallback={
+                    <Show
+                      when={s().guess === s().rule}
+                      fallback={
+                        <>
+                          The step is <span class="m">{s().rule}</span>, not{" "}
+                          <span class="m">{s().guess}</span>; its reason is beside it on the stage.
+                        </>
+                      }
+                    >
+                      <span class="kw ok">Right</span> The step is <span class="m">{s().rule}</span>
+                      ; its reason is beside it on the stage.
+                    </Show>
+                  }
+                >
+                  The step is <span class="m">{s().rule}</span>; its reason is beside it on the
+                  stage.
+                </Show>
+              </p>
+            )}
+          </Show>
+          <Show when={played() > props.lesson.explain.after}>
+            <Explain explain={props.lesson.explain} compared={compared()} compare={setCompared} />
+          </Show>
+          <Show
+            when={step()}
+            fallback={
+              <p class="row">
+                <span class="kw ok">Proved</span>
+                <button type="button" class="btn btn-s" onClick={() => void begin()}>
+                  Play it again
+                </button>
+              </p>
+            }
+          >
+            <Show when={props.lesson.detour?.before === played() && !detoured()}>
+              <div class="detour">
+                <p>
+                  <Words text={props.lesson.detour?.text ?? ""} />
+                </p>
+                <button type="button" class="btn btn-s outline" onClick={() => void detour()}>
+                  Show this split
+                </button>
+              </div>
+            </Show>
+            <fieldset class="predict">
+              <legend>
+                Step {played() + 1} of {steps.length}: predict the next rule.
+              </legend>
+              <div class="row">
+                <For each={props.lesson.choices}>
+                  {(rule) => (
+                    <button
+                      type="button"
+                      class="btn outline rule-guess m"
+                      aria-label={`Predict ${rule}`}
+                      onClick={() => void reveal(rule)}
+                    >
+                      {rule}
+                    </button>
+                  )}
+                </For>
+              </div>
+              <button type="button" class="btn btn-s outline" onClick={() => void reveal(null)}>
+                Show the step
+              </button>
+            </fieldset>
+          </Show>
+        </Show>
+      </section>
+
+      <section class="part" aria-labelledby="part-faded" ref={faded}>
+        <h3 id="part-faded">Your turn</h3>
+        <Show
+          when={part() === "faded" && onTab()}
+          fallback={
+            <>
+              <p class="sub">
+                {props.lesson.faded === 0
+                  ? "The same proof, from its sequent: every step is yours."
+                  : `The same proof with its first ${props.lesson.faded === 1 ? "step" : `${props.lesson.faded} steps`} played: the rest is yours.`}
+              </p>
+              <button type="button" class="btn outline" onClick={() => void fade()}>
+                Finish the proof yourself
+              </button>
+            </>
+          }
+        >
+          <Show
+            when={finished()}
+            fallback={
+              <p class="sub">
+                Choose a formula on the stage for its rules. Hint (H) helps, one rung at a time.
+              </p>
+            }
+          >
+            <p class="row" role="status">
+              <span class="kw ok">Proved</span> Now the practice below.
+            </p>
+          </Show>
+        </Show>
+      </section>
+
+      <section class="part" aria-labelledby="part-practice">
+        <h3 id="part-practice">Practice</h3>
+        <Practice
+          lesson={props.lesson.lesson}
+          examples={props.examples}
+          prover={props.prover}
+          ui={props.ui}
+        />
+      </section>
+
+      <section class="part" aria-labelledby="part-check">
+        <h3 id="part-check">Check</h3>
+        <fieldset class="hinge">
+          <legend>
+            <Words text={props.lesson.hinge.question} />
+          </legend>
+          <For each={props.lesson.hinge.options}>
+            {(o, i) => (
+              <label class="hinge-option">
+                <input
+                  type="radio"
+                  name={`hinge-${props.lesson.id}`}
+                  checked={chosen() === i()}
+                  onChange={() => setChosen(i())}
+                />
+                <span class="hinge-dot" aria-hidden="true" />
+                <span>
+                  <Words text={o.text} />
+                </span>
+              </label>
+            )}
+          </For>
+        </fieldset>
+        <Show when={option()}>
+          {(o) => (
+            <div class="hinge-said" role="status" data-right={o().misconception ? undefined : ""}>
+              <Show
+                when={o().misconception}
+                fallback={
+                  <>
+                    <p>
+                      <span class="kw ok">Right</span> <Words text={o().why} />
+                    </p>
+                    <Show
+                      when={props.next}
+                      fallback={
+                        <button type="button" class="btn" onClick={() => props.open(null)}>
+                          Back to the lessons
+                        </button>
+                      }
+                    >
+                      {(n) => (
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          onClick={() => props.open(n().lesson)}
+                        >
+                          Next lesson: {n().title}
+                        </button>
+                      )}
+                    </Show>
+                  </>
+                }
+              >
+                {(m) => (
+                  <>
+                    <p>
+                      <span class="kw bad">Not quite</span> This answer comes from the idea that{" "}
+                      <Words text={lower(m())} />
+                    </p>
+                    <p>
+                      <Words text={o().why} />
+                    </p>
+                    <button type="button" class="btn" onClick={() => void fade()}>
+                      Try the faded proof again
+                    </button>
+                  </>
+                )}
+              </Show>
+            </div>
+          )}
+        </Show>
+      </section>
+    </article>
+  );
+}
+
+/** A sentence's first letter in lower case, to follow "the idea that". */
+const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+
+/** The self-explanation prompt: the visitor writes an answer, kept nowhere, then compares it with the model one. */
+function Explain(props: {
+  explain: Lesson["explain"];
+  compared: boolean;
+  compare: (on: boolean) => void;
+}) {
+  return (
+    <div class="explain">
+      <label class="explain-q" for="explain-box">
+        <span class="kw-label">Explain it to yourself</span>
+        <span>
+          <Words text={props.explain.prompt} />
+        </span>
+      </label>
+      <textarea id="explain-box" rows={3} />
+      <Show
+        when={props.compared}
+        fallback={
+          <button type="button" class="btn btn-s outline" onClick={() => props.compare(true)}>
+            Compare with a model answer
+          </button>
+        }
+      >
+        <p class="model">
+          <Words text={props.explain.answer} />
+        </p>
+      </Show>
+    </div>
   );
 }
 

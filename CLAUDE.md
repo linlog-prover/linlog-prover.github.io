@@ -76,7 +76,8 @@ and `src/` are the site:
   content rendered into templates; `404.astro` the page Pages serves for a missing path;
   `privacy.astro` the privacy notice, every statement citing its source.
 - `src/content/`: the written content (CC BY 4.0), Markdown in content collections
-  (`src/content.config.ts`): the examples with their sessions, the tour, About and Learn.
+  (`src/content.config.ts`): the store of problems with their sessions, Learn's lessons and
+  the rules' schemas, the tour, and the texts (About, Practice's and Learn's openings).
 - `src/integrations/licences.ts`: the licences written into the build.
 - `src/islands/`: the prover, one Solid island (`App.tsx` and its parts).
 - `src/worker/linlog.worker.ts`: the module worker that loads linlog's module and answers

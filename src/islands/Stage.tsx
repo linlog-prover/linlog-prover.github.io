@@ -32,9 +32,9 @@ import {
 import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
 import { failure, type MathFont, type Offered, type Outcome, type StepForm } from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
-import { rungs, shown } from "../lib/words";
+import { readingOf, rungs, shown } from "../lib/words";
 import { lookJson, type NetDrawing, type NetLook, type Prover, pathKey } from "./state";
-import { ladderKey, phone, token, type Ui } from "./ui";
+import { ladderKey, phone, token, type Ui, Words } from "./ui";
 
 /** A formula's button over the drawing, in the drawing's own pixels. */
 interface Hit {
@@ -469,6 +469,49 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     dock.style.top = `${top}px`;
   });
 
+  // A lesson's reason beside the rule label of the inference it played, with Learn on.
+  const reason = () => {
+    const r = ui.reason;
+    return ui.learn && r && proof()?.id === r.tab ? r : null;
+  };
+  const [because, setBecause] = createSignal<HTMLElement>();
+  createEffect(() => {
+    camera();
+    drawn();
+    const r = reason();
+    const box = because();
+    const session = proof()?.session;
+    if (!box) return;
+    const at = r && session ? goalAt(session, r.path) : undefined;
+    const label =
+      at === undefined ? null : host.querySelector(`#i${drawingIndex(at)}`)?.nextElementSibling;
+    if (!(label instanceof SVGTextElement) || ui.tab === "net") {
+      box.style.visibility = "hidden";
+      return;
+    }
+    const l = label.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const d = host.firstElementChild?.getBoundingClientRect() ?? l;
+    const gap = token("--spacing-2");
+    // On the rule label's row, past the drawing's right edge so that it covers no goal; where
+    // the stage has no room there, under the drawing, below the label; on a phone's narrow
+    // stage, above the stage's controls.
+    const beside = Math.max(l.right, d.right) - s.left + gap;
+    const fits = beside + box.offsetWidth <= s.width - gap;
+    const controls = stage.querySelector(".stage-ctl")?.getBoundingClientRect();
+    const x = fits ? beside : phone() ? gap : l.left - s.left;
+    const y = fits
+      ? l.top + l.height / 2 - s.top - box.offsetHeight / 2
+      : phone() && controls
+        ? controls.top - s.top - box.offsetHeight - gap
+        : d.bottom - s.top + gap;
+    const left = Math.max(gap, Math.min(x, s.width - box.offsetWidth - gap));
+    const top = Math.max(gap, Math.min(y, s.height - box.offsetHeight - gap));
+    box.style.visibility = "visible";
+    box.style.left = `${left}px`;
+    box.style.top = `${top}px`;
+  });
+
   // The rule popover beside the selected formula; the split chooser under the
   // goal's row, so that every formula of the goal stays clickable; on a narrow
   // stage both sit at its bottom, as a sheet.
@@ -818,6 +861,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                     : undefined
                 }
                 aria-label={`${hit.text}, formula ${hit.position + 1} of goal ${goalNumber(hit.goal)}`}
+                data-tip={ui.learn ? readingOf(hit.text) : undefined}
                 aria-pressed={
                   ui.split?.goal === hit.goal ? ui.split.left.includes(hit.position) : undefined
                 }
@@ -866,6 +910,14 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         <p class="done kw ok" role="status">
           Proved: every goal is closed
         </p>
+      </Show>
+
+      <Show when={reason()}>
+        {(r) => (
+          <p class="because" ref={setBecause} role="note" aria-label="Why this step">
+            <Words text={r().text} />
+          </p>
+        )}
       </Show>
 
       <div class="dock" ref={dock} data-tab={ui.tab}>
@@ -1041,7 +1093,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                   <For each={offered()}>
                     {(rule, i) => (
                       <li>
-                        <button type="button" class="rule" onClick={() => void choose(rule)}>
+                        <button
+                          type="button"
+                          class="rule"
+                          data-rule={ui.learn ? rule.rule : undefined}
+                          onClick={() => void choose(rule)}
+                        >
                           <span class="rn">{rule.rule}</span>
                           <span class="rd">{rule.split ? "split" : ""}</span>
                           <kbd>{i() + 1}</kbd>

@@ -49,11 +49,19 @@ sent to a server.
   392 provable problems, filtered by their connectives, their logic, their source and
   their difficulty, or one at random within the filters, each opened as a proof on a new
   tab; the problems proved are marked, also on the next visit.
-- Learn, a frame around the page with the tutorial: the lessons' places, each with its
-  practice drawn from the store (provable and unprovable mixed, each opened as a proof,
-  its answer kept until asked, and a provable one's proof watched step by step), and a
-  reference of the connectives and of the engines with their literature; a tour of the
-  page that proves a sequent as it goes; About, with every licence the site serves.
+- Learn, a frame around the page with the tutorial and the reference. The tutorial's
+  first five lessons (reading a sequent, the multiplicatives, the additives, the units, the
+  exponentials) each play a worked proof on the stage one inference at a time, the next rule
+  predicted before each step and its reason shown beside it; then the same proof with its
+  last steps left to the student; practice drawn from the store (provable and unprovable
+  mixed, each opened as a proof, its answer kept until asked, and a provable one's proof
+  watched step by step); a prompt to explain the densest step, with a model answer; and a
+  check whose wrong answers each name a misconception and offer the faded proof again. The
+  later lessons have their practice. The reference holds the connectives, every rule the
+  lessons use drawn as a schema with its two-sided names, and the engines with their
+  literature; with Learn on, a rule in the stage's popover shows its schema on hover and a
+  formula its connective's reading. A tour of the page proves a sequent as it goes; About
+  has every licence the site serves.
 - After one visit the page works with no network, and it can be installed as an app.
   No cookies, no tracking: GitHub, which serves the site, logs visitors' IP addresses, and
   the privacy page (`/privacy/`) says what that means and what the browser keeps, citing

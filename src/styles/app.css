@@ -1761,3 +1761,249 @@ fieldset {
     padding: var(--spacing-1);
   }
 }
+
+/* A written lesson: the list's entry, the lesson's parts, each a stage of the worked-example
+   sequence along a rule in Learn's colour. */
+.lessons > li:has(.lesson-open) {
+  padding: 0;
+  border-style: solid;
+}
+.lesson-open {
+  display: grid;
+  grid-template-areas: "n name" "n sub";
+  grid-template-columns: auto 1fr;
+  column-gap: var(--spacing-2);
+  align-items: center;
+  width: 100%;
+  min-height: var(--size-control);
+  padding: var(--spacing-1-5) var(--spacing-2);
+  text-align: left;
+  border-radius: var(--radius-control);
+}
+.lesson-open:hover {
+  background: var(--color-panel-2);
+}
+.lesson-open .sub {
+  grid-area: sub;
+}
+.lesson-open .lesson-name {
+  grid-area: name;
+}
+.lesson-name {
+  font-weight: var(--font-weight-semibold);
+}
+.lesson-n {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-chip);
+  height: var(--size-chip);
+  border-radius: var(--radius-round);
+  background: var(--color-learn);
+  color: var(--color-panel);
+  font: var(--font-weight-bold) var(--text-small) / var(--leading-none) var(--font-text);
+}
+.lessons > li:has(.lesson-open) .lesson-n {
+  grid-area: n;
+}
+.lesson-view {
+  display: grid;
+  gap: var(--spacing-3);
+  justify-items: start;
+}
+.lesson-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font: var(--font-weight-semibold) var(--text-head) / var(--leading-snug) var(--font-text);
+}
+.part {
+  display: grid;
+  gap: var(--spacing-2);
+  justify-items: start;
+  width: 100%;
+  padding-left: var(--spacing-3);
+  border-left: var(--line-strong) solid var(--color-learn);
+}
+.part h3 {
+  margin: 0;
+  font: var(--font-weight-semibold) var(--text-panel) / var(--leading-snug) var(--font-text);
+}
+.part > .ex-seq {
+  margin: 0;
+}
+.said,
+.detour p {
+  margin: 0;
+}
+.predict {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.predict legend {
+  padding: 0;
+  margin-bottom: var(--spacing-1-5);
+}
+.predict,
+.detour,
+.explain {
+  display: grid;
+  gap: var(--spacing-1-5);
+  justify-items: start;
+  width: 100%;
+}
+.rule-guess {
+  min-width: var(--size-control);
+  justify-content: center;
+  font-size: var(--text-panel);
+}
+.detour {
+  padding: var(--spacing-2);
+  border: var(--line) dashed var(--color-warn);
+  border-radius: var(--radius-control);
+}
+.explain {
+  padding: var(--spacing-2);
+  background: var(--color-panel);
+  border: var(--line) solid var(--color-edge);
+  border-radius: var(--radius-cluster);
+}
+.explain-q {
+  display: grid;
+  gap: var(--spacing-1);
+}
+.explain textarea {
+  width: 100%;
+  min-height: var(--size-textarea);
+  background: var(--color-field);
+  border: var(--line) solid var(--color-line);
+  border-radius: var(--radius-control);
+  padding: var(--spacing-1-5);
+  font: var(--font-weight-normal) var(--text-small) / var(--leading-normal) var(--font-text);
+}
+.model {
+  margin: 0;
+  padding-left: var(--spacing-2);
+  border-left: var(--line-strong) solid var(--color-learn);
+}
+.hinge {
+  display: grid;
+  gap: var(--spacing-1);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.hinge legend {
+  padding: 0;
+  margin-bottom: var(--spacing-1-5);
+}
+.hinge-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-control);
+  padding: 0 var(--spacing-2);
+  border: var(--line) solid var(--color-edge);
+  border-radius: var(--radius-control);
+  background: var(--color-panel);
+  cursor: pointer;
+}
+.hinge-option:has(input:checked) {
+  border-color: var(--color-learn);
+  box-shadow: inset 0 0 0 var(--line) var(--color-learn);
+}
+/* The radio covers its whole option, which is its target; the dot shows its state. */
+.hinge-option input {
+  position: absolute;
+  inset: calc(-1 * var(--line));
+  width: calc(100% + 2 * var(--line));
+  height: calc(100% + 2 * var(--line));
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.hinge-option:has(input:focus-visible) {
+  outline: var(--line-strong) solid var(--color-accent);
+  outline-offset: var(--spacing-0-5);
+}
+.hinge-dot {
+  flex: none;
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  border: var(--line) solid var(--color-dim);
+  border-radius: var(--radius-round);
+}
+.hinge-option:has(input:checked) .hinge-dot {
+  border-color: var(--color-learn);
+  background: var(--color-learn);
+  box-shadow: inset 0 0 0 var(--spacing-0-5) var(--color-panel);
+}
+.hinge-said {
+  display: grid;
+  gap: var(--spacing-1-5);
+  justify-items: start;
+}
+.hinge-said p {
+  margin: 0;
+}
+
+/* A rule as a schema: the premises over a bar over the conclusion, the name beside the bar. */
+.schema {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  font-size: var(--text-panel);
+}
+.sch-fig {
+  display: inline-grid;
+  justify-items: center;
+}
+.sch-prem {
+  display: flex;
+  gap: var(--spacing-4);
+  min-height: var(--spacing-4);
+  padding: 0 var(--spacing-1);
+}
+.sch-concl {
+  border-top: var(--line) solid currentColor;
+  padding: var(--spacing-0-5) var(--spacing-1) 0;
+}
+.sch-name {
+  font-size: var(--text-small);
+}
+.rule-list {
+  margin: var(--spacing-2) 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--spacing-3);
+}
+.rule-list li p {
+  margin: var(--spacing-1) 0 0;
+}
+.rule-title {
+  font-weight: var(--font-weight-semibold);
+}
+.tip:has(.schema) {
+  flex-direction: column;
+  align-items: start;
+}
+
+/* A lesson's reason, beside the rule label of the inference it explains. */
+.because {
+  position: absolute;
+  z-index: var(--layer-hud);
+  visibility: hidden;
+  max-width: var(--size-popover-wide);
+  margin: 0;
+  padding: var(--spacing-1-5) var(--spacing-2);
+  background: var(--color-panel);
+  border: var(--line) solid var(--color-learn);
+  border-left-width: var(--line-strong);
+  border-radius: var(--radius-control);
+  font: var(--font-weight-normal) var(--text-small) / var(--leading-snug) var(--font-text);
+  pointer-events: none;
+}

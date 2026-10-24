@@ -51,7 +51,8 @@ async function tooSmall(page: Page, least: number): Promise<string[]> {
  * empty page, a proof with the rule popover, the split chooser, a refusal,
  * a hint, a proof closed and its net, every menu, the status and the
  * calculus, the restart warning, Practice and its filters, Learn's two
- * places, the tour, a field's parse error, and the restore bar.
+ * places and a lesson's parts, the tour, a field's parse error, and the
+ * restore bar.
  */
 async function walk(page: Page, least: number) {
   const found: string[] = [];
@@ -133,6 +134,23 @@ async function walk(page: Page, least: number) {
     await page.getByRole("tab", { name: place }).click();
     await measure(`Learn ${place}`);
   }
+  // A lesson: its worked proof, its dead end, its prompt, its faded proof and its check.
+  await page.getByRole("tab", { name: "Tutorial" }).click();
+  await page.getByRole("button", { name: "Lesson 2: The multiplicatives" }).click();
+  await measure("lesson");
+  await page.getByRole("button", { name: "Start the worked proof" }).click();
+  await page.getByRole("button", { name: "Show the step" }).click();
+  await page.getByRole("button", { name: "Show this split" }).click();
+  await expect(page.getByRole("dialog", { name: "Split" })).toContainText("Cannot close");
+  await measure("lesson's dead end");
+  await page.getByRole("button", { name: "Predict ⊗" }).click();
+  await expect(page.getByRole("note", { name: "Why this step" })).toBeVisible();
+  await measure("lesson's worked proof");
+  await page.getByRole("button", { name: "Finish the proof yourself" }).click();
+  await measure("lesson's faded proof");
+  await page.getByRole("region", { name: "Check" }).getByRole("radio").nth(1).check();
+  await measure("lesson's check");
+  await page.getByRole("button", { name: "All lessons" }).click();
   await page.getByRole("button", { name: "Turn Learn off" }).click();
   await band("Tour");
   await expect(page.getByRole("dialog", { name: "Tour" })).toBeVisible();

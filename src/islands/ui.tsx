@@ -4,11 +4,11 @@
 /**
  * The island's own view state, beside the proofs' (state.tsx): what is
  * selected, which popover or menu is open, the tree or net tab, the camera,
- * the hint ladder, the live region's message, Learn's place and the tour's
- * stop.
+ * the hint ladder, the live region's message, Learn's place, its lesson open
+ * and the reason of the step it played, and the tour's stop.
  */
 
-import { createSignal } from "solid-js";
+import { createSignal, For } from "solid-js";
 import { createStore } from "solid-js/store";
 import type { Hint, Offered } from "../lib/linlog";
 
@@ -48,6 +48,15 @@ export type Menu =
   | "more"
   | null;
 
+/** A step a lesson played, whose reason stands beside its inference on the stage. */
+export interface Reason {
+  /** The tab the lesson's proof is on. */
+  readonly tab: string;
+  /** The path of the goal the step expanded. */
+  readonly path: readonly number[];
+  readonly text: string;
+}
+
 /** Learn's two places. */
 export type Rubric = "tutorial" | "reference";
 
@@ -69,6 +78,10 @@ export function createUi() {
     tour: number | null;
     /** The id of what Learn shows and marks: an engine of the reference. */
     spot: string | null;
+    /** The tutorial's lesson open, by its number, or null for the list of lessons. */
+    lesson: number | null;
+    /** The reason of the step a lesson played last, while Learn is on. */
+    reason: Reason | null;
   }>({
     selected: null,
     offered: null,
@@ -81,6 +94,8 @@ export function createUi() {
     learn: null,
     tour: null,
     spot: null,
+    lesson: null,
+    reason: null,
   });
   /** Bumped when the drawing must be laid out again (a new drawing, a resize). */
   const [drawn, setDrawn] = createSignal(0);
@@ -110,3 +125,12 @@ export const phone = (() => {
   query?.addEventListener("change", (event) => setMatches(event.matches));
   return matches;
 })();
+
+/** Written text whose formulas stand between backticks, the formulas set in the math font. */
+export function Words(props: { text: string }) {
+  return (
+    <For each={props.text.split("`")}>
+      {(part, i) => (i() % 2 === 1 ? <span class="m">{part}</span> : part)}
+    </For>
+  );
+}

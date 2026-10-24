@@ -358,3 +358,42 @@ export function formulaText(text: string): string {
 export function shown(formula: { readonly text: string; readonly reading?: string }): string {
   return formula.reading ?? formulaText(formula.text);
 }
+
+/** Each connective's name and reading, as Learn's reference table gives them. */
+export const READINGS: Readonly<
+  Record<string, { readonly name: string; readonly reading: string }>
+> = {
+  "⊗": { name: "tensor", reading: "both, side by side" },
+  "⅋": { name: "par", reading: "the dual of tensor" },
+  "⊸": { name: "linear implication", reading: "consumes A, gives B; A⊥ ⅋ B" },
+  "&": { name: "with", reading: "either one, the other's choice" },
+  "⊕": { name: "plus", reading: "one of them, the prover's choice" },
+  "!": { name: "of course", reading: "as many A as needed" },
+  "?": { name: "why not", reading: "the dual of of course" },
+  "1": { name: "one", reading: "the unit of ⊗" },
+  "⊥": { name: "bottom", reading: "the unit of ⅋" },
+  "⊤": { name: "top", reading: "the unit of &" },
+  "0": { name: "zero", reading: "the unit of ⊕" },
+};
+
+/** The connective a formula as the page shows it is built by last: a sign of `READINGS`, or null for a literal. */
+export function connective(text: string): string | null {
+  let depth = 0;
+  for (const c of text) {
+    if (c === "(") depth++;
+    else if (c === ")") depth--;
+    else if (depth === 0 && "⊗⅋⊸&⊕".includes(c)) return c;
+  }
+  const first = text.trim()[0] ?? "";
+  if ("!?".includes(first)) return first;
+  return text.trim() in READINGS ? text.trim() : null;
+}
+
+/** A formula's reading, for its hover: its last connective's name and reading, or what its literal is. */
+export function readingOf(text: string): string {
+  const sign = connective(text);
+  const known = sign ? READINGS[sign] : undefined;
+  if (known) return `${sign}, ${known.name}: ${known.reading}`;
+  const atom = text.trim().replace(/⊥$/, "");
+  return text.trim().endsWith("⊥") ? `The dual of the atom ${atom}` : `The atom ${atom}`;
+}

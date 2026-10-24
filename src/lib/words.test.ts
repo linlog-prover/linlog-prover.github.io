@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { MODES } from "./linlog";
-import { displayed, modeWords, pretty, rungs, SHORT, short, verdict } from "./words";
+import { displayed, modeWords, pretty, readingOf, rungs, SHORT, short, verdict } from "./words";
 import { linlog } from "./testing";
 
 describe("the typed sequent's signs", () => {
@@ -107,5 +107,16 @@ describe("the hint ladder's first rung", () => {
     expect(rungs(tensor, formulas, false, false)[0]).toBe(
       "Work on this goal: a split of the context comes next.",
     );
+  });
+});
+
+describe("a formula's reading, for its hover with Learn on", () => {
+  it("names the connective it is built by last, or what its literal is", () => {
+    expect(readingOf("(A ⊗ B) ⊕ (A ⊗ C)")).toBe("⊕, plus: one of them, the prover's choice");
+    expect(readingOf("A⊥ ⅋ (B⊥ & C⊥)")).toBe("⅋, par: the dual of tensor");
+    expect(readingOf("?A⊥")).toBe("?, why not: the dual of of course");
+    expect(readingOf("⊤")).toBe("⊤, top: the unit of &");
+    expect(readingOf("B⊥")).toBe("The dual of the atom B");
+    expect(readingOf("A")).toBe("The atom A");
   });
 });

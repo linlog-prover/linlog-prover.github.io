@@ -20,6 +20,18 @@
  *             (`act`).
  *   texts     texts/<name>.md: About, Practice's opening, and the openings of
  *             Learn's tutorial and reference.
+ *   lessons   lessons/<n>-<name>.md, Learn's written lessons: the opening as
+ *             the body, the worked proof (a problem of the store, played
+ *             step by step from its session, a rule and a reason per step,
+ *             the rules to predict among), how many of its steps the faded
+ *             proof plays before the student takes over, the
+ *             self-explanation prompt after one step, the hinge question
+ *             whose wrong answers each name a misconception, and for a lesson
+ *             that shows one, a legal split that leads nowhere.
+ *   rules     rules/<nn>-<name>.md, the one-sided rules the reference draws
+ *             as schemas and the stage's popover shows on hover: linlog's name,
+ *             the premises over the conclusion, the two-sided names of the
+ *             same rule, the lesson that teaches it, what it does.
  * pages/index.astro renders each into a template the island shows.
  */
 
@@ -103,4 +115,58 @@ const texts = defineCollection({
   schema: z.object({ title: z.string() }),
 });
 
-export const collections = { problems, tour, texts };
+/** Text of the lessons and the rules: plain words, formulas between backticks. */
+const words = z.string().min(1);
+
+const lessons = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/lessons" }),
+  schema: z.object({
+    lesson: z.number().int().min(1),
+    title: words,
+    /** The store problem whose session is the worked proof. */
+    worked: z.string(),
+    /** The rules the student predicts among, as linlog names them. */
+    choices: z.array(z.string()).min(2),
+    /** One per step of the worked proof's session, in its order. */
+    steps: z.array(z.object({ rule: z.string(), reason: words })).min(1),
+    /** A legal split that leads nowhere, shown before the step `before`: its left premise's formulas. */
+    detour: z
+      .object({ before: z.number().int().min(0), left: z.array(z.number().int()), text: words })
+      .optional(),
+    /** The steps the faded proof plays before the student takes over. */
+    faded: z.number().int().min(0),
+    /** The self-explanation prompt, after the step `after` (from 0), and a model answer. */
+    explain: z.object({ after: z.number().int().min(0), prompt: words, answer: words }),
+    hinge: z.object({
+      question: words,
+      /** The right answer has no misconception; each wrong one names the one it reveals. */
+      options: z
+        .array(
+          z.object({
+            text: words,
+            problem: z.string().optional(),
+            misconception: words.optional(),
+            why: words,
+          }),
+        )
+        .min(3),
+    }),
+  }),
+});
+
+const rules = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/rules" }),
+  schema: z.object({
+    /** As linlog names the rule on the stage. */
+    name: z.string(),
+    title: words,
+    lesson: z.number().int().min(1),
+    premises: z.array(z.string()),
+    conclusion: z.string(),
+    /** The two-sided names of the same rule, as linlog's two-sided drawings write them. */
+    twoSided: z.array(z.string()).min(1),
+    says: words,
+  }),
+});
+
+export const collections = { problems, tour, texts, lessons, rules };

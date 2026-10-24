@@ -2,8 +2,8 @@
 // Licensed under the EUPL
 
 /**
- * The written content as the island receives it: Learn's problems and the
- * tour's data as props (pages/index.astro), Practice's problems from
+ * The written content as the island receives it: Learn's problems, its
+ * lessons, the rules and the tour's data as props (pages/index.astro), Practice's problems from
  * /problems.json when Practice first opens, and the texts, About's,
  * Practice's and Learn's, as templates in the page, each named by its
  * collection and id (`problems/axiom`, `tour/1-field`, `texts/about`) or
@@ -45,6 +45,52 @@ export interface Problem {
   readonly source: { readonly text: string; readonly url: string } | null;
 }
 
+/** A step of a lesson's worked proof: the rule its session applies there, and why. */
+export interface Reason {
+  readonly rule: string;
+  readonly reason: string;
+}
+
+/** An answer of a hinge question: right without a misconception, wrong with the one it reveals. */
+export interface Option {
+  readonly text: string;
+  readonly problem?: string | undefined;
+  readonly misconception?: string | undefined;
+  readonly why: string;
+}
+
+/** A written lesson of Learn's tutorial (src/content.config.ts says what each part is). */
+export interface Lesson {
+  readonly id: string;
+  readonly lesson: number;
+  readonly title: string;
+  /** The id of the store problem whose proof is the worked one. */
+  readonly worked: string;
+  readonly choices: readonly string[];
+  readonly steps: readonly Reason[];
+  readonly detour: {
+    readonly before: number;
+    readonly left: readonly number[];
+    readonly text: string;
+  } | null;
+  readonly faded: number;
+  readonly explain: { readonly after: number; readonly prompt: string; readonly answer: string };
+  readonly hinge: { readonly question: string; readonly options: readonly Option[] };
+}
+
+/** A one-sided rule as the reference draws it and the popover shows it. */
+export interface Rule {
+  readonly id: string;
+  /** As linlog names it on the stage. */
+  readonly name: string;
+  readonly title: string;
+  readonly lesson: number;
+  readonly premises: readonly string[];
+  readonly conclusion: string;
+  readonly twoSided: readonly string[];
+  readonly says: string;
+}
+
 /** A stop of the tour. */
 export interface Stop {
   readonly id: string;
@@ -61,4 +107,13 @@ export function written(key: string): DocumentFragment {
   return (
     (template?.content.cloneNode(true) as DocumentFragment | undefined) ?? new DocumentFragment()
   );
+}
+
+/** The rule linlog names `name`, by its one-sided name or one of its two-sided ones, with the name it was asked by. */
+export function ruleNamed(
+  rules: readonly Rule[],
+  name: string,
+): { readonly rule: Rule; readonly as: string } | undefined {
+  const rule = rules.find((r) => r.name === name || r.twoSided.includes(name));
+  return rule && { rule, as: name };
 }

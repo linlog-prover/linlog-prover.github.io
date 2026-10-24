@@ -18,7 +18,24 @@ formula is on the right of `⊢` and `A⊥` is the dual of `A`; two-sided
 | `1`, `⊥` | `1`, `bot` | the units of `⊗` and `⅋` | |
 | `⊤`, `0` | `top`, `0` | the units of `&` and `⊕` | |
 
-`⊢` is typed `|-`. The rules' schemas come with the lessons.
+`⊢` is typed `|-`.
+
+## The rules
+
+Each rule as a schema: its premises above the bar, its conclusion below, its name
+beside it, as the stage writes it. `Γ` and `Δ` stand for any formulas, `?Γ` for
+formulas each under `?`. No rule acts on `0`. With Learn on, a rule in the stage's
+popover shows its schema on hover, and a formula its connective's reading.
+
+<div data-rules></div>
+
+These are the rules of the one-sided calculus as the LLHandbook project's <a
+href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
+of linear logic</a> states them (draft of 6 March 2026, section 1.3.5, Table 1.4,
+p. 22). There the axiom takes any formula; section 1.3.2 (p. 14) shows that atoms
+suffice, and linlog's axiom takes an atom. The two-sided names are linlog's names for
+the same rule in a two-sided derivation: the principal formula on the right, or its
+dual on the left.
 
 ## The engines
 

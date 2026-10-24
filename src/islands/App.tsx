@@ -20,15 +20,15 @@ import { failure } from "../lib/linlog";
 import { Cancelled } from "../lib/protocol";
 import { inputProblem, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
-import type { Example, Stop } from "../lib/content";
+import { type Example, type Lesson, type Rule, ruleNamed, type Stop } from "../lib/content";
 import { BottomBand } from "./BottomBand";
-import { LearnFrame } from "./Learn";
+import { LearnFrame, Schema } from "./Learn";
 import { createPractice } from "./Practice";
 import { Stage } from "./Stage";
 import { createProver } from "./state";
 import { TopBand } from "./TopBand";
 import { Tour } from "./Tour";
-import { createUi, ladderKey } from "./ui";
+import { createUi, ladderKey, Words } from "./ui";
 
 export default function App(props: {
   /** The math fonts' addresses: the page imports them, so each is served under /fonts/ beside its licence. */
@@ -37,15 +37,24 @@ export default function App(props: {
   examples: readonly Example[];
   /** The tour's stops, in their order. */
   stops: readonly Stop[];
+  /** Learn's written lessons, in their order. */
+  lessons: readonly Lesson[];
+  /** The one-sided rules, as the reference draws them. */
+  rules: readonly Rule[];
 }) {
   const view = createUi();
   const { ui, setUi } = view;
   const prover = createProver((text) => setUi("live", text));
   const practice = createPractice(prover);
   const [theme, setTheme] = createSignal<Theme>("system");
-  const [tip, setTip] = createSignal<{ text: string; key?: string; x: number; y: number } | null>(
-    null,
-  );
+  const [tip, setTip] = createSignal<{
+    text: string;
+    key?: string;
+    /** A rule's schema, which a rule of the popover shows with Learn on. */
+    rule?: Rule;
+    x: number;
+    y: number;
+  } | null>(null);
   const [linkShort, setLinkShort] = createSignal(false);
   let tipBox: HTMLDivElement | undefined;
 
@@ -228,7 +237,8 @@ export default function App(props: {
     }
   }
 
-  // The one hover rule: any element with a tip shows it on hover and on focus, its key after the words.
+  // The one hover rule: any element with a tip shows it on hover and on focus, its key after the
+  // words; a rule of the popover (`data-rule`, with Learn on) its schema and what it does.
   // A finger neither hovers nor means the focus a tap leaves: no tip follows a touch.
   onMount(() => {
     let touched = false;
@@ -240,12 +250,18 @@ export default function App(props: {
     };
     const show = (event: Event) => {
       if (touched || (event instanceof PointerEvent && event.pointerType === "touch")) return;
-      const element = (event.target as Element | null)?.closest?.("[data-tip]");
+      const element = (event.target as Element | null)?.closest?.("[data-tip], [data-rule]");
       if (!element) return;
       const r = element.getBoundingClientRect();
       const key = element.getAttribute("data-key");
+      const named = ruleNamed(props.rules, element.getAttribute("data-rule") ?? "");
       setTip({
-        text: element.getAttribute("data-tip") ?? "",
+        text: named
+          ? named.as === named.rule.name
+            ? named.rule.says
+            : `${named.as} is the two-sided name of ${named.rule.name}. ${named.rule.says}`
+          : (element.getAttribute("data-tip") ?? ""),
+        ...(named ? { rule: named.rule } : {}),
         ...(key ? { key } : {}),
         x: r.left,
         y: r.bottom + 6,
@@ -437,6 +453,8 @@ export default function App(props: {
           prover={prover}
           ui={view}
           examples={props.examples}
+          lessons={props.lessons}
+          rules={props.rules}
           tour={() => {
             setUi({ tour: null });
             setUi("tour", 0);
@@ -447,7 +465,16 @@ export default function App(props: {
       <Show when={tip()}>
         {(t) => (
           <div class="tip" ref={tipBox} role="tooltip">
-            {t().text}
+            <Show when={t().rule} fallback={t().text}>
+              {(rule) => (
+                <>
+                  <Schema rule={rule()} />
+                  <span>
+                    <Words text={t().text} />
+                  </span>
+                </>
+              )}
+            </Show>
             <Show when={t().key}>{(k) => <kbd>{k()}</kbd>}</Show>
           </div>
         )}
