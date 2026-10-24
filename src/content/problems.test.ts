@@ -94,6 +94,19 @@ describe("the store of problems", () => {
     }
   });
 
+  it("writes every intuitionistic problem in its own syntax, which linlog's strict reading takes back from its print", () => {
+    const intuitionistic = entries.filter((e) => e.mode.startsWith("intuitionistic"));
+    expect(intuitionistic.length).toBeGreaterThan(100);
+    for (const e of intuitionistic) {
+      const read = JSON.parse(linlog.read_as(e.sequent, e.mode, ""));
+      expect(read.sequent, e.id).toEqual(JSON.parse(linlog.read(e.sequent, "")).sequent);
+      const again = JSON.parse(linlog.read_as(read.text, e.mode, ""));
+      expect(again.sequent, `${e.id}: ${read.text}`).toEqual(read.sequent);
+    }
+    // A sequent written classically is refused there, with what to write instead.
+    expect(() => linlog.read_as("~(A * ~B), A |- B", "intuitionistic", "")).toThrow(/negation/);
+  });
+
   for (const problem of entries) {
     it(`${problem.id}: linlog says ${problem.verdict} in ${problem.fragment}, and its session proves it`, () => {
       const sequent = JSON.parse(linlog.read(problem.sequent, "")).sequent;

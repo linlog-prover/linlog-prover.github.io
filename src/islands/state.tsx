@@ -239,19 +239,12 @@ const keyOf = (formulas: readonly GoalFormula[]) =>
 
 /**
  * A goal's sequent as the sequent field reads it: two-sided where the formulas have sides, each
- * formula as its reading writes it (a hypothesis `A ⊸ B`), the dual of its one-sided formula
- * only where linlog gives no reading.
+ * formula as linlog writes it, which in intuitionistic mode is as the reading writes it in its
+ * position (a hypothesis `A ⊸ B`), in the syntax the strict reading takes.
  */
 const sequentText = (formulas: readonly GoalFormula[]) => {
-  // A formula as its reading writes it, which linlog gives in intuitionistic mode. Without one, a
-  // hypothesis is its one-sided formula's dual (linlog's `text` writes the hypothesis A as A⊥): a
-  // negated atom loses its negation, any other formula is negated whole.
-  const dual = (text: string) => {
-    const atom = /^~\s*([\p{L}_][\p{L}\p{N}_']*)$/u.exec(text);
-    return atom ? atom[1] : `~(${text})`;
-  };
-  const left = formulas.filter((f) => f.side === "input").map((f) => f.reading ?? dual(f.text));
-  const right = formulas.filter((f) => f.side !== "input").map((f) => f.reading ?? f.text);
+  const left = formulas.filter((f) => f.side === "input").map((f) => f.text);
+  const right = formulas.filter((f) => f.side !== "input").map((f) => f.text);
   return `${left.join(", ")}${left.length ? " " : ""}|- ${right.join(", ")}`;
 };
 
@@ -546,7 +539,8 @@ export function createProver(say: (text: string) => void = () => undefined) {
 
     /** Reads the field's text as it is typed, for the fragment beside it. */
     async preview(id: string, input: string) {
-      const read = await attempt(() => api.read(input, json()));
+      const mode = store.proofs.find((q) => q.id === id)?.mode ?? lastMode();
+      const read = await attempt(() => api.readAs(input, mode, json()));
       const p = store.proofs.find((q) => q.id === id);
       if (!p || p.input !== input) return;
       update(id, (q) => (q.typed = read.ok ? (read.value.fragment ?? null) : null));
@@ -560,7 +554,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     submit: queued(async (id: string, mode?: Mode) => {
       const p = store.proofs.find((q) => q.id === id);
       if (!p) return;
-      const read = await attempt(() => api.read(p.input, json()));
+      const read = await attempt(() => api.readAs(p.input, mode ?? p.mode, json()));
       if (!read.ok) {
         if (read.failed) {
           const span = read.failed.details?.["span_utf16"] as
@@ -632,7 +626,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
 
     /** Opens a document (a sequent or a session as linlog writes them) as a new proof; says which it got. */
     async open(text: string, mode?: Mode): Promise<{ kind: string } | { problem: Said }> {
-      const read = await attempt(() => api.read(text, json()));
+      const read = await attempt(() => api.readAs(text, mode ?? lastMode(), json()));
       if (!read.ok)
         return {
           problem: read.failed ? inputProblem(read.failed) : { keyword: "Stopped", sentence: "" },

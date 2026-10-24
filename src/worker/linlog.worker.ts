@@ -19,6 +19,7 @@ const calls = {
   about: linlog.about,
   defaults: linlog.defaults,
   read: linlog.read,
+  read_as: linlog.read_as,
   start: linlog.start,
   view: linlog.view,
   rules: linlog.rules,

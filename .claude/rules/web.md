@@ -145,10 +145,17 @@ the page reads.
 ## The state (`src/islands/state.tsx`)
 
 - **A goal's formula is shown as it reads** (`shown` in `src/lib/words.ts`): in
-  intuitionistic mode linlog's `reading` (a hypothesis `A ⊸ B`), else the one-sided `text` in
-  signs. The formulas' buttons are named so (`A ⊸ B, formula 2 of goal 1`), and the rules
-  popover and the split chooser's lists write them so; a step still names a formula by its
-  position.
+  intuitionistic mode linlog's `reading` (a hypothesis `A ⊸ B`), which its `text` is too, else
+  the one-sided `text` in signs. The formulas' buttons are named so (`A ⊸ B, formula 2 of
+  goal 1`), and the rules popover and the split chooser's lists write them so; a step still
+  names a formula by its position.
+- **An intuitionistic sequent is typed in ILL's syntax**: linlog reads intuitionistic text
+  strictly (a `~`, `^`, `par`, `|`, `?` or `bot` refused with a hint), so the page reads the
+  field, a preview and an opened document with `read_as` in the proof's mode (`api.readAs`),
+  never `read`, whose reading has no mode. A goal opened in a new tab is written from its
+  formulas' `text` (`sequentText`), two-sided in intuitionistic mode, with no dual of a
+  one-sided formula: there is none to write. `problems.test.ts` holds every intuitionistic
+  problem to the strict reading and its print.
 - **A tab shows its sequent as typed, in signs** (`displayed` in `src/lib/words.ts`, in
   Euler Math): `A⊥` for `~A` and `A^`, which linlog's parser does not read, so the link
   keeps `pretty`'s text, which it does.

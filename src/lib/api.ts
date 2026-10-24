@@ -52,6 +52,9 @@ export function createApi(changed: (pending: number) => void) {
     about: () => json<About>("about"),
     defaults: () => json<{ limits: { work: number } }>("defaults"),
     read: (input: string, settings: string) => json<ReadResult>("read", input, settings),
+    /** Reads a document for a proof in `mode`: in intuitionistic mode in its own syntax alone. */
+    readAs: (input: string, mode: Mode, settings: string) =>
+      json<ReadResult>("read_as", input, mode, settings),
     start: (sequent: SequentDoc, mode: Mode, settings: string) =>
       json<Inverted>("start", JSON.stringify(sequent), mode, settings),
     view: (session: SessionDoc, settings: string) =>
