@@ -532,6 +532,19 @@ test("a finished intuitionistic proof's essential net is drawn", async ({ page }
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
 });
 
+test("a finished intuitionistic MELL proof's net is drawn with its boxes", async ({ page }) => {
+  await start(page, "!A |- !A * !A");
+  await calculus(page, ["Intuitionistic"]);
+  await expect(page.locator(".pt-mark")).toContainText("ILL");
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-disabled", "true");
+  await page.getByRole("button", { name: "Close goal" }).click();
+  await page.getByRole("tab", { name: "Net" }).click();
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  // A box for each !A of the goal, a copy of the hypothesis !A in each.
+  await expect(page.locator('.drawing svg path[id^="b"]')).toHaveCount(2);
+});
+
 test("Settings' net drawing writes every formula or draws the net compact, in the view and the export", async ({
   page,
 }) => {
