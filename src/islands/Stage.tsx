@@ -45,6 +45,8 @@ interface Hit {
   readonly y: number;
   readonly w: number;
   readonly h: number;
+  /** The part of the width that is padding past the formula's ends, the same on screen at every zoom. */
+  readonly fixed: number;
 }
 
 /** The camera: the drawing's offset in the stage and its scale. */
@@ -294,6 +296,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           before && near(box.left - before.right) ? (before.right + box.left) / 2 : box.left - pad;
         const right =
           after && near(after.left - box.right) ? (box.right + after.left) / 2 : box.right + pad;
+        const ends = (left === box.left - pad ? 1 : 0) + (right === box.right + pad ? 1 : 0);
         const h = Math.max(box.height + 2 * pad, least);
         found.push({
           goal: goal.goal,
@@ -303,6 +306,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           y: box.top + box.height / 2 - h / 2,
           w: right - left,
           h,
+          fixed: ends * pad * k,
         });
       });
     }
@@ -379,8 +383,14 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const formulas = (view()?.goals ?? []).filter((g) => g.goal === goal);
     const k = camera().k;
     const least = token("--size-control-small");
-    const narrowest = Math.min(...targets(formulas).map((t) => t.w * k));
-    return Number.isFinite(narrowest) && narrowest > 0 ? Math.min(4, (least / narrowest) * k) : 0;
+    // A button's width on screen is its formula and gaps, which scale with the zoom, and its
+    // padding past the formula's ends, which does not: the zoom at which each is a control wide.
+    const needed = targets(formulas).map((t) => {
+      const scaled = t.w * k - t.fixed;
+      return scaled > 0 ? ((least - t.fixed) / scaled) * k : 0;
+    });
+    const k1 = Math.max(0, ...needed);
+    return Number.isFinite(k1) ? Math.min(4, k1) : 0;
   }
 
   /** Pans so that the active goal is in view (the other goals stay, dimmed). */
