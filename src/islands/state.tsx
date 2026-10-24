@@ -977,7 +977,8 @@ export function createProver(say: (text: string) => void = () => undefined) {
     close: guard(async (goal: number, factor: number = 1) => {
       const p = current();
       if (!p?.session) return;
-      const budget = settings().budget * factor;
+      // A unit of work is whole: a fraction of a budget the visitor set rounds to one.
+      const budget = Math.max(1, Math.round(settings().budget * factor));
       const path = pathOf(p, goal);
       const result = await attempt(() => api.close(p.session as SessionDoc, goal, json(budget)));
       if (!result.ok) {
