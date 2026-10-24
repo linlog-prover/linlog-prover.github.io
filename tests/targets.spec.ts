@@ -151,6 +151,19 @@ async function walk(page: Page, least: number) {
   await page.getByRole("region", { name: "Check" }).getByRole("radio").nth(1).check();
   await measure("lesson's check");
   await page.getByRole("button", { name: "All lessons" }).click();
+  // Lesson 7's attempt, its question, a problem asked of linlog and the search that gives up.
+  await page.getByRole("button", { name: "Lesson 7: When there is no proof" }).click();
+  await page.getByRole("button", { name: "Play the attempt" }).click();
+  await measure("lesson's attempt");
+  for (let step = 0; step < 5; step++)
+    await page.getByRole("button", { name: "Next step of the attempt" }).click();
+  await page.getByRole("radio", { name: "Step 2, ⊕₁" }).check();
+  await measure("lesson's wrong step");
+  await page.getByRole("button", { name: "Ask linlog about A false case" }).click();
+  await page.getByRole("button", { name: "Search it with a budget of 20 units" }).click();
+  await expect(page.getByRole("button", { name: "Try 40 units" })).toBeVisible();
+  await measure("lesson's unknown");
+  await page.getByRole("button", { name: "All lessons" }).click();
   await page.getByRole("button", { name: "Turn Learn off" }).click();
   await band("Tour");
   await expect(page.getByRole("dialog", { name: "Tour" })).toBeVisible();

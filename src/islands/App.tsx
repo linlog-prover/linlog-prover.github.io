@@ -254,7 +254,12 @@ export default function App(props: {
       if (!element) return;
       const r = element.getBoundingClientRect();
       const key = element.getAttribute("data-key");
-      const named = ruleNamed(props.rules, element.getAttribute("data-rule") ?? "");
+      // An intuitionistic proof is drawn two-sided, so its rules show their two-sided schemas.
+      const named = ruleNamed(
+        props.rules,
+        element.getAttribute("data-rule") ?? "",
+        prover.current()?.mode.startsWith("intuitionistic") ?? false,
+      );
       // A rule the reference draws no schema of (Mix, weakening) has nothing to show.
       if (!named && !element.hasAttribute("data-tip")) return;
       setTip({

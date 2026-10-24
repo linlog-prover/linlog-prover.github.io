@@ -37,6 +37,22 @@ suffice, and linlog's axiom takes an atom. The two-sided names are linlog's name
 the same rule in a two-sided derivation: the principal formula on the right, or its
 dual on the left.
 
+## The two-sided rules
+
+In intuitionistic mode a sequent has its hypotheses on the left of `⊢` and exactly
+one formula on the right, and the stage names each rule two-sided: a left rule uses
+a hypothesis, a right rule proves the goal. Each is a one-sided rule above read from
+the other side: `⊸L` is `⊗` on the hypothesis `A ⊸ B`, whose dual is `A ⊗ B⊥`. With
+Learn on, a rule in an intuitionistic proof's popover shows its two-sided schema.
+
+<div data-rules-two></div>
+
+These are the rules of intuitionistic linear logic as the <a
+href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
+of linear logic</a> states them (section 1.7.2.1, Table 1.5, p. 48), without the cut,
+the quantifiers and the exchange, in linlog's names: there `(wL)` and `(cL)`, here `!w`
+and `!c`. As above, linlog's axiom takes an atom.
+
 ## The engines
 
 Every search on this page is linlog's: it picks an engine by the sequent's

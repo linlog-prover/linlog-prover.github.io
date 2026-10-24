@@ -309,7 +309,18 @@ the page reads.
   in the split chooser, which `split_passes` must refuse), and the hinge question (one
   option without a `misconception`; an option's `problem`, when named, is provable exactly
   when the option is right). Every sequent a lesson shows as a problem is a store problem
-  with that lesson, so the store's checks cover it. Formulas in a lesson's or a rule's text
+  with that lesson, so the store's checks cover it. Optional parts: `attempt` (an erroneous
+  example: steps with the attempt's own reasons, played by Redo from the unfinished session
+  `lessons/<id>.attempt.json` on the lesson's tab, then "which step went wrong?" answered as
+  the hinge is; the wrong step is the one without a misconception, and `lessons.test.ts` holds
+  it to be the first after which an open goal has no proof), `gallery` (store problems of the
+  lesson asked of linlog, `ask`, the search on the root as Close runs it, or replayed with their
+  net drawn, `net`), `unknown` (a sequent outside the store searched with a budget too small,
+  so the visitor watches Unknown and the retry's doublings decide it; the test holds the text's
+  budget to the module's answers) and `net` (the finished worked proof offers its net). Every
+  lesson problem is decided within a hundredth of the page's budget (`lessons.test.ts`): the
+  store keeps no verdict a budget could change, and a lesson problem near the budget is
+  replaced, not marked. Formulas in a lesson's or a rule's text
   stand between backticks and are set in the math font (`Words` in `ui.tsx`).
 - **The worked proof plays on a tab of its own** (`prover.worked`: the session replayed to
   its first steps, the rest on the redo stack for a worked proof or left to the visitor for
@@ -324,12 +335,18 @@ the page reads.
   `data-tip`, its last connective's name and reading (`readingOf`; `READINGS` in
   `words.ts`, which `lessons.test.ts` holds to the reference table's reading column), and a
   rule of the popover `data-rule`, whose tip in `App.tsx` draws the rule's schema
-  (`Schema`) from the `rules` collection, a two-sided name by the one-sided rule it names
-  (`ruleNamed`). A verdict's reason is the note's and the status's tip, as before.
+  (`Schema`) from the `rules` collection (`ruleNamed`): in an intuitionistic proof its
+  two-sided schema, elsewhere the one-sided rule, a two-sided name by the one-sided rule it
+  names. A verdict's reason is the note's and the status's tip, as before.
 - **The reference's rules** are `rules/<nn>-<name>.md` (linlog's name, the premises and the
   conclusion as the Handbook's Table 1.4 writes them, linlog's two-sided names from its
   `ClassicalRule` table, the lesson), drawn by `Rules` into the reference's `<div
   data-rules>` through a portal, after the text is cloned (`Written`'s `ready`).
+  The two-sided rules of intuitionistic linear logic (`rules/14-ill-*.md` on, the Handbook's
+  Table 1.5 in linlog's names) carry `oneSided`, the one-sided rule they are, in place of
+  `twoSided`, and are drawn into `<div data-rules-two>`; `lessons.test.ts` holds each to a
+  one-sided rule that lists its name. A step's reason is placed beside the rule label, which
+  linlog draws as a text, or as a group where the name has a subscript (`⊕₁`).
 - **Learn's practice is a lesson's**: the problems with a `lesson`, under the tutorial's
   lesson, easiest first, provable and unprovable mixed, never three alike in a row
   (`problems.test.ts`); a card keeps its verdict and explanation under "Answer". Every

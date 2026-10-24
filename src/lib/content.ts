@@ -76,9 +76,36 @@ export interface Lesson {
   readonly faded: number;
   readonly explain: { readonly after: number; readonly prompt: string; readonly answer: string };
   readonly hinge: { readonly question: string; readonly options: readonly Option[] };
+  /** Whether the finished worked proof offers its net. */
+  readonly net: boolean;
+  /** An attempt that goes wrong, with its session as text; the wrong step has no misconception. */
+  readonly attempt: {
+    readonly text: string;
+    readonly steps: readonly (Reason & {
+      readonly misconception?: string | undefined;
+      readonly why: string;
+    })[];
+    readonly session: string;
+  } | null;
+  /** A sequent searched with a budget too small to decide it. */
+  readonly unknown: {
+    readonly sequent: string;
+    readonly mode: Mode;
+    readonly budget: number;
+    readonly text: string;
+  } | null;
+  /** Problems of the lesson to ask linlog about or to draw the net of. */
+  readonly gallery: {
+    readonly title: string;
+    readonly act: "ask" | "net";
+    readonly items: readonly { readonly problem: string; readonly text: string }[];
+  } | null;
 }
 
-/** A one-sided rule as the reference draws it and the popover shows it. */
+/**
+ * A rule as the reference draws it and the popover shows it: one-sided, with its two-sided
+ * names, or a two-sided rule of intuitionistic linear logic, with the one-sided rule it is.
+ */
 export interface Rule {
   readonly id: string;
   /** As linlog names it on the stage. */
@@ -87,7 +114,8 @@ export interface Rule {
   readonly lesson: number;
   readonly premises: readonly string[];
   readonly conclusion: string;
-  readonly twoSided: readonly string[];
+  readonly twoSided?: readonly string[] | undefined;
+  readonly oneSided?: string | undefined;
   readonly says: string;
 }
 
@@ -109,11 +137,18 @@ export function written(key: string): DocumentFragment {
   );
 }
 
-/** The rule linlog names `name`, by its one-sided name or one of its two-sided ones, with the name it was asked by. */
+/**
+ * The rule linlog names `name`, with the name it was asked by: on two sides (an intuitionistic
+ * proof) its two-sided schema where the reference has one, else the one-sided rule by its name
+ * or one of its two-sided ones.
+ */
 export function ruleNamed(
   rules: readonly Rule[],
   name: string,
+  twoSides = false,
 ): { readonly rule: Rule; readonly as: string } | undefined {
-  const rule = rules.find((r) => r.name === name || r.twoSided.includes(name));
+  const rule =
+    (twoSides ? rules.find((r) => r.oneSided !== undefined && r.name === name) : undefined) ??
+    rules.find((r) => r.twoSided !== undefined && (r.name === name || r.twoSided.includes(name)));
   return rule && { rule, as: name };
 }

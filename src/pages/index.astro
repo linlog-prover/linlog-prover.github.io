@@ -55,11 +55,24 @@ const stopData: Stop[] = stops.map((s) => ({
   target: s.data.target,
   act: s.data.act,
 }));
-const lessonData: Lesson[] = lessons.map((l) => ({
-  id: l.id,
-  ...l.data,
-  detour: l.data.detour ?? null,
-}));
+const attempts = import.meta.glob<string>("../content/lessons/*.attempt.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const lessonData: Lesson[] = lessons.map((l) => {
+  const attempt = l.data.attempt;
+  const session = attempts[`../content/lessons/${l.id}.attempt.json`];
+  if (attempt && !session) throw new Error(`lesson ${l.id}: its attempt has no session beside it`);
+  return {
+    id: l.id,
+    ...l.data,
+    detour: l.data.detour ?? null,
+    attempt: attempt && session ? { ...attempt, session } : null,
+    unknown: l.data.unknown ?? null,
+    gallery: l.data.gallery ?? null,
+  };
+});
 const ruleData: Rule[] = rules.map((r) => ({ id: r.id, ...r.data }));
 const rendered = await Promise.all(
   [...examples, ...stops, ...texts, ...lessons].map(async (entry) => ({

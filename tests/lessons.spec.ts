@@ -4,7 +4,9 @@
 // Learn's written lessons, one test per interaction, against the built site
 // with linlog's real module: the worked proof played with a prediction and a
 // reason per step, the dead end, the self-explanation prompt, the faded proof,
-// the hinge question, and the hover explanations and schemas Learn adds.
+// the hinge question, the attempt whose wrong step the visitor finds, a
+// problem asked of linlog, a search that gives up at a small budget, the nets
+// a lesson draws, and the hover explanations and schemas Learn adds.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
@@ -130,9 +132,95 @@ test("the reference draws every rule of the lessons as a schema, with its two-si
   await page.locator("footer").getByRole("button", { name: "Learn" }).click();
   const frame = page.getByRole("complementary", { name: "Learn" });
   await frame.getByRole("tab", { name: "Reference" }).click();
-  const rules = frame.locator(".rule-list > li");
-  await expect(rules).toHaveCount(13);
+  const [one, two] = [frame.locator(".rule-list").nth(0), frame.locator(".rule-list").nth(1)];
+  await expect(one.locator("> li")).toHaveCount(13);
   const promotion = frame.locator("#rule-promotion");
   await expect(promotion.getByRole("img", { name: "!: from ⊢ ?Γ, A to ⊢ ?Γ, !A" })).toBeVisible();
   await expect(promotion).toContainText("!R, ?L");
+  // And the two-sided rules of intuitionistic linear logic, each with its one-sided rule.
+  await expect(two.locator("> li")).toHaveCount(19);
+  const implication = frame.locator("#rule-ill-lollipop-l");
+  await expect(
+    implication.getByRole("img", { name: "⊸L: from Γ ⊢ A and Δ, B ⊢ C to Γ, Δ, A ⊸ B ⊢ C" }),
+  ).toBeVisible();
+  await expect(implication).toContainText("One-sided: ⊗.");
+});
+
+test("in an intuitionistic proof, a rule of the popover shows its two-sided schema", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 6, "Two sides");
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  await frame.getByRole("button", { name: "Show the step" }).click();
+  await page.getByRole("button", { name: /^A ⊸ B, formula/ }).click();
+  await page.getByRole("dialog", { name: "Rules" }).getByRole("button", { name: /^⊸L/ }).hover();
+  const tip = page.getByRole("tooltip");
+  await expect(
+    tip.getByRole("img", { name: "⊸L: from Γ ⊢ A and Δ, B ⊢ C to Γ, Δ, A ⊸ B ⊢ C" }),
+  ).toBeVisible();
+  await expect(tip).toContainText("The split is ⊗'s");
+});
+
+test("the attempt plays its steps, the visitor finds the wrong one, and linlog answers on the goal it left", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 7, "When there is no proof");
+  const attempt = frame.getByRole("region", { name: "An attempt that went wrong" });
+  await attempt.getByRole("button", { name: "Play the attempt" }).click();
+  for (let step = 0; step < 5; step++)
+    await attempt.getByRole("button", { name: "Next step of the attempt" }).click();
+  // Stuck: ⊢ A⊥, B is open, the last step's reason beside it.
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 6/ })).toBeVisible();
+  await expect(page.getByRole("note", { name: "Why this step" })).toContainText("B ⊕ D gives B");
+  await attempt.getByRole("radio", { name: "Step 5, ⊕₁" }).check();
+  await expect(attempt.getByRole("status")).toContainText(
+    "This answer comes from the idea that the wrong step is the one where the attempt got stuck.",
+  );
+  await attempt.getByRole("radio", { name: "Step 2, ⊕₁" }).check();
+  await expect(attempt.getByRole("status")).toContainText("Right");
+  await attempt.getByRole("button", { name: "Ask linlog about the goal step 2 left" }).click();
+  await expect(page.locator(".dock .kw.bad")).toHaveText("Unprovable, checked: atom balance");
+  // The worked proof takes the tab back and plays the right step.
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  await frame.getByRole("button", { name: "Show the step" }).click();
+  await frame.getByRole("button", { name: "Predict ⊕₂" }).click();
+  await expect(frame.locator(".said")).toContainText("Right");
+  await expect(page.getByRole("button", { name: /^B⊥, formula 1 of goal 3/ })).toBeVisible();
+});
+
+test("a problem asked of linlog opens with its verdict and reason beside it", async ({ page }) => {
+  const frame = await lesson(page, 7, "When there is no proof");
+  await frame.getByRole("button", { name: "Ask linlog about A false case" }).click();
+  await expect(page.locator(".dock .kw.bad")).toHaveText(
+    "Unprovable, checked: a classical countermodel",
+  );
+});
+
+test("a search with a small budget answers unknown, and twice the budget, three times, decides it", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 7, "When there is no proof");
+  await frame.getByRole("button", { name: "Search it with a budget of 20 units" }).click();
+  await expect(page.locator(".dock .kw.warn")).toHaveText("Unknown: gave up");
+  for (const units of [40, 80, 160])
+    await page.getByRole("button", { name: `Try ${units} units` }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Proved: every goal is closed" }),
+  ).toBeVisible();
+});
+
+test("a lesson's finished proof shows its net, and its gallery draws nets with boxes", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 8, "Proof nets");
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  for (let step = 0; step < 7; step++)
+    await frame.getByRole("button", { name: "Show the step" }).click();
+  await frame.getByRole("button", { name: "See its net" }).click();
+  await expect(page.getByRole("tab", { name: "Net" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  await frame.getByRole("button", { name: "Draw the net of Of course twice" }).click();
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  // A box inside a box.
+  await expect(page.locator('.drawing svg path[id^="b"]')).toHaveCount(2);
 });

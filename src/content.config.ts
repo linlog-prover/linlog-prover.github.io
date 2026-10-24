@@ -27,11 +27,17 @@
  *             proof plays before the student takes over, the
  *             self-explanation prompt after one step, the hinge question
  *             whose wrong answers each name a misconception, and for a lesson
- *             that shows one, a legal split that leads nowhere.
- *   rules     rules/<nn>-<name>.md, the one-sided rules the reference draws
- *             as schemas and the stage's popover shows on hover: linlog's name,
- *             the premises over the conclusion, the two-sided names of the
- *             same rule, the lesson that teaches it, what it does.
+ *             that shows one, a legal split that leads nowhere, an attempt
+ *             with a wrong step to find (its unfinished session beside the
+ *             lesson as lessons/<n>-<name>.attempt.json), a search run with a
+ *             small budget, and problems of the store to ask linlog about or
+ *             to draw the net of.
+ *   rules     rules/<nn>-<name>.md, the rules the reference draws as schemas
+ *             and the stage's popover shows on hover: linlog's name, the
+ *             premises over the conclusion, the lesson that teaches it, what
+ *             it does, and for a one-sided rule its two-sided names, for a
+ *             two-sided rule of intuitionistic linear logic the one-sided rule
+ *             it is.
  * pages/index.astro renders each into a template the island shows.
  */
 
@@ -151,22 +157,68 @@ const lessons = defineCollection({
         )
         .min(3),
     }),
+    /** Whether the finished worked proof offers its net. */
+    net: z.boolean().default(false),
+    /**
+     * An attempt at the worked proof's sequent that goes wrong, played before it from the
+     * unfinished session beside the lesson: a plausible reason per step, then "which step
+     * went wrong?", the wrong step the one without a misconception.
+     */
+    attempt: z
+      .object({
+        text: words,
+        steps: z
+          .array(
+            z.object({
+              rule: z.string(),
+              reason: words,
+              misconception: words.optional(),
+              why: words,
+            }),
+          )
+          .min(2),
+      })
+      .optional(),
+    /** A sequent the page searches with a budget too small to decide it, and what a larger one decides. */
+    unknown: z
+      .object({
+        sequent: z.string(),
+        mode: z.enum(MODES),
+        budget: z.number().int().min(1),
+        text: words,
+      })
+      .optional(),
+    /** Problems of the lesson to ask linlog about (`ask`) or to draw the net of (`net`), each with a line. */
+    gallery: z
+      .object({
+        title: words,
+        act: z.enum(["ask", "net"]),
+        items: z.array(z.object({ problem: z.string(), text: words })).min(1),
+      })
+      .optional(),
   }),
 });
 
 const rules = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/rules" }),
-  schema: z.object({
-    /** As linlog names the rule on the stage. */
-    name: z.string(),
-    title: words,
-    lesson: z.number().int().min(1),
-    premises: z.array(z.string()),
-    conclusion: z.string(),
-    /** The two-sided names of the same rule, as linlog's two-sided drawings write them. */
-    twoSided: z.array(z.string()).min(1),
-    says: words,
-  }),
+  schema: z
+    .object({
+      /** As linlog names the rule on the stage. */
+      name: z.string(),
+      title: words,
+      lesson: z.number().int().min(1),
+      premises: z.array(z.string()),
+      conclusion: z.string(),
+      /** A one-sided rule: its two-sided names, as linlog's two-sided drawings write them. */
+      twoSided: z.array(z.string()).min(1).optional(),
+      /** A two-sided rule of intuitionistic linear logic: the one-sided rule it is, by its name. */
+      oneSided: z.string().optional(),
+      says: words,
+    })
+    .refine(
+      (r) => (r.twoSided === undefined) !== (r.oneSided === undefined),
+      "a rule is one-sided, with its two-sided names, or two-sided, with its one-sided rule",
+    ),
 });
 
 export const collections = { problems, tour, texts, lessons, rules };

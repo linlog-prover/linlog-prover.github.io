@@ -124,7 +124,21 @@ function Rules(props: { rules: readonly Rule[] }) {
               <span class="rule-title">{rule.title}</span> <Words text={rule.says} />
             </p>
             <p class="sub">
-              Two-sided: <span class="m">{rule.twoSided.join(", ")}</span>. Lesson {rule.lesson}.
+              <Show
+                when={rule.oneSided}
+                fallback={
+                  <>
+                    Two-sided: <span class="m">{rule.twoSided?.join(", ")}</span>.
+                  </>
+                }
+              >
+                {(one) => (
+                  <>
+                    One-sided: <span class="m">{one()}</span>.
+                  </>
+                )}
+              </Show>{" "}
+              Lesson {rule.lesson}.
             </p>
           </li>
         )}
@@ -143,6 +157,7 @@ export function LearnFrame(props: {
 }) {
   const { ui, setUi } = props.ui;
   const [rulesAt, setRulesAt] = createSignal<HTMLElement>();
+  const [twoSidedAt, setTwoSidedAt] = createSignal<HTMLElement>();
   const open = (lesson: number | null) => setUi({ lesson, reason: null });
   const opened = () => props.lessons.find((l) => l.lesson === ui.lesson);
   return (
@@ -250,14 +265,22 @@ export function LearnFrame(props: {
             <Written
               name="texts/reference"
               spot={ui.spot}
-              ready={(host) =>
-                setRulesAt(host.querySelector<HTMLElement>("[data-rules]") ?? undefined)
-              }
+              ready={(host) => {
+                setRulesAt(host.querySelector<HTMLElement>("[data-rules]") ?? undefined);
+                setTwoSidedAt(host.querySelector<HTMLElement>("[data-rules-two]") ?? undefined);
+              }}
             />
             <Show when={rulesAt()}>
               {(at) => (
                 <Portal mount={at()}>
-                  <Rules rules={props.rules} />
+                  <Rules rules={props.rules.filter((r) => r.twoSided)} />
+                </Portal>
+              )}
+            </Show>
+            <Show when={twoSidedAt()}>
+              {(at) => (
+                <Portal mount={at()}>
+                  <Rules rules={props.rules.filter((r) => r.oneSided)} />
                 </Portal>
               )}
             </Show>
@@ -399,6 +422,20 @@ function LessonView(props: {
       </h2>
       <Written name={`lessons/${props.lesson.id}`} />
 
+      <Show when={worked && props.lesson.attempt}>
+        {(attempt) => (
+          <Attempt
+            attempt={attempt()}
+            sequent={worked?.sequent ?? ""}
+            mode={worked?.mode ?? "classical"}
+            prover={props.prover}
+            ui={props.ui}
+            tab={tab}
+            setTab={setTab}
+          />
+        )}
+      </Show>
+
       <section class="part" aria-labelledby="part-worked">
         <h3 id="part-worked">A worked proof</h3>
         <p class="m ex-seq">{worked ? displayed(worked.sequent) : ""}</p>
@@ -450,6 +487,15 @@ function LessonView(props: {
                 <button type="button" class="btn btn-s" onClick={() => void begin()}>
                   Play it again
                 </button>
+                <Show when={props.lesson.net}>
+                  <button
+                    type="button"
+                    class="btn btn-s outline"
+                    onClick={() => props.ui.setUi("tab", "net")}
+                  >
+                    See its net
+                  </button>
+                </Show>
               </p>
             }
           >
@@ -532,6 +578,21 @@ function LessonView(props: {
           </Show>
         </Show>
       </section>
+
+      <Show when={props.lesson.gallery}>
+        {(gallery) => (
+          <Gallery
+            gallery={gallery()}
+            examples={props.examples}
+            prover={props.prover}
+            ui={props.ui}
+          />
+        )}
+      </Show>
+
+      <Show when={props.lesson.unknown}>
+        {(unknown) => <GivesUp unknown={unknown()} prover={props.prover} />}
+      </Show>
 
       <section class="part" aria-labelledby="part-practice">
         <h3 id="part-practice">Practice</h3>
@@ -617,6 +678,275 @@ function LessonView(props: {
         </Show>
       </section>
     </article>
+  );
+}
+
+/**
+ * An attempt at the worked proof's sequent that goes wrong (an erroneous example): its steps
+ * played on the stage one at a time, each with the attempt's own reason beside it, then "which
+ * step went wrong?", answered as the hinge question is, and linlog asked about the goal the wrong
+ * step left. It plays on the lesson's tab, which the worked proof then takes back.
+ */
+function Attempt(props: {
+  attempt: NonNullable<Lesson["attempt"]>;
+  sequent: string;
+  mode: Example["mode"];
+  prover: Prover;
+  ui: Ui;
+  tab: () => string | null;
+  setTab: (id: string) => void;
+}) {
+  const example = { sequent: props.sequent, mode: props.mode, session: props.attempt.session };
+  const all = actionsOf(JSON.parse(props.attempt.session) as SessionDoc);
+  const steps = props.attempt.steps;
+  const wrong = steps.findIndex((s) => !s.misconception);
+  /** The steps played so far, or null before the attempt starts. */
+  const [played, setPlayed] = createSignal<number | null>(null);
+  const [chosen, setChosen] = createSignal<number | null>(null);
+  const [asked, setAsked] = createSignal(false);
+  const onTab = () => props.prover.current()?.id === props.tab();
+
+  /** Shows the attempt after its first `n` steps, the rest on the redo stack. */
+  async function at(n: number): Promise<boolean> {
+    const id = await props.prover.worked(example, n, true, props.tab());
+    if (!id) return false;
+    props.setTab(id);
+    props.ui.setUi({ reason: null, split: null, selected: null });
+    return true;
+  }
+
+  async function begin() {
+    if (!(await at(0))) return;
+    setPlayed(0);
+    setChosen(null);
+    setAsked(false);
+  }
+
+  async function next() {
+    const n = played();
+    const step = n === null ? undefined : steps[n];
+    if (n === null || !step || props.prover.busy()) return;
+    // The visitor may have worked on the tab meanwhile: take it back to where the attempt is.
+    if (!onTab() || props.prover.current()?.redo.length !== all.length - n) {
+      if (!(await at(n))) return;
+    }
+    const path = all[n]?.path ?? [];
+    await props.prover.redo();
+    const id = props.tab();
+    if (id) props.ui.setUi("reason", { tab: id, path, text: `${step.rule}: ${step.reason}` });
+    props.ui.setUi("live", `${step.rule}. ${step.reason.replaceAll("`", "")}`);
+    setPlayed(n + 1);
+  }
+
+  /** Takes the attempt back to just after its wrong step and lets the search try the goal it left. */
+  async function ask() {
+    if (props.prover.busy() || !(await at(wrong + 1))) return;
+    const session = props.prover.current()?.session;
+    const after = all[wrong + 1];
+    const goal = session && after ? goalAt(session, after.path) : undefined;
+    if (goal === undefined) return;
+    await props.prover.close(goal);
+    setAsked(true);
+  }
+
+  const option = () => {
+    const i = chosen();
+    return i === null ? undefined : steps[i];
+  };
+
+  return (
+    <section class="part" aria-labelledby="part-attempt">
+      <h3 id="part-attempt">An attempt that went wrong</h3>
+      <p>
+        <Words text={props.attempt.text} />
+      </p>
+      <Show
+        when={played() !== null && onTab()}
+        fallback={
+          <button type="button" class="btn btn-primary" onClick={() => void begin()}>
+            Play the attempt
+          </button>
+        }
+      >
+        <Show
+          when={(played() ?? 0) < steps.length}
+          fallback={
+            <>
+              <fieldset class="hinge">
+                <legend>The attempt is stuck. Which step went wrong?</legend>
+                <For each={steps}>
+                  {(s, i) => (
+                    <label class="hinge-option">
+                      <input
+                        type="radio"
+                        name="attempt-step"
+                        checked={chosen() === i()}
+                        onChange={() => setChosen(i())}
+                      />
+                      <span class="hinge-dot" aria-hidden="true" />
+                      <span>
+                        Step {i() + 1}, <span class="m">{s.rule}</span>
+                      </span>
+                    </label>
+                  )}
+                </For>
+              </fieldset>
+              <Show when={option()}>
+                {(o) => (
+                  <div
+                    class="hinge-said"
+                    role="status"
+                    data-right={o().misconception ? undefined : ""}
+                  >
+                    <Show
+                      when={o().misconception}
+                      fallback={
+                        <>
+                          <p>
+                            <span class="kw ok">Right</span> <Words text={o().why} />
+                          </p>
+                          <Show
+                            when={asked()}
+                            fallback={
+                              <button type="button" class="btn" onClick={() => void ask()}>
+                                Ask linlog about the goal step {wrong + 1} left
+                              </button>
+                            }
+                          >
+                            <p class="sub">
+                              linlog's answer is beside that goal on the stage. The worked proof
+                              below takes the right step.
+                            </p>
+                          </Show>
+                        </>
+                      }
+                    >
+                      {(m) => (
+                        <>
+                          <p>
+                            <span class="kw bad">Not quite</span> This answer comes from the idea
+                            that <Words text={lower(m())} />
+                          </p>
+                          <p>
+                            <Words text={o().why} />
+                          </p>
+                        </>
+                      )}
+                    </Show>
+                  </div>
+                )}
+              </Show>
+            </>
+          }
+        >
+          <p class="row">
+            <span class="sub">
+              Step {(played() ?? 0) + 1} of {steps.length} of the attempt
+            </span>
+            <button type="button" class="btn btn-s outline" onClick={() => void next()}>
+              Next step of the attempt
+            </button>
+          </p>
+        </Show>
+      </Show>
+    </section>
+  );
+}
+
+/**
+ * Problems of the lesson shown on the stage: each opened and asked of linlog, so that its verdict
+ * and the reason stand beside it (`ask`), or its proof replayed and its net drawn (`net`).
+ */
+function Gallery(props: {
+  gallery: NonNullable<Lesson["gallery"]>;
+  examples: readonly Example[];
+  prover: Prover;
+  ui: Ui;
+}) {
+  /** The tab a net was drawn on, reused while it holds that problem. */
+  const [tab, setTab] = createSignal<string | null>(null);
+  const items = () =>
+    props.gallery.items.flatMap((item) => {
+      const example = props.examples.find((e) => e.id === item.problem);
+      return example ? [{ example, text: item.text }] : [];
+    });
+
+  async function show(example: Example) {
+    if (props.prover.busy()) return;
+    if (props.gallery.act === "ask") {
+      // The search on the sequent itself, whose refutation the page checks, as Close does.
+      await props.prover.example(example, false);
+      await props.prover.close(0);
+      return;
+    }
+    if (!example.session) return;
+    const steps = actionsOf(JSON.parse(example.session) as SessionDoc).length;
+    const id = await props.prover.worked(example, steps, false, tab());
+    if (!id) return;
+    setTab(id);
+    props.ui.setUi("tab", "net");
+  }
+
+  return (
+    <section class="part" aria-labelledby="part-gallery">
+      <h3 id="part-gallery">{props.gallery.title}</h3>
+      <ul class="prac">
+        <For each={items()}>
+          {(item) => (
+            <li class="exercise">
+              <div class="ex-head">
+                <span class="ex-title">{item.example.title}</span>
+              </div>
+              <p class="m ex-seq">{displayed(item.example.sequent)}</p>
+              <p class="sub">
+                <Words text={item.text} />
+              </p>
+              <p class="row">
+                <button
+                  type="button"
+                  class="btn btn-s outline"
+                  disabled={props.prover.busy()}
+                  onClick={() => void show(item.example)}
+                >
+                  {props.gallery.act === "ask"
+                    ? `Ask linlog about ${item.example.title}`
+                    : `Draw the net of ${item.example.title}`}
+                </button>
+              </p>
+            </li>
+          )}
+        </For>
+      </ul>
+    </section>
+  );
+}
+
+/** A sequent searched with a budget too small to decide it: the visitor watches it answer unknown. */
+function GivesUp(props: { unknown: NonNullable<Lesson["unknown"]>; prover: Prover }) {
+  async function run() {
+    if (props.prover.busy()) return;
+    const u = props.unknown;
+    await props.prover.example({ sequent: u.sequent, mode: u.mode, session: null }, false);
+    await props.prover.close(0, u.budget / props.prover.settings().budget);
+  }
+  return (
+    <section class="part" aria-labelledby="part-gives-up">
+      <h3 id="part-gives-up">When the search gives up</h3>
+      <p class="m ex-seq">{displayed(props.unknown.sequent)}</p>
+      <p>
+        <Words text={props.unknown.text} />
+      </p>
+      <p class="row">
+        <button
+          type="button"
+          class="btn btn-s outline"
+          disabled={props.prover.busy()}
+          onClick={() => void run()}
+        >
+          Search it with a budget of {props.unknown.budget} units
+        </button>
+      </p>
+    </section>
   );
 }
 

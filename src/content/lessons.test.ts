@@ -7,8 +7,14 @@
 // fall within it; a legal split shown as a dead end is one linlog's
 // split_passes refuses; a hinge question has one right answer, each wrong one
 // names a misconception, and a problem it names is provable exactly when it is
-// the right answer. Every rule a worked proof uses has its schema in the
-// reference, and the readings a formula's hover gives are the reference's.
+// the right answer. An attempt that goes wrong is an unfinished session of the
+// worked proof's sequent whose one wrong step is the first that leaves a goal
+// with no proof; a search shown giving up answers unknown at its budget and
+// proves its sequent with a larger one; a problem asked of linlog has no proof,
+// one whose net is drawn has a net. Every lesson problem is decided well inside
+// the page's budget. Every rule a worked proof uses has its schema in the
+// reference, two-sided where the proof is intuitionistic, and the readings a
+// formula's hover gives are the reference's.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -30,16 +36,35 @@ const rules = read("./rules/");
 const problems = new Map(read("./problems/").map((p) => [p.id, p.data]));
 const session = (id: string): SessionDoc =>
   JSON.parse(readFileSync(new URL(`./problems/${id}.session.json`, import.meta.url), "utf8"));
-const ruleNames = new Set(rules.flatMap((r) => [r.data.name]));
+/** The names of the rules the reference draws for a proof in `mode`: two-sided where it is intuitionistic. */
+const schemas = (mode: string) =>
+  new Set(
+    rules
+      .filter((r) => (mode.startsWith("intuitionistic") ? r.data.oneSided : r.data.twoSided))
+      .map((r) => r.data.name),
+  );
+/** linlog's tab default, the page's work budget (`DEFAULT_BUDGET`). */
+const TAB_BUDGET = 2 ** 26;
+const within = (work: number) => JSON.stringify({ limits: { work } });
+/** The open goals of a session, by number. */
+const open = (doc: SessionDoc): number[] =>
+  JSON.parse(linlog.view(JSON.stringify(doc), "")).goals.map((g: { goal: number }) => g.goal);
+/** linlog's verdict on a goal, by the search within the page's budget. */
+const verdictOn = (doc: SessionDoc, goal: number): string =>
+  JSON.parse(linlog.close(JSON.stringify(doc), goal, within(TAB_BUDGET))).outcome.verdict;
 
 describe("Learn's lessons", () => {
-  it("are lessons 1 to 5 of the progression, in its order", () => {
+  it("are the nine lessons of the progression, in its order", () => {
     expect(lessons.map((l) => [l.data.lesson, l.data.title])).toEqual([
       [1, "Reading a sequent"],
       [2, "The multiplicatives"],
       [3, "The additives"],
       [4, "The units"],
       [5, "The exponentials"],
+      [6, "Two sides"],
+      [7, "When there is no proof"],
+      [8, "Proof nets"],
+      [9, "Ordinary logic through the translations"],
     ]);
   });
 
@@ -55,7 +80,7 @@ describe("Learn's lessons", () => {
       for (const rule of applied) expect(l.data.choices).toContain(rule);
       expect(l.data.faded).toBeLessThan(applied.length);
       expect(l.data.explain.after).toBeLessThan(applied.length);
-      for (const rule of applied) expect(ruleNames, `${rule}'s schema`).toContain(rule);
+      for (const rule of applied) expect(schemas(doc.mode), `${rule}'s schema`).toContain(rule);
     },
   );
 
@@ -86,6 +111,90 @@ describe("Learn's lessons", () => {
     },
   );
 
+  it.each(lessons.filter((l) => l.data.attempt))(
+    "$id's attempt goes wrong at its one step without a misconception, the first that leaves a goal with no proof",
+    (l) => {
+      const { steps } = l.data.attempt;
+      const doc: SessionDoc = JSON.parse(
+        readFileSync(new URL(`./lessons/${l.id}.attempt.json`, import.meta.url), "utf8"),
+      );
+      const worked = session(l.data.worked);
+      expect(doc.sequent).toEqual(worked.sequent);
+      expect(doc.mode).toBe(worked.mode);
+      expect(steps.map((s: { rule: string }) => s.rule)).toEqual(
+        doc.history.map((h) => doc.inferences[h]?.rule),
+      );
+      const wrong = steps.findIndex((s: { misconception?: string }) => !s.misconception);
+      expect(steps.filter((s: { misconception?: string }) => !s.misconception)).toHaveLength(1);
+      let at: SessionDoc = JSON.parse(
+        linlog.start(problems.get(l.data.worked)?.sequent, doc.mode, ""),
+      ).session;
+      for (const [k, action] of actions(doc).entries()) {
+        if (action.kind !== "step") throw new Error("an attempt is made of steps");
+        const goal = goalAt(at, action.path) ?? -1;
+        at = JSON.parse(
+          linlog.apply(JSON.stringify(at), goal, JSON.stringify(action.step), ""),
+        ).session;
+        const verdicts = open(at).map((g) => verdictOn(at, g));
+        if (k < wrong) expect(verdicts, `after step ${k + 1}`).not.toContain("unprovable");
+        if (k === wrong) expect(verdicts, `after step ${k + 1}`).toContain("unprovable");
+      }
+      // It ends stuck: a goal is still open.
+      expect(open(at).length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(lessons.filter((l) => l.data.unknown))(
+    "$id's search answers unknown at its budget and its doublings until the text's, and proves the sequent there and at the page's",
+    (l) => {
+      const { sequent, mode, budget } = l.data.unknown;
+      expect([...problems.values()].some((p) => p.sequent === sequent && p.mode === mode)).toBe(
+        false,
+      );
+      const start = JSON.parse(linlog.start(sequent, mode, "")).session;
+      const at = (work: number) =>
+        JSON.parse(linlog.close(JSON.stringify(start), 0, within(work))).outcome.verdict;
+      for (const work of [budget, 2 * budget, 4 * budget])
+        expect(at(work), `${work}`).toBe("unknown");
+      expect(l.data.unknown.text).toContain(`${8 * budget} units`);
+      expect(at(8 * budget)).toBe("proved");
+      expect(at(TAB_BUDGET)).toBe("proved");
+    },
+  );
+
+  it.each(lessons.filter((l) => l.data.gallery))(
+    "$id's gallery shows problems of its own: those asked of linlog have no proof, those drawn have a net",
+    (l) => {
+      for (const item of l.data.gallery.items) {
+        const problem = problems.get(item.problem);
+        expect(problem?.lesson, item.problem).toBe(l.data.lesson);
+        if (l.data.gallery.act === "ask") expect(problem?.verdict, item.problem).toBe("unprovable");
+        else {
+          const view = JSON.parse(linlog.view(JSON.stringify(session(item.problem)), ""));
+          expect(view.complete, item.problem).toBe(true);
+          expect(view.net, item.problem).toBeNull();
+        }
+      }
+    },
+  );
+
+  it.each(lessons.filter((l) => l.data.net))("$id's worked proof has a net to see", (l) => {
+    const view = JSON.parse(linlog.view(JSON.stringify(session(l.data.worked)), ""));
+    expect(view.net).toBeNull();
+  });
+
+  it("decides every problem of the lessons well inside the page's budget", () => {
+    for (const [id, p] of problems) {
+      if (p.lesson === undefined) continue;
+      const sequent = JSON.parse(linlog.read(p.sequent, "")).sequent;
+      const outcome = JSON.parse(
+        linlog.prove(JSON.stringify(sequent), p.mode, within(TAB_BUDGET)),
+      ).outcome;
+      expect(outcome.verdict, id).toBe(p.verdict === "provable" ? "proved" : "unprovable");
+      expect(outcome.statistics.work, id).toBeLessThan(TAB_BUDGET / 100);
+    }
+  });
+
   it.each(lessons)(
     "$id's hinge question has one right answer, and each wrong one names a misconception",
     (l) => {
@@ -102,6 +211,14 @@ describe("Learn's lessons", () => {
 
 describe("the reference", () => {
   const reference = readFileSync(new URL("./texts/reference.md", import.meta.url), "utf8");
+
+  it("draws each two-sided rule as the one-sided rule it names, which lists it among its two-sided names", () => {
+    expect(reference).toContain("<div data-rules-two></div>");
+    for (const r of rules.filter((r) => r.data.oneSided)) {
+      const one = rules.find((o) => o.data.twoSided && o.data.name === r.data.oneSided);
+      expect(one?.data.twoSided, r.id).toContain(r.data.name);
+    }
+  });
 
   it("draws a schema for every rule of the lessons, with the lesson that teaches it", () => {
     expect(reference).toContain("<div data-rules></div>");
