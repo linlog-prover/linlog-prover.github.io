@@ -140,8 +140,8 @@ async function walk(page: Page, least: number) {
   await measure("lesson");
   await page.getByRole("button", { name: "Start the worked proof" }).click();
   await page.getByRole("button", { name: "Show the step" }).click();
-  await page.getByRole("button", { name: "Show this split" }).click();
-  await expect(page.getByRole("dialog", { name: "Split" })).toContainText("Cannot close");
+  await page.getByRole("button", { name: "Play this split" }).click();
+  await expect(page.locator(".detour").getByRole("status")).toContainText("Cannot close");
   await measure("lesson's dead end");
   await page.getByRole("button", { name: "Predict ⊗" }).click();
   await expect(page.getByRole("note", { name: "Why this step" })).toBeVisible();

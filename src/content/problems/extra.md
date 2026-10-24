@@ -9,4 +9,4 @@ fragment: "MLL"
 lesson: 1
 order: 101
 ---
-The axiom needs `A⊥` and `A` alone: `B` would be left over, and linear logic drops no formula that is not under `?`.
+The axiom needs `A⊥` and `A` alone: `B` would be left over, and only `⊤` (which closes a goal it is in) or `?w` (which drops a formula under `?`) disposes of a formula; the goal has neither.

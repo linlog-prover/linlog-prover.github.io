@@ -22,7 +22,7 @@ faded: 3
 explain:
   after: 3
   prompt: "Why must the premise of `1 ⊕ 0` hold nothing else?"
-  answer: "`1` is the unit of `⊗`, a proof made of nothing: it consumes no formula. Anything beside it would be left unused, and linear logic drops nothing that is not under `?`."
+  answer: "The rule `1` has the conclusion `⊢ 1`, with nothing beside it: `1` is the unit of `⊗`, a proof made of nothing, which consumes no formula. A formula beside it would need a rule of its own to go: `⊤` closes a goal it is in, `?w` drops a formula under `?`, and here there is neither."
 hinge:
   question: "Which of these goals has a proof?"
   options:

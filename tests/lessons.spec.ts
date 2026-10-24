@@ -41,18 +41,22 @@ test("a worked proof plays one inference at a time: the rule predicted, then its
   await expect(frame.getByText("Proved", { exact: true })).toBeVisible();
 });
 
-test("the dead end is a legal split the split chooser says cannot close", async ({ page }) => {
+test("the dead end is a legal split played on the stage, which cannot close, then taken back", async ({
+  page,
+}) => {
   const frame = await lesson(page, 2, "The multiplicatives");
   await frame.getByRole("button", { name: "Start the worked proof" }).click();
   await frame.getByRole("button", { name: "Show the step" }).click();
-  await frame.getByRole("button", { name: "Show this split" }).click();
-  const split = page.getByRole("dialog", { name: "Split" });
-  await expect(split).toContainText("Cannot close");
-  await expect(split.locator(".prem").first()).toContainText("A⊥");
-  // The lesson goes on with the right split.
+  await frame.getByRole("button", { name: "Play this split" }).click();
+  await expect(frame.locator(".detour").getByRole("status")).toContainText("Cannot close");
+  // Its premises are drawn: A⊥ went with B, B⊥ with A.
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 3/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^B⊥, formula 1 of goal 4/ })).toBeVisible();
+  // The next step takes it back and plays the right split.
   await frame.getByRole("button", { name: "Predict ⊗" }).click();
-  await expect(split).toHaveCount(0);
+  await expect(frame.locator(".said")).toContainText("Right");
   await expect(page.getByRole("button", { name: /^B⊥, formula 1 of goal 3/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^A⊥, formula 1 of goal 4/ })).toBeVisible();
 });
 
 test("the self-explanation prompt follows its step, and a model answer comes on request", async ({

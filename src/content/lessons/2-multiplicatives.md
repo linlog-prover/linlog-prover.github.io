@@ -15,7 +15,7 @@ steps:
 detour:
   before: 1
   left: [0]
-  text: "First a split that is legal and leads nowhere: `A⊥` goes with `B`, and `B⊥` with `A`. The split chooser says it cannot close: neither premise holds an atom with its own dual."
+  text: "First a split that is legal and leads nowhere: `A⊥` goes with `B`, and `B⊥` with `A`. Neither premise holds an atom with its own dual, so neither can be closed. The next step takes it back and plays the right split."
 faded: 1
 explain:
   after: 1
@@ -27,7 +27,7 @@ hinge:
     - text: "`A⊥, B⊥` with `A ⊗ B`; `C⊥` with `C`"
       why: "Each atom goes where its dual is: `A ⊗ B` needs `A⊥` and `B⊥`, and `C` needs `C⊥`."
     - text: "`A⊥` with `A ⊗ B`; `B⊥, C⊥` with `C`"
-      misconception: "Each factor of `⊗` takes one formula: the split counts formulas instead of matching atoms."
+      misconception: "A factor of `⊗` needs one formula beside it, however many atoms it has: the split counts formulas instead of matching atoms."
       why: "`A ⊗ B` needs both `A⊥` and `B⊥`; `C` cannot use `B⊥`."
     - text: "`A⊥, B⊥, C⊥` with `A ⊗ B`; nothing with `C`"
       misconception: "A premise can do without the duals of its atoms."

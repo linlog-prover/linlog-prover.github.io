@@ -308,6 +308,8 @@ function LessonView(props: {
   /** What was said of the last step played: the rule and the guess before it. */
   const [said, setSaid] = createSignal<{ rule: string; guess: string | null } | null>(null);
   const [detoured, setDetoured] = createSignal(false);
+  /** linlog's quick verdict on the dead end, once it is played: whether it could still close. */
+  const [deadEnd, setDeadEnd] = createSignal<boolean | null>(null);
   const [compared, setCompared] = createSignal(false);
   const [chosen, setChosen] = createSignal<number | null>(null);
   let faded!: HTMLElement;
@@ -329,6 +331,7 @@ function LessonView(props: {
     setPlayed(0);
     setSaid(null);
     setDetoured(false);
+    setDeadEnd(null);
   }
 
   /** Plays the next step of the worked proof, after the visitor's guess (or none). */
@@ -350,18 +353,23 @@ function LessonView(props: {
     setPlayed(at + 1);
   }
 
-  /** Shows the lesson's legal split that leads nowhere in the split chooser, with linlog's verdict on it. */
+  /**
+   * Plays the lesson's legal split that leads nowhere on the stage, its dead premises drawn,
+   * with linlog's verdict on it; the next prediction takes it back (the tab no longer holds
+   * the lesson's steps, so `reveal` replays them).
+   */
   async function detour() {
     const d = props.lesson.detour;
     const action = all[played()];
     const session = props.prover.current()?.session;
-    if (!d || !action || action.kind !== "step" || !onTab() || !session) return;
+    if (!d || !action || action.kind !== "step" || !onTab() || !session || props.prover.busy())
+      return;
     const goal = goalAt(session, action.path);
     if (goal === undefined) return;
     const step = { position: action.step.position, rule: action.step.rule, left: d.left };
-    setUi({ selected: null, split: { goal, ...step, passes: null } });
-    const passes = await props.prover.splitPasses(goal, step);
-    setUi("split", (s) => (s ? { ...s, passes } : s));
+    setUi({ selected: null, split: null, reason: null });
+    setDeadEnd(await props.prover.splitPasses(goal, step));
+    await props.prover.apply(goal, step);
     setDetoured(true);
   }
 
@@ -413,7 +421,10 @@ function LessonView(props: {
                       fallback={
                         <>
                           The step is <span class="m">{s().rule}</span>, not{" "}
-                          <span class="m">{s().guess}</span>; its reason is beside it on the stage.
+                          <Show when={s().guess !== "no rule"} fallback="“no rule”">
+                            <span class="m">{s().guess}</span>
+                          </Show>
+                          ; its reason is beside it on the stage.
                         </>
                       }
                     >
@@ -442,14 +453,26 @@ function LessonView(props: {
               </p>
             }
           >
-            <Show when={props.lesson.detour?.before === played() && !detoured()}>
+            <Show when={props.lesson.detour?.before === played()}>
               <div class="detour">
                 <p>
                   <Words text={props.lesson.detour?.text ?? ""} />
                 </p>
-                <button type="button" class="btn btn-s outline" onClick={() => void detour()}>
-                  Show this split
-                </button>
+                <Show
+                  when={detoured()}
+                  fallback={
+                    <button type="button" class="btn btn-s outline" onClick={() => void detour()}>
+                      Play this split
+                    </button>
+                  }
+                >
+                  <p class="row" role="status">
+                    <span class={`kw ${deadEnd() === false ? "bad" : "plain"}`}>
+                      {deadEnd() === false ? "Cannot close" : "Played"}
+                    </span>
+                    On the stage, neither premise can be closed.
+                  </p>
+                </Show>
               </div>
             </Show>
             <fieldset class="predict">

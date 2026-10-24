@@ -255,6 +255,8 @@ export default function App(props: {
       const r = element.getBoundingClientRect();
       const key = element.getAttribute("data-key");
       const named = ruleNamed(props.rules, element.getAttribute("data-rule") ?? "");
+      // A rule the reference draws no schema of (Mix, weakening) has nothing to show.
+      if (!named && !element.hasAttribute("data-tip")) return;
       setTip({
         text: named
           ? named.as === named.rule.name

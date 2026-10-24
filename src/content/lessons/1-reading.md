@@ -2,7 +2,7 @@
 lesson: 1
 title: "Reading a sequent"
 worked: "identity"
-choices: ["ax", "⅋", "⊗"]
+choices: ["ax", "⅋", "⊗", "no rule"]
 steps:
   - rule: "ax"
     reason: "The goal holds the atom `A` and its dual `A⊥`, and nothing else: the axiom closes it."
@@ -24,7 +24,7 @@ hinge:
     - text: "`⊢ A⊥, A, B`"
       problem: "extra"
       misconception: "A formula nobody uses can be left over, as in classical logic."
-      why: "Linear logic drops nothing that is not under `?`: `B` would be left unproved."
+      why: "`B` would be left over: only `⊤`, which closes a goal it is in, or `?w`, which drops a formula under `?`, can dispose of a formula, and the goal has neither."
     - text: "`⊢ A⊥, B`"
       problem: "strangers"
       misconception: "Any atom closes with any negated atom."
