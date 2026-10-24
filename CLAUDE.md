@@ -74,7 +74,10 @@ which its flake, its tooling and its Claude Code setup are taken.
 and `src/` are the site:
 - `src/pages/index.astro`: the one page, the island placed `client:only`, the written
   content rendered into templates; `404.astro` the page Pages serves for a missing path;
-  `privacy.astro` the privacy notice, every statement citing its source.
+  `privacy.astro` the privacy notice, every statement citing its source; `llms.txt.ts`
+  the site's `/llms.txt` for AI models (llmstxt.org), its text `src/content/llms.txt`: what
+  the page is and the links to linlog's guide for models, which linlog's rustdoc site
+  serves at `/linlog/llms.txt` and `/linlog/llms-full.txt`.
 - `src/content/`: the written content (CC BY 4.0), Markdown in content collections
   (`src/content.config.ts`): the store of problems with their sessions, Learn's lessons and
   the rules' schemas, the tour, and the texts (About, Practice's and Learn's openings).

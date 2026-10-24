@@ -8,6 +8,8 @@ WebAssembly and runs in the page; nothing you type is sent anywhere, and your
 proofs stay in this browser's storage.
 
 The library's documentation is at [/linlog/](/linlog/), its source and the
-command line prover on [GitHub](https://github.com/linlog-prover/linlog).
+command line prover on [GitHub](https://github.com/linlog-prover/linlog). For AI
+models, [llms.txt](/llms.txt) says what this page is and where linlog's guide for
+them is.
 Questions, mistakes and wishes are welcome as
 [issues](https://github.com/linlog-prover/linlog-prover.github.io/issues).

@@ -391,7 +391,11 @@ the page reads.
   stop in the live region, and marks what it points at with `data-tour-spot`.
 - **About** is a menu of the bottom band: its text, linlog's version from `about`, every
   licence the site serves (linked, `tests/learn.spec.ts` fetches each) and the line that
-  GitHub logs visitors' addresses, which links the privacy page.
+  GitHub logs visitors' addresses, which links the privacy page. Its text links `/llms.txt`,
+  the page described for AI models in the proposal's shape (an H1, a blockquote, then lists
+  of links; no heading among the details), which points to linlog's guide on the rustdoc
+  site rather than copying it, so that the guide stays one text, kept true by linlog's own
+  tests; `tests/learn.spec.ts` holds the link, the shape and the two guide links.
 - **The privacy page** (`src/pages/privacy.astro`, at `/privacy/`) is a page of its own,
   linked from About, from the bottom band's end (More's sheet on a phone) and from the 404
   page. Each statement cites one of its numbered sources (`SOURCES`), every one cited and

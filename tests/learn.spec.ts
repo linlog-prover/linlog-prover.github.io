@@ -114,6 +114,27 @@ test("About says what the page is, and every licence it lists is served", async 
   }
 });
 
+test("llms.txt tells AI models what the page is and where linlog's guide is, and About links it", async ({
+  page,
+  request,
+}) => {
+  await goto(page);
+  await page.getByRole("button", { name: "About" }).click();
+  const about = page.getByRole("dialog", { name: "About" });
+  await expect(about.getByRole("link", { name: "llms.txt" })).toHaveAttribute("href", "/llms.txt");
+  const response = await request.get("/llms.txt");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("text/plain");
+  const text = await response.text();
+  // The proposal's shape: an H1, a blockquote, then the lists of links.
+  expect(text).toMatch(/^# .+\n\n> /);
+  expect(text).toContain("\n## Docs\n");
+  for (const guide of ["llms.txt", "llms-full.txt"]) {
+    expect(text).toContain(`(https://linlog-prover.github.io/linlog/${guide})`);
+  }
+  expect(text).toContain("CC BY 4.0");
+});
+
 test("with Learn on, the bottom band keeps its actions in one row at 1280 pixels", async ({
   page,
 }) => {
