@@ -462,8 +462,10 @@ test("the calculus's switches restart the proof after a warning, and two-sided s
   page,
 }) => {
   await start(page, "A, B |- A * B");
-  // Classical derivations are drawn one-sided: the switch is there, greyed.
-  await expect((await switches(page)).getByRole("checkbox", { name: "Two-sided" })).toBeDisabled();
+  // Classical derivations are drawn one-sided by default: the switch is there, off.
+  const twoSided = (await switches(page)).getByRole("checkbox", { name: "Two-sided" });
+  await expect(twoSided).toBeEnabled();
+  await expect(twoSided).not.toBeChecked();
   await page.keyboard.press("Escape");
   await rule(page, /^A ⊗ B/, "⊗");
   await page.getByRole("button", { name: /^B⊥, formula 2/ }).click();
@@ -477,6 +479,25 @@ test("the calculus's switches restart the proof after a warning, and two-sided s
   await page.keyboard.press("Escape");
   await start(page, "A |- B, C", false);
   await expect(page.getByRole("alert")).toContainText("2 formulas right of ⊢");
+});
+
+test("the two-sided switch draws a classical derivation as written, kept across a reload", async ({
+  page,
+}) => {
+  await proveCommuted(page);
+  const steps = page.locator(".drawing desc").first();
+  await expect(steps).toContainText("by ⅋ from");
+  await calculus(page, ["Two-sided"]);
+  await expect(steps).toContainText("A ⊗ B ⊢ B ⊗ A, by ⊗L from");
+  // The proofs are stored a moment after a change, and a reload offers them back.
+  await page.waitForTimeout(500);
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Restore" })).toBeVisible();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.locator(".ptab")).toHaveCount(1);
+  await expect((await switches(page)).getByRole("checkbox", { name: "Two-sided" })).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(steps).toContainText("A ⊗ B ⊢ B ⊗ A, by ⊗L from");
 });
 
 test("the light and dark toggle pins a scheme, kept on the next visit", async ({ page }) => {

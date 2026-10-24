@@ -56,17 +56,22 @@ interface Camera {
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** The settings of the stage's drawing: the formulas large enough to click, in the stage's font. */
+/**
+ * The settings of the stage's drawing: the formulas large enough to click, in the stage's font,
+ * a classical derivation two-sided where the calculus's switch asks it.
+ */
 const drawSettings = (
   work: number,
   essential: boolean,
   net: NetDrawing,
   look: NetLook,
   font: MathFont,
+  twoSided: boolean,
 ) =>
   JSON.stringify({
     limits: { work },
     styles: { svg: { font_size: 30, essential, net, net_look: lookJson(look), font } },
+    ...(twoSided ? { view: { classical: "two" } } : {}),
   });
 
 export function Stage(props: { prover: Prover; ui: Ui }) {
@@ -128,8 +133,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           props.prover.settings().net,
           props.prover.settings().netLook,
           props.prover.settings().stageFont,
+          props.prover.settings().twoSided,
         ] as const,
-      async ([session, v, tab, , netDrawing, look, font]) => {
+      async ([session, v, tab, , netDrawing, look, font, twoSided]) => {
         const mine = ++sequence;
         if (!session || !v) {
           host.replaceChildren();
@@ -146,6 +152,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             netDrawing,
             look,
             font,
+            twoSided,
           );
           svg = net
             ? await props.prover.api.drawNet(session, settings)

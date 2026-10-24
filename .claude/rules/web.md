@@ -180,6 +180,13 @@ the page reads.
   page does. The hint ladder's first rung reads linlog's judgement of the hinted rule
   (`Hint.invertible`), not a list of names, and with the switch on says that the invertible
   rules are done.
+- **The Two-sided switch** is on the calculus's popover in classical mode alone
+  (`Calculus.tsx`), a setting of the tab (`Settings.twoSided`, off by default, stored with
+  the others), not of the proof: it changes no session and restarts nothing. While it is on,
+  `viewJson` adds `view.classical: "two"` to `json()`, the stage's `drawSettings` and the
+  exports' settings, and linlog draws the derivation two-sided as the sequent was typed
+  (`~L`/`~R` where a negation was typed); a session keeps how its sequent was typed from
+  `start`, so turning the switch on redraws any proof at any point.
 - **One action that changes a proof at a time** (`guard`): each reads the session, waits on
   the worker and shows the answer, so a second begun meanwhile would build on a session
   the first replaces. An action asked for while one runs does nothing; the bottom band's

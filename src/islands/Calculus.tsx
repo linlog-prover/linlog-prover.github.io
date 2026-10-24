@@ -5,10 +5,11 @@
  * The calculus's switches, in the popover a tab's calculus mark opens, at
  * every width: a segmented control for classical or intuitionistic logic and
  * labelled switches for Mix, affine weakening and, in classical mode alone,
- * the two-sided presentation (greyed: linlog does not draw classical
- * derivations two-sided yet; intuitionistic ones are two-sided already, so
- * there it is not shown). A session is one sequent in one mode, so a change
- * restarts the proof, and the switches say so first when the proof has steps.
+ * the two-sided presentation (intuitionistic derivations are two-sided
+ * already, so there it is not shown). A session is one sequent in one mode, so
+ * a change of the calculus restarts the proof, and the switches say so first
+ * when the proof has steps; the presentation is a setting of the tab, kept with
+ * the others, and changes only how every classical derivation is drawn.
  */
 
 import { Show } from "solid-js";
@@ -85,9 +86,15 @@ export function Calculus(props: { prover: Prover; ui: Ui }) {
       <Show when={!intuitionistic()}>
         <label
           class="sw"
-          data-tip="Drawing classical derivations two-sided is a later feature of linlog; they are drawn one-sided"
+          data-tip="Draw the derivation two-sided, as the sequent was written: each formula on its side of ⊢, the rules named by side (⊗L, ⅋R, ⊸L), and a step ~L or ~R where a negation was written"
         >
-          <input type="checkbox" disabled />
+          <input
+            type="checkbox"
+            checked={props.prover.settings().twoSided}
+            onChange={(event) =>
+              props.prover.setSettings({ twoSided: event.currentTarget.checked })
+            }
+          />
           <span class="sw-t" aria-hidden="true" />
           Two-sided
         </label>

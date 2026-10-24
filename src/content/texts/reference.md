@@ -3,7 +3,7 @@ title: Reference
 ---
 The connectives, as you type them and as linlog prints them. One-sided, every
 formula is on the right of `⊢` and `A⊥` is the dual of `A`; two-sided
-(intuitionistic), the hypotheses are on the left.
+(intuitionistic, or classical with the Two-sided switch), the hypotheses are on the left.
 
 | sign | typed | name | reading |
 |---|---|---|---|

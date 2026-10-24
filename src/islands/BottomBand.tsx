@@ -55,6 +55,7 @@ import {
   pathKey,
   sameLook,
   TEXTBOOK_LOOK,
+  viewJson,
 } from "./state";
 import { Written } from "./Learn";
 import { Logo } from "./Logo";
@@ -384,6 +385,7 @@ function ExportMenu(props: {
           font: exportFont(props.prover.settings()),
         },
       },
+      ...viewJson(props.prover.settings()),
     });
   const name = () => "linlog-proof";
 

@@ -117,7 +117,13 @@ export interface Settings {
   font: MathFont | null;
   /** Whether linlog applies every invertible rule by itself after each step, `interactive.invertible`. */
   invertible: boolean;
+  /** Whether a classical derivation is drawn two-sided, as its sequent was written, `view.classical`. */
+  twoSided: boolean;
 }
+
+/** The view of the settings as linlog reads it: a classical derivation two-sided when asked. */
+export const viewJson = (settings: Settings) =>
+  settings.twoSided ? { view: { classical: "two" } } : {};
 
 /** The math font the exports are set in: the one chosen for them, else the stage's. */
 export const exportFont = (settings: Settings): MathFont => settings.font ?? settings.stageFont;
@@ -188,6 +194,7 @@ function loadSettings(): Settings {
       stageFont: MATH_FONTS.find((f) => f.key === stored.stageFont)?.key ?? "euler",
       font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
       invertible: stored.invertible === true,
+      twoSided: stored.twoSided === true,
     };
   } catch {
     return {
@@ -199,6 +206,7 @@ function loadSettings(): Settings {
       stageFont: "euler",
       font: null,
       invertible: false,
+      twoSided: false,
     };
   }
 }
@@ -300,7 +308,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
 
   /**
    * The settings as linlog reads them: the tab's defaults with the budget, the engine forced,
-   * and the invertible rules applied by themselves when they are on.
+   * the invertible rules applied by themselves when they are on, and the derivation's sides.
    */
   const json = (budget = settings().budget, invertible = settings().invertible) => {
     const engine = settings().engine;
@@ -308,6 +316,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
       limits: { work: budget },
       ...(engine ? { search: { engine } } : {}),
       ...(invertible ? { interactive: { invertible } } : {}),
+      ...viewJson(settings()),
     });
   };
   /**
