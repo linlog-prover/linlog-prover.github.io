@@ -17,10 +17,13 @@ import type {
   Offered,
   Outcome,
   Played,
+  Ran,
+  Reached,
   ReadResult,
   SequentDoc,
   SessionDoc,
   StepForm,
+  Stepped,
 } from "./linlog";
 import { type Client, createClient, type WorkerLike } from "./protocol";
 import type { Action, Replayed } from "./steps";
@@ -71,6 +74,35 @@ export function createApi(changed: (pending: number) => void) {
         JSON.stringify(step),
         settings,
       ),
+    cut: (
+      session: SessionDoc,
+      goal: number,
+      formula: string,
+      left: readonly number[],
+      settings: string,
+    ) =>
+      json<Inverted & { opened: number[] }>(
+        "cut",
+        doc(session),
+        goal,
+        formula,
+        JSON.stringify(left),
+        settings,
+      ),
+    /** A proof's or net's cuts and drawing: `on` the derivation or the net, `of` its document or "" for the session's. */
+    cuts: (on: "tree" | "net", session: SessionDoc, of: string, settings: string) =>
+      json<Reached>(on === "tree" ? "cuts" : "net_cuts", doc(session), of, settings),
+    /** One step of elimination, on the cut `at` (a node, or a vertex at a cut link) or the strategy's. */
+    cutStep: (
+      on: "tree" | "net",
+      session: SessionDoc,
+      of: string,
+      at: number | undefined,
+      settings: string,
+    ) => json<Stepped>(on === "tree" ? "cut_step" : "net_cut_step", doc(session), of, at, settings),
+    /** Elimination to the end within the settings' bounds. */
+    eliminate: (on: "tree" | "net", session: SessionDoc, of: string, settings: string) =>
+      json<Ran>(on === "tree" ? "eliminate" : "net_eliminate", doc(session), of, settings),
     close: (session: SessionDoc, goal: number, settings: string) =>
       json<Closed>("close", doc(session), goal, settings),
     fill: (session: SessionDoc, goal: number, source: SessionDoc, settings: string) =>

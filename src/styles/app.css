@@ -2007,3 +2007,97 @@ fieldset {
   font: var(--font-weight-normal) var(--text-small) / var(--leading-snug) var(--font-text);
   pointer-events: none;
 }
+
+/* Cut elimination: its own cluster at the stage's top left, over a finished proof with cuts. */
+.elim {
+  position: absolute;
+  top: var(--spacing-7);
+  left: var(--spacing-3);
+  z-index: var(--layer-hud);
+  display: grid;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2);
+  max-width: min(var(--size-menu), calc(100vw - var(--spacing-6)));
+}
+.elim .h,
+.elim .line {
+  margin: 0;
+  padding: 0 var(--spacing-1);
+}
+.elim .line {
+  font-size: var(--text-small);
+}
+.elim .line .kw {
+  font-weight: var(--font-weight-semibold);
+}
+.elim .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin: 0;
+}
+.steps-taken summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-control);
+  font-size: var(--text-small);
+  padding: 0 var(--spacing-1);
+  cursor: pointer;
+}
+.steps-taken ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(6 * var(--size-band));
+  overflow-y: auto;
+}
+.steps-taken .mi[aria-pressed="true"] {
+  background: var(--color-accent-wash);
+}
+/* A cut's button over an elimination's drawing; the strategy's next cut outlined. */
+.cb {
+  position: absolute;
+  pointer-events: auto;
+  background: transparent;
+  border: var(--line) dashed var(--color-edge);
+  border-radius: var(--radius-control);
+  padding: 0;
+  cursor: pointer;
+}
+.cb:hover,
+.cb:focus-visible {
+  background: var(--color-accent-wash);
+  border-color: var(--color-line);
+}
+.cb[data-next] {
+  border: var(--line-strong) solid var(--color-accent);
+}
+/* The cut a step reduced, on the drawing it was taken on, and where it acted besides: an
+   inference's conclusion and rule label, a net's vertex or box; a net's lines keep no fill. */
+.drawing svg g.reduced text,
+.drawing svg g.reduced + text,
+.drawing svg text.reduced,
+.drawing svg g.acted text,
+.drawing svg g.acted + text,
+.drawing svg text.acted {
+  fill: var(--color-net-highlight);
+}
+.drawing svg :is(path, circle):is(.reduced, .acted) {
+  stroke: var(--color-net-highlight);
+}
+.drawing svg g.next-cut text,
+.drawing svg g.next-cut + text {
+  fill: var(--color-accent);
+}
+.drawing svg path.next-cut {
+  stroke: var(--color-accent);
+}
+.cut-field {
+  display: grid;
+  gap: var(--spacing-1);
+  margin: 0 var(--spacing-1) var(--spacing-2);
+}
+.cut-field .field {
+  width: 100%;
+}

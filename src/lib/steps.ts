@@ -19,7 +19,7 @@
  * step out numbers every later one differently, while the paths stay.
  */
 
-import type { Inference, Played, Prover, SessionDoc, StepForm } from "./linlog";
+import type { Inference, Played, Prover, SessionDoc, StepForm, View } from "./linlog";
 
 /** A goal's place in the tree: the premise taken at each inference from the root. */
 export type Path = readonly number[];
@@ -31,6 +31,18 @@ export type Action =
       readonly kind: "step";
       readonly step: StepForm;
       /** The premises' formulas the step made, which its replay must make again. */
+      readonly made: readonly (readonly number[])[];
+    }
+  | {
+      readonly path: Path;
+      readonly kind: "cut";
+      /** The cut formula as typed, in the mode's syntax. */
+      readonly formula: string;
+      /** The occurrence of the cut formula, the first of the occurrences the cut added. */
+      readonly occurrence: number;
+      /** The goal's positions whose formulas went to the first premise. */
+      readonly left: readonly number[];
+      /** The premises' formulas the cut made, which its replay must make again. */
       readonly made: readonly (readonly number[])[];
     }
   | {
@@ -121,8 +133,8 @@ export function leftOf(
   principal: number | undefined,
   left: readonly number[],
   right: readonly number[],
+  own = principal === undefined ? 0 : 1,
 ): number[] | undefined {
-  const own = principal === undefined ? 0 : 1;
   const dead = new Set<string>();
   const chosen: number[] = [];
   // i: the goal's next position; a, b: each premise's next formula; c, d:
@@ -187,12 +199,33 @@ function stepAction(doc: SessionDoc, goal: number, path: Path): Action {
   return { path, kind: "step", step: stepOf(doc, goal), made: madeOf(doc, goal) };
 }
 
-/** The session's actions, in the order they were taken. */
-export function actions(doc: SessionDoc): Action[] {
+/** The cuts' formulas as typed, by their inference, as the view gives them. */
+export type CutTexts = View["cuts"];
+
+/**
+ * A cut as `cut` takes it again: its formula as typed (`texts`, the view's), and the goal's
+ * positions that went to the first premise, each premise its share of the goal plus one
+ * formula of its own, the cut formula or its dual.
+ */
+function cutAction(doc: SessionDoc, goal: number, path: Path, texts: CutTexts): Action {
+  const inference = doc.inferences[goal];
+  const [first, second] = (inference?.premises ?? []).map((p) => doc.inferences[p]?.sequent ?? []);
+  const left = leftOf(inference?.sequent ?? [], undefined, first ?? [], second ?? [], 1) ?? [];
+  const formula = texts.find((c) => c.inference === goal)?.formula ?? "";
+  const occurrence = inference?.cut ?? 0;
+  return { path, kind: "cut", formula, occurrence, left, made: madeOf(doc, goal) };
+}
+
+/**
+ * The session's actions, in the order they were taken; a cut with its formula as `texts`
+ * (the view's `cuts`) say it was typed.
+ */
+export function actions(doc: SessionDoc, texts: CutTexts = []): Action[] {
   const where = paths(doc);
   const history = new Set(doc.history);
   return doc.history.map((goal): Action => {
     const path = where.get(goal) ?? [];
+    if (doc.inferences[goal]?.rule === "cut") return cutAction(doc, goal, path, texts);
     if (!grafted(doc, goal, history)) return stepAction(doc, goal, path);
     // The graft's inferences from its root up, each as a step: what replays
     // it when the search no longer closes the goal.
@@ -231,8 +264,9 @@ export function retract(
   doc: SessionDoc,
   goal: number | undefined,
   invertible?: ReadonlySet<number>,
+  texts: CutTexts = [],
 ): Retraction | undefined {
-  const all = actions(doc);
+  const all = actions(doc, texts);
   const inverts = (path: Path) => {
     const at = goalAt(doc, path);
     return invertible !== undefined && at !== undefined && invertible.has(at);
@@ -283,6 +317,15 @@ export function play(
 ): Replayed {
   let played: Played = start;
   const failed: Path[] = [];
+  // A cut adds its formula's occurrences after every one the session has, so a cut replayed
+  // after other cuts than before (an earlier one taken back, or one redone later) has them
+  // elsewhere: each block a recorded cut added, its formula's tree then its dual's, is moved
+  // to where its replay put it, and what an action made is compared through the moves.
+  const moves: { from: number; to: number; by: number }[] = [];
+  const moved = (made: readonly (readonly number[])[]) =>
+    made.map((premise) =>
+      premise.map((o) => o + (moves.find((m) => m.from <= o && o < m.to)?.by ?? 0)),
+    );
   const step = (action: Action & { kind: "step" }): boolean => {
     const goal = goalAt(played.session, action.path);
     if (goal === undefined || expanded(played.session.inferences[goal])) return false;
@@ -290,7 +333,38 @@ export function play(
       const next = JSON.parse(
         prover.apply(JSON.stringify(played.session), goal, JSON.stringify(action.step), settings),
       ) as Played;
-      if (!same(madeOf(next.session, goal), action.made)) {
+      if (!same(madeOf(next.session, goal), moved(action.made))) {
+        played = JSON.parse(prover.undo(JSON.stringify(next.session), settings)) as Played;
+        return false;
+      }
+      played = next;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const cut = (action: Action & { kind: "cut" }): boolean => {
+    const goal = goalAt(played.session, action.path);
+    if (goal === undefined || expanded(played.session.inferences[goal])) return false;
+    try {
+      const next = JSON.parse(
+        prover.cut(
+          JSON.stringify(played.session),
+          goal,
+          action.formula,
+          JSON.stringify(action.left),
+          settings,
+        ),
+      ) as Played;
+      // The recorded dual is the second premise's one occurrence of the block.
+      const from = action.occurrence;
+      const dual = Math.max(...(action.made[1] ?? []));
+      const placed = next.session.inferences[goal]?.cut;
+      if (placed === undefined || dual < from) return false;
+      const move = { from, to: from + 2 * (dual - from), by: placed - from };
+      moves.push(move);
+      if (!same(madeOf(next.session, goal), moved(action.made))) {
+        moves.pop();
         played = JSON.parse(prover.undo(JSON.stringify(next.session), settings)) as Played;
         return false;
       }
@@ -304,6 +378,10 @@ export function play(
     if (failed.some((path) => within(action.path, path))) continue;
     if (action.kind === "step") {
       if (!step(action)) failed.push(action.path);
+      continue;
+    }
+    if (action.kind === "cut") {
+      if (!cut(action)) failed.push(action.path);
       continue;
     }
     const goal = goalAt(played.session, action.path);

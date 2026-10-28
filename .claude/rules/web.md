@@ -78,6 +78,14 @@ the page reads.
   refuses. The fast-check property in `steps.test.ts` replays random proof
   attempts against the real module; extend its sequents when a rule is added.
 
+- **A cut replays from its formula as typed** (the action `cut`): the session document
+  holds a cut's occurrence, not its text, so `actions` and `retract` take the view's `cuts`
+  (each cut's inference and formula in the mode's syntax) and give a cut `{formula, left,
+  made}`, `left` found by `leftOf` with one formula of each premise's own (the cut formula
+  and its dual). linlog's `start` on the session's sequent leaves its cut formulas out, so
+  the replayed cut makes the same occurrences. A caller without the view (Learn's worked
+  examples, which have no cut) passes none.
+
 ## The drawing and the stage (`src/islands/Stage.tsx`)
 
 - linlog's SVG goes in by `innerHTML`; it stays a picture (`role="img"`, its `<desc>`),
@@ -141,6 +149,22 @@ the page reads.
   nothing in this Chromium at all.
 - Solid's narrowed accessor in `<Show>{(x) => …}` goes stale once its condition is false:
   read it before the handler changes what the condition reads (the restart warning).
+
+- **The cut chooser** (`ui.cutting`, the dock's "Cut"): the formula typed in the tab's syntax
+  (ILL's in an intuitionistic tab), the goal's formulas clicked over to the premise proving
+  it, placed under the goal's row as the split chooser is; a parse error or a refusal stays
+  said in it (`cutProblem`), never as the goal's note.
+- **Cut elimination** is each proof's `elim.tree` and `elim.net`, never stored, cleared by any
+  change of the session (`show`): the proof or net reached (linlog's `cuts`/`net_cuts`
+  answer, its document sent back with each call), the steps taken with the drawing each
+  was taken on, and the way back. Undo keeps the state before a step; a step of "To the end"
+  is taken again on undo by `eliminate` from the run's start with `cut.steps` one fewer and
+  `cut.drawn_bytes` 0 (the strategy is deterministic and nothing else of a run is kept).
+  The stage draws the reached proof or net (or with "Before" the drawing a step was taken
+  on, its cut marked by the classes `reduced` and `acted` on linlog's ids, a net's marks
+  linlog's own), with a `.cb` button over every cut, the strategy's next outlined
+  (`next-cut`). A net's elimination draws as `draw_net` does: an intuitionistic net with
+  cut links under its reading. Settings' "Elimination steps" is `cut.steps`.
 
 ## The state (`src/islands/state.tsx`)
 

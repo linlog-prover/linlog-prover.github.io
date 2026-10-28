@@ -208,6 +208,25 @@ test.describe("at a phone's width", () => {
     expect(await walk(page, 44)).toEqual([]);
   });
 
+  test("the cut chooser and the elimination's controls are 44 by 44 pixels at least", async ({
+    page,
+  }) => {
+    await start(page, "A, A -o B |- B");
+    await page.getByRole("button", { name: "Cut", exact: true }).click();
+    await page.getByRole("dialog", { name: "Cut" }).getByRole("textbox").fill("A -o B");
+    expect(await tooSmall(page, 44)).toEqual([]);
+    await page.getByRole("button", { name: /^A ⊗ B⊥, formula 2/ }).click();
+    await page.getByRole("dialog", { name: "Cut" }).getByRole("button", { name: "Cut" }).click();
+    await page.getByRole("button", { name: "Close all" }).first().click();
+    const panel = page.getByRole("region", { name: "Cut elimination" });
+    await panel.getByRole("button", { name: "Eliminate the cuts" }).click();
+    expect(await tooSmall(page, 44)).toEqual([]);
+    await panel.getByRole("button", { name: "To the end" }).click();
+    await expect(panel.getByRole("status")).toContainText("Cut-free");
+    await panel.locator("summary").click();
+    expect(await tooSmall(page, 44)).toEqual([]);
+  });
+
   test("the stage's controls stay 44 by 44 pixels in every math font", async ({ page }) => {
     await goto(page);
     expect(await fonts(page, 44)).toEqual([]);

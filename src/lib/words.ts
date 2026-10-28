@@ -397,3 +397,46 @@ export function readingOf(text: string): string {
   const atom = text.trim().replace(/⊥$/, "");
   return text.trim().endsWith("⊥") ? `The dual of the atom ${atom}` : `The atom ${atom}`;
 }
+
+/** Why a cut was not made: its formula's text, or the step's refusal at the goal. */
+export function cutProblem(failed: Failure, formulas: readonly GoalFormula[]): Said {
+  if (failed.code === "parse") {
+    const said = inputProblem(failed);
+    return {
+      keyword: said.keyword,
+      sentence: failed.message.replace(
+        /^cannot parse the sequent: /,
+        "The cut formula does not parse: ",
+      ),
+    };
+  }
+  if (failed.code === "cut_formula") {
+    return {
+      keyword: "One formula",
+      sentence: "A cut formula is one formula, written without ⊢ and without commas.",
+    };
+  }
+  if (failed.code === "not_intuitionistic") {
+    return {
+      keyword: "Not an intuitionistic formula",
+      sentence:
+        "In intuitionistic logic the cut formula is written in its syntax, without negation.",
+    };
+  }
+  return refusal(failed, formulas, "cut");
+}
+
+/** A step of cut elimination as a line: its number, its case, and the cut it reduced. */
+export function stepLine(k: number, step: { readonly name: string; readonly formula: string }) {
+  const name = `${step.name.charAt(0).toUpperCase()}${step.name.slice(1)}`;
+  return `${k}. ${name} on the cut of ${formulaText(step.formula)}`;
+}
+
+/** Why an elimination to the end stopped before the last cut: the bound, in the page's words. */
+export function eliminationStopped(reason: Failure | undefined, steps: number): Said {
+  const message = reason?.message ?? "a bound was reached";
+  return {
+    keyword: `Stopped after ${steps} ${steps === 1 ? "step" : "steps"}`,
+    sentence: `${message.charAt(0).toUpperCase()}${message.slice(1)}; cuts are left. Next step goes on from here.`,
+  };
+}

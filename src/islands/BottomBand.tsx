@@ -47,6 +47,7 @@ import { notTaken, pretty } from "../lib/words";
 import type { Theme } from "../lib/theme";
 import {
   DEFAULT_BUDGET,
+  DEFAULT_CUT_STEPS,
   exportFont,
   LINLOG_LOOK,
   lookJson,
@@ -729,6 +730,21 @@ function SettingsPanel(props: {
           {Math.round(props.prover.settings().budget / 68e6) || "under one"} second
           {props.prover.settings().budget >= 1.36e8 ? "s" : ""} here.
         </p>
+        <label class="lbl col">
+          <span>Elimination steps</span>
+          <input
+            class="num-in"
+            type="number"
+            min="1"
+            step="1"
+            value={props.prover.settings().cutSteps}
+            onChange={(event) => {
+              const value = Math.floor(Number(event.currentTarget.value));
+              props.prover.setSettings({ cutSteps: value > 0 ? value : DEFAULT_CUT_STEPS });
+            }}
+          />
+        </label>
+        <p class="sub">The most steps of cut elimination "To the end" takes.</p>
         <label class="sw" data-tip={INVERTIBLE_TIP}>
           <input
             type="checkbox"
@@ -986,7 +1002,7 @@ function StepsPanel(props: { prover: Prover }) {
   const proof = () => props.prover.current();
   const list = () => {
     const session = proof()?.session;
-    return session ? actions(session) : [];
+    return session ? actions(session, proof()?.view?.cuts) : [];
   };
   const goalNumber = (path: readonly number[]) => {
     const session = proof()?.session;
@@ -1010,7 +1026,9 @@ function StepsPanel(props: { prover: Prover }) {
                 <span class="fn">
                   {action.kind === "step"
                     ? `${action.step.rule} on goal ${goalNumber(action.path)}`
-                    : `The ${engineName(proof()?.engines[pathKey(action.path)] ?? "") || "search"} closed goal ${goalNumber(action.path)}`}
+                    : action.kind === "cut"
+                      ? `cut on ${action.formula} in goal ${goalNumber(action.path)}`
+                      : `The ${engineName(proof()?.engines[pathKey(action.path)] ?? "") || "search"} closed goal ${goalNumber(action.path)}`}
                 </span>
               </button>
             </li>

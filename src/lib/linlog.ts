@@ -73,6 +73,8 @@ export interface Inference {
   readonly principal?: number;
   /** The premises' inferences, the left one first. */
   readonly premises?: readonly number[];
+  /** For a cut, the occurrence of its cut formula, which the first premise holds. */
+  readonly cut?: number;
 }
 
 /** A session: the library's session document, what `interact`'s `save` writes. */
@@ -118,6 +120,8 @@ export interface View {
   readonly invertible: readonly number[];
   /** Why the sequent has no proof net, or null when it has one. */
   readonly net: Failure | null;
+  /** The session's cuts: each one's inference and its formula as typed, which a replay cuts with. */
+  readonly cuts: readonly { readonly inference: number; readonly formula: string }[];
 }
 
 /** A rule a formula takes, and whether it splits the goal's context. */
@@ -220,6 +224,7 @@ export interface Inverted extends Played {
 export interface Prover {
   start(sequent: string, mode: string, settings: string): string;
   apply(session: string, goal: number, step: string, settings: string): string;
+  cut(session: string, goal: number, formula: string, left: string, settings: string): string;
   close(session: string, goal: number, settings: string): string;
   undo(session: string, settings: string): string;
 }
@@ -238,3 +243,64 @@ export function failure(thrown: unknown): Failure {
   if (thrown && typeof thrown === "object" && "code" in thrown) return thrown as Failure;
   return { code: "page", kind: "internal", message: String(thrown) };
 }
+
+/** A cut of a proof, as `cuts` lists it. */
+export interface CutShown {
+  /** The cut's node in the proof, which a step names. */
+  readonly node: number;
+  /** The cut formula as the mode reads it. */
+  readonly formula: string;
+  /** The drawing's inferences (`i<n>`) that show the cut. */
+  readonly inferences: readonly number[];
+}
+
+/** A cut link of a net, as `net_cuts` lists it. */
+export interface LinkShown {
+  /** Its two ends; either names it to a step. */
+  readonly ends: readonly [number, number];
+  /** The id of its bar in the drawing. */
+  readonly id: string;
+  /** The cut formula as the mode reads it. */
+  readonly formula: string;
+}
+
+/** A proof or net of an elimination with its cuts and its drawing, as `cuts` and `net_cuts` answer. */
+export interface Reached {
+  /** The proof's document, which the next call takes. */
+  readonly proof?: unknown;
+  /** The net's document, which the next call takes. */
+  readonly net?: unknown;
+  readonly cuts: readonly (CutShown | LinkShown)[];
+  /** The cut the strategy reduces next: a node, or a cut link's ends; null when none is left. */
+  readonly next: number | readonly [number, number] | null;
+  /** The drawing, null where its bound refused it. */
+  readonly drawing: string | null;
+  readonly refused?: Failure;
+}
+
+/** A step of an elimination, as `cut_step` and `net_cut_step` answer it. */
+export interface Taken {
+  /** The cut reduced: its node, or its cut link's ends. */
+  readonly cut: number | readonly [number, number];
+  /** The cut formula as the mode reads it. */
+  readonly formula: string;
+  /** The case, in snake case. */
+  readonly case: string;
+  /** The case as a phrase: "the axiom case", "contraction", … */
+  readonly name: string;
+  /** The ids to highlight in the drawing the step was taken on; null where it was not drawn. */
+  readonly highlight: { readonly cut: readonly string[]; readonly above: readonly string[] } | null;
+}
+
+/** One step's answer: the step, for a net the net before drawn with its marks, and what it made. */
+export type Stepped = Reached & { readonly step: Taken; readonly marked?: string };
+
+/** An elimination to the end: its steps, each with its drawing, how it ended, and what it reached. */
+export type Ran = Reached & {
+  readonly steps: readonly (Taken & { readonly drawing: string | null })[];
+  readonly end: "cut_free" | "refused";
+  /** The bound that ended it, for `refused`. */
+  readonly reason?: Failure;
+  /** The first step, from 1, whose drawing the bound on drawings left out. */
+  readonly undrawn: number | null;
+};

@@ -102,8 +102,8 @@ test("an unprovable goal's close says why, checked; a search that gives up offer
   await page.getByRole("button", { name: "Close goal" }).click();
   await expect(page.locator(".dock .kw.bad")).toHaveText("Unprovable, checked: atom balance");
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("spinbutton").fill("1");
-  await page.getByRole("spinbutton").press("Enter");
+  await page.getByRole("spinbutton", { name: "Budget" }).fill("1");
+  await page.getByRole("spinbutton", { name: "Budget" }).press("Enter");
   await page.keyboard.press("Escape");
   await start(page, "!A |- A * A", false);
   await page.getByRole("button", { name: "Close goal" }).click();
@@ -389,8 +389,8 @@ test("a proof's state is told by its mark's shape as well as its colour", async 
   await page.getByRole("button", { name: "Close goal" }).click();
   await expect(shape(1)).toHaveClass(/lucide-circle-x/);
   await page.locator("footer").getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("spinbutton").fill("1");
-  await page.getByRole("spinbutton").press("Enter");
+  await page.getByRole("spinbutton", { name: "Budget" }).fill("1");
+  await page.getByRole("spinbutton", { name: "Budget" }).press("Enter");
   await page.keyboard.press("Escape");
   await start(page, "!(a -o a * a), a |- a * a * a * a", false);
   await calculus(page, ["Intuitionistic"]);

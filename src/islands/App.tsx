@@ -175,6 +175,7 @@ export default function App(props: {
           selected: null,
           offered: null,
           split: null,
+          cutting: null,
           pendingMode: null,
         }),
       { defer: true },
@@ -315,6 +316,11 @@ export default function App(props: {
       }
       if ((ui.selected || ui.split) && outside(".stage .pop, .fb")) {
         setUi({ selected: null, offered: null, split: null });
+        closed = true;
+      }
+      // The cut chooser stays while its formulas are chosen and its button pressed again.
+      if (ui.cutting && outside(".stage .pop, .fb, .gbar")) {
+        setUi("cutting", null);
         closed = true;
       }
       if (closed && target.closest(".stage")) {

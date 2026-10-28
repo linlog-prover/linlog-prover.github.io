@@ -21,9 +21,12 @@ import {
   type Mode,
   type Outcome,
   type Played,
+  type Ran,
+  type Reached,
   type SequentDoc,
   type SessionDoc,
   type StepForm,
+  type Taken,
   type View,
 } from "../lib/linlog";
 import type { Example } from "../lib/content";
@@ -47,7 +50,9 @@ import {
   within,
 } from "../lib/steps";
 import {
+  cutProblem,
   displayed,
+  eliminationStopped,
   fillRefusal,
   inputProblem,
   refusal,
@@ -66,6 +71,44 @@ export interface Note {
   readonly outcome?: Outcome;
   /** The budget the search had, for "Try with twice the budget". */
   readonly budget?: number;
+}
+
+/** Where the cuts of a finished proof are eliminated: on its derivation, or on its net. */
+export type On = "tree" | "net";
+
+/** A step taken in an elimination, with the drawing of the proof or net it was taken on. */
+export type StepDone = Taken & { readonly drawing: string | null };
+
+/**
+ * A way back in an elimination: the state before a step; or, for a step of a run to the
+ * end, the run's start and how many of its steps lead there, taken again on undo (the
+ * strategy is deterministic, and nothing of the run but its drawings is kept).
+ */
+type Back =
+  | { readonly kind: "state"; readonly reached: Reached; readonly taken: number }
+  | {
+      readonly kind: "run";
+      readonly from: Reached;
+      readonly taken: number;
+      readonly steps: number;
+    };
+
+/** The elimination of a finished proof's cuts on one view: where it stands and the way back. */
+export interface Elim {
+  /** The proof or net reached, with its cuts and drawing. */
+  reached: Reached;
+  /** The steps taken, in order, each with the drawing it was taken on. */
+  taken: StepDone[];
+  /** The way back, the last step's last. */
+  back: Back[];
+  /** Why the last run to the end stopped with cuts left, if a bound stopped it. */
+  stopped: Said | null;
+  /** The first step of the last run whose drawing the bound on drawings left out. */
+  undrawn: number | null;
+  /** Which step's drawing the stage shows, from 1, or null for the proof or net reached. */
+  shown: number | null;
+  /** What linlog refused, said at the elimination. */
+  problem: Said | null;
 }
 
 /** One open proof. */
@@ -94,6 +137,8 @@ export interface Proof {
   engines: Record<string, string>;
   /** The tab and goal the proof was opened from ("Open in a new tab"), or null. */
   origin: { readonly from: string; readonly path: Path } | null;
+  /** The elimination of a finished proof's cuts on each view, never stored. */
+  elim: { tree: Elim | null; net: Elim | null };
 }
 
 /** The visitor's settings, kept in the browser but for the engine, which holds for the visit. */
@@ -119,6 +164,8 @@ export interface Settings {
   invertible: boolean;
   /** Whether a classical derivation is drawn two-sided, as its sequent was written, `view.classical`. */
   twoSided: boolean;
+  /** The most steps an elimination to the end takes, `cut.steps`. */
+  cutSteps: number;
 }
 
 /** The view of the settings as linlog reads it: a classical derivation two-sided when asked. */
@@ -171,6 +218,8 @@ const storedLook = (stored: unknown): NetLook => {
 
 /** The tab's default work budget: linlog's tab default, about a second of search. */
 export const DEFAULT_BUDGET = 2 ** 26;
+/** The most steps of an elimination to the end by default: linlog's, `cut::Options::DEFAULT_STEPS`. */
+export const DEFAULT_CUT_STEPS = 10_000;
 const SETTINGS_KEY = "linlog-settings";
 
 const storage = (): Store | undefined => {
@@ -195,6 +244,10 @@ function loadSettings(): Settings {
       font: MATH_FONTS.find((f) => f.key === stored.font)?.key ?? null,
       invertible: stored.invertible === true,
       twoSided: stored.twoSided === true,
+      cutSteps:
+        typeof stored.cutSteps === "number" && stored.cutSteps > 0
+          ? stored.cutSteps
+          : DEFAULT_CUT_STEPS,
     };
   } catch {
     return {
@@ -207,6 +260,7 @@ function loadSettings(): Settings {
       font: null,
       invertible: false,
       twoSided: false,
+      cutSteps: DEFAULT_CUT_STEPS,
     };
   }
 }
@@ -236,6 +290,7 @@ const blank = (mode: Mode): Proof => ({
   banner: null,
   engines: {},
   origin: null,
+  elim: { tree: null, net: null },
 });
 
 /** A goal's formulas as a key, equal for the same formulas in any order: how two tabs' sequents are compared. */
@@ -263,6 +318,29 @@ export const pathKey = (path: Path) => path.join(".");
 export type Prover = ReturnType<typeof createProver>;
 
 /** Creates the state, its worker and its actions; `say` speaks in the page's live region. */
+/** An elimination begun at a proof or net. */
+const fresh = (reached: Reached): Elim => ({
+  reached,
+  taken: [],
+  back: [],
+  stopped: null,
+  undrawn: null,
+  shown: null,
+  problem: null,
+});
+
+/** The document of a proof or net reached, as the next call takes it. */
+const documentOf = (reached: Reached) => {
+  const document = reached.proof ?? reached.net;
+  return document === undefined ? "" : JSON.stringify(document);
+};
+
+/** What linlog refused in an elimination, in the page's words. */
+const eliminationProblem = (failed: Failure): Said => ({
+  keyword: failed.code === "no_cut" ? "No cut there" : "Not taken",
+  sentence: `${failed.message.charAt(0).toUpperCase()}${failed.message.slice(1)}.`,
+});
+
 export function createProver(say: (text: string) => void = () => undefined) {
   const [pending, setPending] = createSignal(0);
   const api: Api = createApi(setPending);
@@ -375,6 +453,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     update(id, (p) => {
       p.session = played.session;
       p.view = played.view;
+      p.elim = { tree: null, net: null };
       p.editing = false;
       p.inputProblem = null;
       p.note = null;
@@ -688,7 +767,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         const p = current();
         if (blankId && blankId !== p?.id) actions.remove(blankId);
         if (!watch || !p?.session) return;
-        const all = actionsOf(p.session);
+        const all = actionsOf(p.session, p.view?.cuts);
         const result = await attempt(() => api.replay(p.session as SessionDoc, [], replaying()));
         if (!result.ok) return;
         update(p.id, (q) => {
@@ -807,6 +886,148 @@ export function createProver(say: (text: string) => void = () => undefined) {
       return true;
     }),
 
+    /**
+     * Cuts a goal on a formula typed in the tab's syntax, the goal's formulas at `left` going
+     * to the first premise; both premises open. Returns what to say at the cut's form when
+     * it was not made (its formula's text, or the step's refusal), else null.
+     */
+    cut: guard(
+      async (goal: number, formula: string, left: readonly number[]): Promise<Said | null> => {
+        const p = current();
+        if (!p?.session) return null;
+        const result = await attempt(() =>
+          api.cut(p.session as SessionDoc, goal, formula, left, json()),
+        );
+        if (!result.ok) {
+          const formulas = p.view?.goals.find((g) => g.goal === goal)?.formulas ?? [];
+          return result.failed ? cutProblem(result.failed, formulas) : null;
+        }
+        update(p.id, (q) => (q.redo = []));
+        show(p.id, result.value, result.value.opened[0] ?? result.value.view.goals[0]?.goal);
+        save();
+        return null;
+      },
+    ),
+
+    /** Starts eliminating the finished proof's cuts on a view, `settings` the stage's drawing's. */
+    eliminate: guard(async (on: On, settings: string) => {
+      const p = current();
+      if (!p?.session || !p.view?.complete) return;
+      const result = await attempt(() => api.cuts(on, p.session as SessionDoc, "", settings));
+      update(p.id, (q) => {
+        q.elim[on] = result.ok
+          ? fresh(result.value)
+          : {
+              ...fresh({ cuts: [], next: null, drawing: null }),
+              problem: result.failed ? eliminationProblem(result.failed) : null,
+            };
+      });
+    }),
+
+    /** One step of elimination: the cut named (a node, or a vertex at a cut link), or the strategy's. */
+    eliminationStep: guard(async (on: On, at: number | undefined, settings: string) => {
+      const p = current();
+      const e = p?.elim[on];
+      if (!p?.session || !e) return;
+      const result = await attempt(() =>
+        api.cutStep(on, p.session as SessionDoc, documentOf(e.reached), at, settings),
+      );
+      update(p.id, (q) => {
+        const now = q.elim[on];
+        if (!now) return;
+        if (!result.ok) {
+          now.problem = result.failed ? eliminationProblem(result.failed) : null;
+          return;
+        }
+        const { step, marked, ...reached } = result.value;
+        now.back.push({ kind: "state", reached: now.reached, taken: now.taken.length });
+        now.taken.push({
+          ...step,
+          drawing: on === "tree" ? now.reached.drawing : (marked ?? null),
+        });
+        Object.assign(now, { reached, stopped: null, undrawn: null, shown: null, problem: null });
+      });
+    }),
+
+    /** Eliminates to the end within the settings' bounds, each step undoable alone. */
+    eliminationRun: guard(async (on: On, settings: string) => {
+      const p = current();
+      const e = p?.elim[on];
+      if (!p?.session || !e) return;
+      const result = await attempt(() =>
+        api.eliminate(on, p.session as SessionDoc, documentOf(e.reached), settings),
+      );
+      update(p.id, (q) => {
+        const now = q.elim[on];
+        if (!now) return;
+        if (!result.ok) {
+          now.problem = result.failed ? eliminationProblem(result.failed) : null;
+          return;
+        }
+        const { steps, end, reason, undrawn, ...reached } = result.value;
+        const from = now.reached;
+        const taken = now.taken.length;
+        steps.forEach((_, i) => {
+          now.back.push({ kind: "run", from, taken, steps: i });
+        });
+        now.taken.push(...steps);
+        Object.assign(now, {
+          reached,
+          stopped: end === "refused" ? eliminationStopped(reason, steps.length) : null,
+          undrawn: undrawn === null ? null : taken + undrawn,
+          shown: null,
+          problem: null,
+        });
+      });
+    }),
+
+    /** Takes back the last step of an elimination. */
+    eliminationUndo: guard(async (on: On, settings: string) => {
+      const p = current();
+      const e = p?.elim[on];
+      const back = e?.back.at(-1);
+      if (!p?.session || !e || !back) return;
+      let reached: Reached = back.kind === "state" ? back.reached : back.from;
+      if (back.kind === "run" && back.steps > 0) {
+        // Its steps are taken again undrawn: the drawings are kept already.
+        const bounded = { ...JSON.parse(settings), cut: { steps: back.steps, drawn_bytes: 0 } };
+        const result = await attempt(() =>
+          api.eliminate(
+            on,
+            p.session as SessionDoc,
+            documentOf(back.from),
+            JSON.stringify(bounded),
+          ),
+        );
+        if (!result.ok) return;
+        const again: Ran = result.value;
+        reached = again;
+      }
+      update(p.id, (q) => {
+        const now = q.elim[on];
+        if (!now) return;
+        now.back.pop();
+        now.taken.splice(back.taken + (back.kind === "run" ? back.steps : 0));
+        Object.assign(now, { reached, stopped: null, undrawn: null, shown: null, problem: null });
+      });
+    }),
+
+    /** Shows the drawing a step was taken on, from 1, or with null the proof or net reached. */
+    eliminationShow(on: On, step: number | null) {
+      const p = current();
+      if (!p?.elim[on]) return;
+      update(p.id, (q) => {
+        const now = q.elim[on];
+        if (now) now.shown = step;
+      });
+    },
+
+    /** Leaves an elimination: the view shows the finished proof again. */
+    eliminationLeave(on: On) {
+      const p = current();
+      if (p) update(p.id, (q) => (q.elim[on] = null));
+    },
+
     /** Undo on the active goal's branch (on a finished proof, the last step). */
     undo: guard(async () => {
       const p = current();
@@ -818,6 +1039,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         p.session,
         p.view?.complete ? undefined : activeGoal(p),
         invertible,
+        p.view?.cuts,
       );
       const back = retracted && {
         ...retracted,
@@ -827,7 +1049,8 @@ export function createProver(say: (text: string) => void = () => undefined) {
       if (!back) {
         // Steps there are, but each one the page applied by itself.
         const automatic =
-          invertible !== undefined && retract(p.session, activeGoal(p)) !== undefined;
+          invertible !== undefined &&
+          retract(p.session, activeGoal(p), undefined, p.view?.cuts) !== undefined;
         update(p.id, (q) => {
           q.note = {
             path: [],
@@ -857,7 +1080,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     backTo: guard(async (count: number) => {
       const p = current();
       if (!p?.session) return;
-      const all = actionsFor(p, actionsOf(p.session));
+      const all = actionsFor(p, actionsOf(p.session, p.view?.cuts));
       if (count >= all.length) return;
       const result = await attempt(() =>
         api.replay(p.session as SessionDoc, all.slice(0, count), replaying()),

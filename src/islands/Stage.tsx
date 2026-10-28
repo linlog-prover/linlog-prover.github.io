@@ -30,10 +30,26 @@ import {
   Show,
 } from "solid-js";
 import { engineLabel, engineName, engineOf, engineTip } from "../lib/engines";
-import { failure, type MathFont, type Offered, type Outcome, type StepForm } from "../lib/linlog";
+import {
+  type CutShown,
+  failure,
+  type LinkShown,
+  type MathFont,
+  type Offered,
+  type Outcome,
+  type StepForm,
+} from "../lib/linlog";
 import { goalAt, paths, searchMade } from "../lib/steps";
-import { readingOf, rungs, shown } from "../lib/words";
-import { lookJson, type NetDrawing, type NetLook, type Prover, pathKey } from "./state";
+import { readingOf, rungs, type Said, shown, stepLine } from "../lib/words";
+import {
+  type Elim,
+  lookJson,
+  type NetDrawing,
+  type NetLook,
+  type On,
+  type Prover,
+  pathKey,
+} from "./state";
 import { ladderKey, phone, token, type Ui, Words } from "./ui";
 
 /** A formula's button over the drawing, in the drawing's own pixels. */
@@ -47,6 +63,19 @@ interface Hit {
   readonly h: number;
   /** The part of the width that is padding past the formula's ends, the same on screen at every zoom. */
   readonly fixed: number;
+}
+
+/** A cut's button over the drawing, in the drawing's own pixels: what a step names it by. */
+interface CutHit {
+  /** The node of a derivation's cut, or a vertex at a net's cut link. */
+  readonly at: number;
+  readonly formula: string;
+  /** Whether the strategy reduces it next. */
+  readonly next: boolean;
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
 }
 
 /** The camera: the drawing's offset in the stage and its scale. */
@@ -69,9 +98,11 @@ const drawSettings = (
   look: NetLook,
   font: MathFont,
   twoSided: boolean,
+  cutSteps?: number,
 ) =>
   JSON.stringify({
     limits: { work },
+    ...(cutSteps ? { cut: { steps: cutSteps } } : {}),
     styles: { svg: { font_size: 30, essential, net, net_look: lookJson(look), font } },
     ...(twoSided ? { view: { classical: "two" } } : {}),
   });
@@ -86,6 +117,10 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   let dock: HTMLDivElement | undefined;
   let popover: HTMLDivElement | undefined;
   const [hits, setHits] = createSignal<Hit[]>([]);
+  const [cutHits, setCutHits] = createSignal<CutHit[]>([]);
+  /** The cut chooser's formula as typed, and what linlog said of it. */
+  const [cutText, setCutText] = createSignal("");
+  const [cutSaid, setCutSaid] = createSignal<Said | null>(null);
   const [camera, setCamera] = createSignal<Camera>({ x: 0, y: 0, k: 1 });
 
   /** Whether the visitor zoomed since the drawing was last fitted: then their zoom stands. */
@@ -123,6 +158,27 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     return !!v && v.complete && v.net === null;
   };
 
+  /** The view an elimination acts on: the net while the net is shown, else the derivation. */
+  const onView = (): On => (ui.tab === "net" && netReady() ? "net" : "tree");
+  /** The elimination of the finished proof's cuts on the view shown, if one is under way. */
+  const elim = (): Elim | null => proof()?.elim[onView()] ?? null;
+  /** The settings of the stage's drawing, which an elimination's drawings are made with. */
+  const drawJson = () => {
+    const s = props.prover.settings();
+    return drawSettings(
+      s.budget,
+      (proof()?.mode ?? "classical").startsWith("intuitionistic"),
+      s.net,
+      s.netLook,
+      s.stageFont,
+      s.twoSided,
+      s.cutSteps,
+    );
+  };
+  /** The drawing an elimination shows: the proof or net reached, or a step's, before it. */
+  const elimDrawing = (e: Elim) =>
+    e.shown === null ? e.reached.drawing : (e.taken[e.shown - 1]?.drawing ?? null);
+
   // A new drawing whenever the session, the tab or the proof changes.
   createEffect(
     on(
@@ -136,6 +192,10 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           props.prover.settings().netLook,
           props.prover.settings().stageFont,
           props.prover.settings().twoSided,
+          proof()?.elim.tree?.reached,
+          proof()?.elim.tree?.shown,
+          proof()?.elim.net?.reached,
+          proof()?.elim.net?.shown,
         ] as const,
       async ([session, v, tab, , netDrawing, look, font, twoSided]) => {
         const mine = ++sequence;
@@ -145,24 +205,41 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
           return;
         }
         const net = tab === "net" && v.complete && v.net === null;
+        const eliminating = proof()?.elim[net ? "net" : "tree"] ?? null;
         let svg: string;
         try {
-          // An intuitionistic proof's net is its essential net.
-          const settings = drawSettings(
-            props.prover.settings().budget,
-            session.mode.startsWith("intuitionistic"),
-            netDrawing,
-            look,
-            font,
-            twoSided,
-          );
-          svg = net
-            ? await props.prover.api.drawNet(session, settings)
-            : await props.prover.api.draw(session, settings);
+          if (eliminating) {
+            const drawing = elimDrawing(eliminating);
+            if (drawing === null) {
+              const refused = eliminating.reached.refused?.message;
+              throw new Error(
+                JSON.stringify({
+                  code: "page",
+                  kind: "refused",
+                  message: refused ?? "This step was not drawn: the drawings took their bound.",
+                }),
+              );
+            }
+            svg = drawing;
+          } else {
+            // An intuitionistic proof's net is its essential net.
+            const settings = drawSettings(
+              props.prover.settings().budget,
+              session.mode.startsWith("intuitionistic"),
+              netDrawing,
+              look,
+              font,
+              twoSided,
+            );
+            svg = net
+              ? await props.prover.api.drawNet(session, settings)
+              : await props.prover.api.draw(session, settings);
+          }
         } catch (thrown) {
           if (mine !== sequence) return;
           host.replaceChildren();
           setHits([]);
+          setCutHits([]);
           setProblem(failure(thrown instanceof Error ? thrown.message : thrown).message);
           return;
         }
@@ -175,7 +252,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         // A net is drawn larger than its derivation, the compact net smaller
         // than the one with its formulas, and a look may add rows: each is
         // fitted afresh.
-        const kind = net ? `net-${netDrawing}-${JSON.stringify(look)}` : "tree";
+        const kind = `${net ? `net-${netDrawing}-${JSON.stringify(look)}` : "tree"}${eliminating ? "-cut" : ""}`;
         // A proof just finished is fitted whole, since nothing is left to work on.
         const fresh =
           shownProof !== props.prover.store.active ||
@@ -213,6 +290,13 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     const v = view();
     const session = proof()?.session;
     if (!v || !session) return;
+    const eliminating = proof()?.elim[net ? "net" : "tree"];
+    if (eliminating) {
+      setHits([]);
+      markElimination(eliminating);
+      return;
+    }
+    setCutHits([]);
     const open = new Set(v.goals.map((g) => g.goal));
     const made = searchMade(session);
     const act = active();
@@ -247,6 +331,54 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       return;
     }
     setHits(targets(v.goals));
+  }
+
+  /**
+   * Marks an elimination's drawing: the cut a step reduced (and where it acted besides) on
+   * the drawing it was taken on, and on the proof or net reached a button over every cut,
+   * the strategy's next one marked.
+   */
+  function markElimination(e: Elim) {
+    const mark = (id: string, name: string) =>
+      host.querySelector(`[id="${CSS.escape(id)}"]`)?.classList.add(name);
+    const step = e.shown === null ? undefined : e.taken[e.shown - 1];
+    if (step) {
+      for (const id of step.highlight?.cut ?? []) mark(id, "reduced");
+      for (const id of step.highlight?.above ?? []) mark(id, "acted");
+      setCutHits([]);
+      return;
+    }
+    const origin = host.getBoundingClientRect();
+    const k = camera().k;
+    const least = token("--size-control-small") / k;
+    const next = e.reached.next;
+    const found: CutHit[] = [];
+    for (const cut of e.reached.cuts) {
+      const tree = "node" in cut;
+      const ids = tree ? (cut as CutShown).inferences.map((n) => `i${n}`) : [(cut as LinkShown).id];
+      const at = tree ? (cut as CutShown).node : (cut as LinkShown).ends[0];
+      const isNext = tree
+        ? next === at
+        : Array.isArray(next) && next[0] === at && next[1] === (cut as LinkShown).ends[1];
+      for (const id of ids) {
+        const element = host.querySelector(`[id="${CSS.escape(id)}"]`);
+        if (!element) continue;
+        if (isNext) element.classList.add("next-cut");
+        const r = element.getBoundingClientRect();
+        const w = Math.max(r.width / k, least);
+        const h = Math.max(r.height / k, least);
+        found.push({
+          at,
+          formula: cut.formula,
+          next: isNext,
+          x: (r.left - origin.left) / k + r.width / k / 2 - w / 2,
+          y: (r.top - origin.top) / k + r.height / k / 2 - h / 2,
+          w,
+          h,
+        });
+      }
+    }
+    setCutHits(found);
   }
 
   /** The inference whose premise an inference is, or -1 for the root. */
@@ -318,7 +450,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     on(
       () => camera().k,
       () => {
-        if (host.firstChild && !(ui.tab === "net" && netReady()))
+        const e = elim();
+        if (host.firstChild && e) markElimination(e);
+        else if (host.firstChild && !(ui.tab === "net" && netReady()))
           setHits(targets(view()?.goals ?? []));
       },
       { defer: true },
@@ -513,22 +647,26 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     box.style.top = `${top}px`;
   });
 
-  // The rule popover beside the selected formula; the split chooser under the
-  // goal's row, so that every formula of the goal stays clickable; on a narrow
-  // stage both sit at its bottom, as a sheet.
+  // The rule popover beside the selected formula; the split and cut choosers
+  // under the goal's row, so that every formula of the goal stays clickable; on
+  // a narrow stage each sits at its bottom, as a sheet.
   createEffect(() => {
     camera();
     drawn();
     void ui.offered;
-    const spot = ui.split ?? ui.selected;
-    if (!popover || !spot) return;
+    void ui.cutting?.left;
+    void cutSaid();
+    const under = ui.split ?? ui.cutting;
+    const selected = ui.selected;
+    const goal = under?.goal ?? selected?.goal;
+    if (!popover || goal === undefined) return;
     const s = stage.getBoundingClientRect();
     const narrow = phone();
     const gap = token("--spacing-2");
-    const anchor = ui.split
-      ? host.querySelector(`#i${drawingIndex(spot.goal)}`)
+    const anchor = under
+      ? host.querySelector(`#i${drawingIndex(goal)}`)
       : stage.querySelector<HTMLElement>(
-          `.fb[data-goal="${spot.goal}"][data-position="${spot.position}"]`,
+          `.fb[data-goal="${goal}"][data-position="${selected?.position}"]`,
         );
     if (!anchor) return;
     const r = anchor.getBoundingClientRect();
@@ -539,7 +677,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       const controls = stage.querySelector<HTMLElement>(".stage-ctl")?.offsetTop ?? s.height;
       left = gap;
       top = controls - popover.offsetHeight - gap;
-    } else if (ui.split) {
+    } else if (under) {
       left = r.left - s.left;
       top = r.bottom - s.top + gap;
     } else {
@@ -666,6 +804,15 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
 
   /** Opens a formula's rules, or in the split chooser sends it left or right. */
   async function pick(hit: Hit) {
+    const cutting = ui.cutting;
+    if (cutting) {
+      if (hit.goal !== cutting.goal) return;
+      const left = cutting.left.includes(hit.position)
+        ? cutting.left.filter((p) => p !== hit.position)
+        : [...cutting.left, hit.position].sort((a, b) => a - b);
+      setUi("cutting", { ...cutting, left });
+      return;
+    }
     const split = ui.split;
     if (split) {
       if (hit.goal !== split.goal || hit.position === split.position) return;
@@ -732,6 +879,39 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     announce(applied === true, split.rule);
   }
 
+  /** Opens the cut chooser at a goal. */
+  function openCut(goal: number) {
+    props.prover.clearNote();
+    setCutSaid(null);
+    setUi({ selected: null, offered: null, split: null, cutting: { goal, left: [] } });
+    queueMicrotask(() => popover?.querySelector<HTMLInputElement>("input")?.focus());
+  }
+
+  /** Makes the cut the chooser holds; what linlog refused stays said in it. */
+  async function applyCut() {
+    const cutting = ui.cutting;
+    if (!cutting || cutText().trim() === "") return;
+    const said = await props.prover.cut(cutting.goal, cutText(), cutting.left);
+    if (said === undefined) return;
+    if (said) {
+      setCutSaid(said);
+      setUi("live", `${said.keyword}. ${said.sentence}`);
+      return;
+    }
+    setUi("cutting", null);
+    setCutText("");
+    setUi("live", "cut applied: both premises are open.");
+  }
+
+  /** Takes one step of the elimination shown: the cut `at`, or the strategy's. */
+  async function eliminationStep(at?: number) {
+    const before = elim()?.taken.length ?? 0;
+    await props.prover.eliminationStep(onView(), at, drawJson());
+    const e = elim();
+    const step = e?.taken.at(-1);
+    if (e && step && e.taken.length > before) setUi("live", stepLine(e.taken.length, step));
+  }
+
   function announce(applied: boolean, rule: string) {
     const note = proof()?.note;
     if (applied) {
@@ -757,7 +937,10 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   onMount(() => {
     const keys = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key === "Escape" && (ui.selected || ui.split)) {
+      if (event.key === "Escape" && ui.cutting) {
+        setUi("cutting", null);
+        event.preventDefault();
+      } else if (event.key === "Escape" && (ui.selected || ui.split)) {
         const spot = ui.split ?? ui.selected;
         setUi({ selected: null, offered: null, split: null });
         if (spot)
@@ -848,7 +1031,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                     : undefined
                 }
                 data-left={
-                  ui.split?.goal === hit.goal && ui.split.left.includes(hit.position)
+                  (ui.split?.goal === hit.goal && ui.split.left.includes(hit.position)) ||
+                  (ui.cutting?.goal === hit.goal && ui.cutting.left.includes(hit.position))
                     ? ""
                     : undefined
                 }
@@ -864,7 +1048,11 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 aria-label={`${hit.text}, formula ${hit.position + 1} of goal ${goalNumber(hit.goal)}`}
                 data-tip={ui.learn ? readingOf(hit.text) : undefined}
                 aria-pressed={
-                  ui.split?.goal === hit.goal ? ui.split.left.includes(hit.position) : undefined
+                  ui.split?.goal === hit.goal
+                    ? ui.split.left.includes(hit.position)
+                    : ui.cutting?.goal === hit.goal
+                      ? ui.cutting.left.includes(hit.position)
+                      : undefined
                 }
                 ref={(el) => {
                   el.style.left = `${hit.x}px`;
@@ -873,6 +1061,25 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                   el.style.height = `${hit.h}px`;
                 }}
                 onClick={() => void pick(hit)}
+              />
+            )}
+          </For>
+          <For each={cutHits()}>
+            {(hit) => (
+              <button
+                type="button"
+                class="cb"
+                data-next={hit.next ? "" : undefined}
+                aria-label={`Reduce the cut of ${hit.formula}${hit.next ? ", the strategy's next" : ""}`}
+                data-tip={`Reduce this cut of ${hit.formula}`}
+                disabled={props.prover.busy()}
+                ref={(el) => {
+                  el.style.left = `${hit.x}px`;
+                  el.style.top = `${hit.y}px`;
+                  el.style.width = `${hit.w}px`;
+                  el.style.height = `${hit.h}px`;
+                }}
+                onClick={() => void eliminationStep(hit.at)}
               />
             )}
           </For>
@@ -921,6 +1128,165 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
         )}
       </Show>
 
+      <Show when={view()?.complete && ((view()?.cuts.length ?? 0) > 0 || elim())}>
+        <section class="cluster elim" aria-label="Cut elimination">
+          <Show
+            when={elim()}
+            fallback={
+              <div class="row">
+                <span class="txt">
+                  {view()?.cuts.length === 1 ? "1 cut" : `${view()?.cuts.length} cuts`} in this
+                  proof
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-s btn-primary"
+                  data-tip={
+                    onView() === "net"
+                      ? "Reduce the cut links of the net step by step"
+                      : "Reduce the cuts of the derivation step by step"
+                  }
+                  disabled={props.prover.busy()}
+                  onClick={() => void props.prover.eliminate(onView(), drawJson())}
+                >
+                  Eliminate the cuts
+                </button>
+              </div>
+            }
+          >
+            {(e) => (
+              <>
+                <p class="kw-label h">Cut elimination{onView() === "net" ? " on the net" : ""}</p>
+                <p class="line" role="status" aria-live="polite">
+                  {(() => {
+                    const shownStep = e().shown;
+                    const step = shownStep === null ? undefined : e().taken[shownStep - 1];
+                    if (step && shownStep !== null) return `Before ${stepLine(shownStep, step)}`;
+                    const last = e().taken.at(-1);
+                    const left = e().reached.cuts.length;
+                    const count =
+                      left === 0 ? "Cut-free" : `${left} ${left === 1 ? "cut" : "cuts"} left`;
+                    return last ? `${stepLine(e().taken.length, last)} · ${count}` : count;
+                  })()}
+                </p>
+                <Show when={e().stopped}>
+                  {(said) => (
+                    <p class="line warn" role="alert">
+                      <span class="kw">{said().keyword}</span> {said().sentence}
+                    </p>
+                  )}
+                </Show>
+                <Show when={e().undrawn}>
+                  {(k) => (
+                    <p class="line sub">
+                      Steps from {k()} on are not drawn: their drawings would take more than the
+                      page keeps.
+                    </p>
+                  )}
+                </Show>
+                <Show when={e().problem}>
+                  {(said) => (
+                    <p class="line warn" role="alert">
+                      <span class="kw">{said().keyword}</span> {said().sentence}
+                    </p>
+                  )}
+                </Show>
+                <div class="row">
+                  <button
+                    type="button"
+                    class="btn btn-s btn-primary"
+                    data-tip="The next step of the strategy: the cut with no cut above it"
+                    disabled={props.prover.busy() || e().reached.next === null}
+                    onClick={() => void eliminationStep()}
+                  >
+                    Next step
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-s"
+                    data-tip="Every step to the cut-free proof, within the bounds of Settings"
+                    disabled={props.prover.busy() || e().reached.next === null}
+                    onClick={() => void props.prover.eliminationRun(onView(), drawJson())}
+                  >
+                    To the end
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-s"
+                    data-tip="Take the last step back"
+                    disabled={props.prover.busy() || e().back.length === 0}
+                    onClick={() => void props.prover.eliminationUndo(onView(), drawJson())}
+                  >
+                    Undo step
+                  </button>
+                  <Show when={e().taken.length > 0}>
+                    <button
+                      type="button"
+                      class="btn btn-s"
+                      aria-pressed={e().shown !== null}
+                      data-tip="The drawing before the last step, its cut marked"
+                      onClick={() =>
+                        props.prover.eliminationShow(
+                          onView(),
+                          e().shown === null ? e().taken.length : null,
+                        )
+                      }
+                    >
+                      Before
+                    </button>
+                  </Show>
+                  <button
+                    type="button"
+                    class="btn btn-s"
+                    data-tip="Back to the finished proof"
+                    onClick={() => props.prover.eliminationLeave(onView())}
+                  >
+                    Leave
+                  </button>
+                </div>
+                <Show when={e().taken.length > 1}>
+                  <details class="steps-taken">
+                    <summary>{e().taken.length} steps</summary>
+                    <ol>
+                      <For
+                        each={e().taken.flatMap((step, i) =>
+                          step.drawing === null ? [] : [{ step, k: i + 1 }],
+                        )}
+                      >
+                        {(drawn) => (
+                          <li>
+                            <button
+                              type="button"
+                              class="mi"
+                              aria-pressed={e().shown === drawn.k}
+                              onClick={() =>
+                                props.prover.eliminationShow(
+                                  onView(),
+                                  e().shown === drawn.k ? null : drawn.k,
+                                )
+                              }
+                            >
+                              {stepLine(drawn.k, drawn.step)}
+                            </button>
+                          </li>
+                        )}
+                      </For>
+                    </ol>
+                    <Show when={e().undrawn}>
+                      {(k) => (
+                        <p class="sub">
+                          Steps {k()} to {e().taken.length} are not drawn: their drawings would take
+                          more than the page keeps.
+                        </p>
+                      )}
+                    </Show>
+                  </details>
+                </Show>
+              </>
+            )}
+          </Show>
+        </section>
+      </Show>
       <div class="dock" ref={dock} data-tab={ui.tab}>
         <Show when={active() !== undefined}>
           <div class="cluster gbar">
@@ -973,6 +1339,18 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                 }}
               >
                 Close goal
+              </button>
+              <button
+                type="button"
+                class="btn btn-s"
+                data-tip="Cut this goal on a formula you type: two premises, one proving it, one using it"
+                aria-expanded={ui.cutting !== null}
+                onClick={() => {
+                  const goal = active();
+                  if (goal !== undefined) openCut(goal);
+                }}
+              >
+                Cut
               </button>
               <button
                 type="button"
@@ -1112,6 +1490,83 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             )}
           </Show>
         </div>
+      </Show>
+
+      <Show when={ui.cutting}>
+        {(cutting) => {
+          const rest = () =>
+            formulasOf(cutting().goal)
+              .filter((_, i) => !cutting().left.includes(i))
+              .map(shown);
+          const chosen = () =>
+            formulasOf(cutting().goal)
+              .filter((_, i) => cutting().left.includes(i))
+              .map(shown);
+          return (
+            <div class="cluster pop split cut" ref={popover} role="dialog" aria-label="Cut">
+              <p class="pop-h">
+                <span class="kw-label">Cut</span>
+              </p>
+              <label class="cut-field">
+                <span class="sub">
+                  The cut formula, written as{" "}
+                  {(proof()?.mode ?? "").startsWith("intuitionistic")
+                    ? "in intuitionistic logic"
+                    : "in this tab"}
+                </span>
+                <input
+                  class="field m"
+                  type="text"
+                  spellcheck={false}
+                  autocomplete="off"
+                  aria-invalid={cutSaid() ? "true" : undefined}
+                  value={cutText()}
+                  onInput={(event) => {
+                    setCutText(event.currentTarget.value);
+                    setCutSaid(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void applyCut();
+                    }
+                  }}
+                />
+              </label>
+              <Show when={cutSaid()}>
+                {(said) => (
+                  <p class="sub warn" role="alert">
+                    <span class="kw">{said().keyword}</span> {said().sentence}
+                  </p>
+                )}
+              </Show>
+              <p class="sub">Choose the goal's formulas that go to the premise proving it.</p>
+              <div class="split-pre">
+                <p class="prem">
+                  <span class="kw-label">Proves</span>
+                  <span class="m">{chosen().join(", ") || "from nothing else"}</span>
+                </p>
+                <p class="prem">
+                  <span class="kw-label">Uses</span>
+                  <span class="m">{rest().join(", ") || "with nothing else"}</span>
+                </p>
+              </div>
+              <p class="row">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  disabled={cutText().trim() === "" || props.prover.busy()}
+                  onClick={() => void applyCut()}
+                >
+                  Cut
+                </button>
+                <button type="button" class="btn" onClick={() => setUi("cutting", null)}>
+                  Cancel
+                </button>
+              </p>
+            </div>
+          );
+        }}
       </Show>
 
       <Show when={ui.split}>

@@ -4,7 +4,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { Offered, Played, SessionDoc } from "./linlog";
-import { actions, goalAt, paths, replay, retract, searchMade } from "./steps";
+import { actions, goalAt, paths, play, replay, retract, searchMade } from "./steps";
 import { linlog } from "./testing";
 
 const S = "";
@@ -196,5 +196,52 @@ describe("the step tree", () => {
     const after = replay(linlog, par.session, back?.kept ?? [], small);
     expect(after.failed).toEqual([]);
     expect(after.session.inferences[goalAt(after.session, [0]) ?? -1]?.rule).toBeDefined();
+  });
+
+  it("replays a cut with its formula as typed, in both logics, through an undo elsewhere", () => {
+    for (const [text, mode, formula, left, typed] of [
+      ["A, A -o B |- B", "classical", "A -o B", [1], "A ⊸ B"],
+      ["A, A -o B, B -o C |- C", "intuitionistic", "B", [0, 1], "B"],
+    ] as const) {
+      // Typed, as the page starts a tab: a classical session keeps how it was written.
+      const p = JSON.parse(linlog.start(text, mode, S)) as Played;
+      const tree = (doc: SessionDoc) => JSON.stringify([doc.sequent, doc.inferences, doc.history]);
+      const cut = JSON.parse(
+        linlog.cut(JSON.stringify(p.session), 0, formula, JSON.stringify(left), S),
+      ) as Played & { opened: number[] };
+      expect(cut.view.cuts).toEqual([{ inference: 0, formula: typed }]);
+      const all = actions(cut.session, cut.view.cuts);
+      expect(all[0]).toMatchObject({ kind: "cut", path: [], formula: typed, left });
+      expect(tree(replay(linlog, cut.session, all, S).session)).toBe(tree(cut.session));
+      // The second premise closed by the search, then taken back: the cut stays.
+      const second = cut.opened[1] ?? -1;
+      const used = JSON.parse(linlog.close(JSON.stringify(cut.session), second, S)) as Played;
+      const back = retract(used.session, undefined, undefined, used.view.cuts);
+      expect(back?.kept).toEqual([all[0]]);
+      const after = replay(linlog, used.session, back?.kept ?? [], S);
+      expect(after.failed).toEqual([]);
+      expect(tree(after.session)).toBe(tree(cut.session));
+    }
+  });
+
+  it("keeps a cut on another branch through an undo of an earlier cut, and redoes it", () => {
+    // ⊢ ~A, ~B, A ⊗ B split into ⊢ ~A, A and ⊢ ~B, B; each cut, the first one's first.
+    const p = JSON.parse(linlog.start("A, B |- A * B", "classical", S)) as Played;
+    const split = step(p, 0, 2, "⊗", [0]);
+    const [first, second] = split.opened as [number, number];
+    const cutOn = (played: Played, goal: number, formula: string) =>
+      JSON.parse(linlog.cut(JSON.stringify(played.session), goal, formula, "[0]", S)) as Played & {
+        opened: number[];
+      };
+    const one = cutOn(split, first, "A * A");
+    const two = cutOn(one, second, "B");
+    const back = retract(two.session, one.opened[0], undefined, two.view.cuts);
+    expect(back?.reopened).toEqual([0]);
+    const after = replay(linlog, two.session, back?.kept ?? [], S);
+    expect(after.failed).toEqual([]);
+    expect(after.session.inferences[goalAt(after.session, [1]) ?? -1]?.rule).toBe("cut");
+    const again = play(linlog, after, back?.removed ?? [], S);
+    expect(again.failed).toEqual([]);
+    expect(again.session.inferences[goalAt(again.session, [0]) ?? -1]?.rule).toBe("cut");
   });
 });

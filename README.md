@@ -28,6 +28,12 @@ sent to a server.
   work beside that work, with the engine's source in the literature on hover and in
   Learn's reference; Settings can force an engine for the visit, offering those that take
   the sequent.
+- The cut rule: the cut formula typed in the tab's syntax, the goal's formulas chosen for the
+  premise that proves it, both premises opened as goals.
+- Cut elimination on a finished proof with cuts, on its derivation and on its net: the next
+  step of the strategy or a cut picked on the drawing, each step named by its case with its
+  cut marked on the drawing it was taken on, every step undoable, and "To the end" within
+  Settings' bound on steps, saying when a bound stopped it.
 - The finished proof's net (MLL) or essential net (IMLL); every export (SVG, PNG, PDF,
   LaTeX, Typst, text, the session as JSON, the Rocq certificate, and the certificate that
   a refuted goal has no proof), the drawings set in a math font chosen in the export menu

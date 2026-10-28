@@ -66,6 +66,8 @@ export function createUi() {
     selected: Spot | null;
     offered: Offered[] | null;
     split: Split | null;
+    /** The cut chooser open at a goal: the goal's positions going to the premise proving the cut formula. */
+    cutting: { goal: number; left: number[] } | null;
     menu: Menu;
     tab: "tree" | "net";
     ladder: Ladder | null;
@@ -86,6 +88,7 @@ export function createUi() {
     selected: null,
     offered: null,
     split: null,
+    cutting: null,
     menu: null,
     tab: "tree",
     ladder: null,
