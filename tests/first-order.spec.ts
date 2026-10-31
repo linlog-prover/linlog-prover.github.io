@@ -33,6 +33,11 @@ test("a sequent with quantifiers and terms is proved with a witness typed and on
   await pick(page, "∀x. r(x, a)", "∀L");
   const chooser = page.getByRole("dialog", { name: "Witness" });
   await expect(chooser).toContainText("Witness for ∀L");
+  // Another formula picked gives the rules of that one, the chooser closed.
+  await page.getByRole("button", { name: /^∃y\. r\(b, y\), formula/ }).click();
+  await expect(chooser).toBeHidden();
+  await expect(page.getByRole("dialog", { name: "Rules" })).toBeVisible();
+  await pick(page, "∀x. r(x, a)", "∀L");
   await chooser.getByRole("button", { name: "Leave open" }).click();
   await expect(chooser).toBeHidden();
   await expect(page.getByRole("button", { name: /^r\(\$1, a\), formula/ })).toBeVisible();

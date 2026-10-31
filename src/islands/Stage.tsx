@@ -829,7 +829,12 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     }
     props.prover.focus(hit.goal);
     props.prover.clearNote();
-    setUi({ selected: { goal: hit.goal, position: hit.position }, offered: null });
+    // Another formula picked: the witness chooser gives way to its rules.
+    setUi({
+      selected: { goal: hit.goal, position: hit.position },
+      offered: null,
+      witnessing: null,
+    });
     const offered = await props.prover.rules(hit.goal, hit.position);
     if (ui.selected?.goal !== hit.goal || ui.selected.position !== hit.position) return;
     setUi("offered", offered);

@@ -60,7 +60,12 @@ const scope = self as unknown as {
   postMessage(message: unknown, transfer?: Transferable[]): void;
 };
 
-const ready = init({ module_or_path: wasm });
+// Chromium sometimes fails to write the module's response to its HTTP cache
+// (net::ERR_CACHE_WRITE_FAILURE, seen with the 6.9 MB module), which aborts the
+// streaming compile: the module is fetched once more, past the cache.
+const ready = init({ module_or_path: wasm }).catch(() =>
+  init({ module_or_path: fetch(wasm, { cache: "no-store" }) }),
+);
 
 scope.onmessage = async (event) => {
   try {

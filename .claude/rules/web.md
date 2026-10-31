@@ -88,14 +88,29 @@ the page reads.
 
 - **At first order** a replay compares what a step made by occurrence (`madeOf` with the
   view's `forest`, each premise sorted): a replay that leaves a step out numbers the members
-  past the forest anew. Each quantifier step's term (the view's `opened`, kept on the action
-  as `term`) is compared beside it: a ∃R/∀L step must take the same witness, or be open
-  where it was (`null`, whatever an axiom filled it with since), a ∀R/∃L step an
-  eigenvariable; a mismatch is undone and its goal reported, as a propositional one is.
-  Eigenvariables are lettered in the order their steps are taken, so a replay maps each
-  recorded letter to the one its step took again (`letters` in `play`) and reads every
-  witness and cut formula through the map. A cut on an instance names its body's member:
-  its block starts `depth` binders before it (`occurrenceOf`).
+  past the forest anew. It finds a step's principal and split, and a cut's split, by what the
+  formulas are (`memberKeys`: occurrence and frame terms, each eigenvariable and open witness
+  named by the path of the quantifier step that made it, a ∀R/∃L step for an eigenvariable
+  and a ∃R/∀L step for an open witness, since the latter also takes eigenvariables as
+  witnesses), never by position: the core shares an instance's member across branches, so a
+  replay that leaves out the branch that made it orders the other's goal otherwise.
+- **A recorded witness or cut formula names each eigenvariable by its step's path** (`{1.0}`,
+  `byPath`), read as the letter that step took in the session the action is played on
+  (`lettered`): eigenvariables are lettered in the order their steps are taken, so a replay
+  that leaves one out letters the later ones anew, and a redo entry outlives several replays
+  (a map of letters went wrong when a redo entry's own letter came to be a kept one's). Each
+  quantifier step's term (the view's `opened`, `term` on the action) is compared beside what
+  it made: a ∃R/∀L step must take the same witness, or be open where it was (`null`, whatever
+  filled it since), a ∀R/∃L step an eigenvariable; a mismatch is undone and its goal
+  reported, as a propositional one is. A cut on an instance names its body's member: its
+  block starts `depth` binders before it (`occurrenceOf`).
+- **A worked example's actions are read without its view** (`actionsOf(example.session)` in
+  `state.tsx`): a first-order example (a lesson's, later) needs its view's `opened` and
+  `forest` passed, or its witnesses replay open.
+- **The worker loads the module once more past the HTTP cache** when the first load fails:
+  Chromium sometimes fails to write the 6.9 MB module to its cache
+  (`net::ERR_CACHE_WRITE_FAILURE`), which aborts the streaming compile; about one load in
+  twenty in a fresh Playwright context did, and About's version line never came.
 
 ## The drawing and the stage (`src/islands/Stage.tsx`)
 
@@ -148,7 +163,8 @@ the page reads.
   at its bottom. The witness chooser (`ui.witnessing`, a rule offered with `witness`) is
   the cut chooser's twin: the term typed in the formulas' font, Apply, Leave open (`$1`),
   and linlog's refusal said in it (`witnessed` in the state returns it); it takes the
-  selection's place, so digits typed in it pick no rule.
+  selection's place, so digits typed in it pick no rule, and another formula picked closes it
+  for that formula's rules.
 - **Zoom is the stage's on the stage and the browser's everywhere else.** The stage keeps
   `touch-action: none`, so the browser makes no gesture there and the stage's pointers do:
   one on the field pans, a second finger (wherever it lands, a formula's button too) makes

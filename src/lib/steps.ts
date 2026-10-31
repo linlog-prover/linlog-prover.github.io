@@ -37,6 +37,11 @@ export type Action =
        * step's eigenvariable by its letter, a ∃R or ∀L step's witness, null for one left open.
        */
       readonly term?: string | null;
+      /**
+       * With quantifiers, the principal's and the left premise's formulas by what they are
+       * (`memberKeys`), which a replay finds again where it numbers the members anew.
+       */
+      readonly keys?: { readonly principal: string; readonly left?: readonly string[] };
     }
   | {
       readonly path: Path;
@@ -50,6 +55,8 @@ export type Action =
        * it names, its cut on their body; 0 otherwise.
        */
       readonly depth?: number;
+      /** With quantifiers, the formulas going to the first premise by what they are. */
+      readonly leftKeys?: readonly string[];
       /** The goal's positions whose formulas went to the first premise. */
       readonly left: readonly number[];
       /** The premises' formulas the cut made, which its replay must make again. */
@@ -182,6 +189,91 @@ export type Terms = Pick<View, "opened" | "forest">;
 /** The rules that take a witness: `∃` one-sided, ∃R and ∀L. */
 const WITNESSED = new Set(["∃", "∃R", "∀L"]);
 
+/** The quantifier rules, one-sided and two-sided. */
+const QUANTIFIER = new Set(["∀", "∃", "∀R", "∀L", "∃R", "∃L"]);
+
+/**
+ * Every member of a session with quantifiers by what it is, the same across replays: its
+ * occurrence and its frame's terms, each eigenvariable and open witness named by the path of
+ * the quantifier step that made it (a constant the search made, by its number). A replay
+ * numbers members, terms and eigenvariables anew, but keeps every step's path. Without
+ * quantifiers a member is its occurrence.
+ */
+export function memberKeys(doc: SessionDoc, forest: number | undefined): (m: number) => string {
+  const instances = doc.instances;
+  if (forest === undefined || !instances) return (m) => `o${m}`;
+  const base = ((doc.sequent["fo"] as unknown[] | undefined) ?? []).length;
+  const frameTerm = (m: number) => {
+    const entry = m >= forest ? instances.members[m - forest] : undefined;
+    return entry ? instances.frames[entry[1]]?.[1] : undefined;
+  };
+  // The step that made each eigenvariable or open witness: the quantifier step whose body's
+  // frame pushed it.
+  const madeBy = new Map<string, string>();
+  const where = paths(doc);
+  for (const [goal, inference] of doc.inferences.entries()) {
+    if (inference.rule === undefined || !QUANTIFIER.has(inference.rule)) continue;
+    const below = new Set(inference.sequent);
+    const premise = doc.inferences[inference.premises?.[0] ?? -1]?.sequent ?? [];
+    for (const m of premise.filter((p) => !below.has(p))) {
+      const t = frameTerm(m);
+      const term = t !== undefined && t >= base ? instances.terms[t - base] : undefined;
+      // An eigenvariable is made by a ∀R or ∃L step, an open witness by a ∃R or ∀L step,
+      // which also takes eigenvariables as its witness.
+      const witnessed = WITNESSED.has(inference.rule);
+      const name =
+        term && "E" in term && !witnessed
+          ? `E${term.E}`
+          : term && "M" in term && witnessed
+            ? `M${term.M}`
+            : undefined;
+      if (name) madeBy.set(name, (where.get(goal) ?? []).join("."));
+    }
+  }
+  const known = new Map<number, string>();
+  const termKey = (t: number): string => {
+    if (t < base) return `s${t}`;
+    const done = known.get(t);
+    if (done !== undefined) return done;
+    const term = instances.terms[t - base];
+    let key = `?${t}`;
+    if (term && "F" in term) key = `f${term.F[0]}(${term.F[1].map(termKey).join(",")})`;
+    else if (term && "E" in term) key = `∀@${madeBy.get(`E${term.E}`) ?? `c${term.E}`}`;
+    else if (term && "M" in term) key = `∃@${madeBy.get(`M${term.M}`) ?? `m${term.M}`}`;
+    known.set(t, key);
+    return key;
+  };
+  return (m) => {
+    const entry = m >= forest ? instances.members[m - forest] : undefined;
+    if (!entry) return `o${m}`;
+    const frame: string[] = [];
+    for (let f: number | null | undefined = entry[1]; f !== null && f !== undefined; ) {
+      const cell: readonly [number | null, number] | undefined = instances.frames[f];
+      if (!cell) break;
+      frame.push(termKey(cell[1]));
+      f = cell[0];
+    }
+    return `o${entry[0]}[${frame.join(",")}]`;
+  };
+}
+
+/** The positions in `members` of the formulas `keys` name, each taken once, none `taken`. */
+function positionsOf(
+  members: readonly number[],
+  key: (m: number) => string,
+  keys: readonly string[],
+  taken: boolean[],
+): number[] | undefined {
+  const found: number[] = [];
+  for (const k of keys) {
+    const at = members.findIndex((m, i) => !taken[i] && key(m) === k);
+    if (at < 0) return undefined;
+    taken[at] = true;
+    found.push(at);
+  }
+  return found;
+}
+
 /**
  * A member's occurrence, and how many binders its frame opens: a member past the forest is the
  * session's `instances` entry at its offset, `[occurrence, frame]`, its frames a chain of
@@ -238,14 +330,55 @@ const madeOf = (doc: SessionDoc, goal: number, forest?: number): number[][] =>
     return sequent.map((m) => occurrenceOf(doc, forest, m).occurrence).sort((a, b) => a - b);
   });
 
+/** Matches a name in a term or formula. */
+const NAME = /[A-Za-z_][A-Za-z0-9_']*/g;
+
+/** Matches a name written by the path of the step that made it, `{1.0}`. */
+const BY_PATH = /\{([0-9.]*)\}/g;
+
+/**
+ * Each eigenvariable's letter, to the path of the ∀R or ∃L step that made it: what a witness
+ * or a cut formula names an eigenvariable by when recorded (`{1.0}`), since a replay that
+ * leaves out a step letters the later ones anew, and an action on the redo stack outlives
+ * several replays.
+ */
+function makers(doc: SessionDoc, terms: Terms): Map<string, string> {
+  const where = paths(doc);
+  const found = new Map<string, string>();
+  for (const { inference, term } of terms.opened ?? []) {
+    const rule = doc.inferences[inference]?.rule;
+    if (term !== null && rule !== undefined && !WITNESSED.has(rule)) {
+      found.set(term, (where.get(inference) ?? []).join("."));
+    }
+  }
+  return found;
+}
+
+/** A witness or a formula with each eigenvariable written by its step's path. */
+const byPath = (text: string, made: Map<string, string>) =>
+  text.replace(NAME, (name) => {
+    const path = made.get(name);
+    return path === undefined ? name : `{${path}}`;
+  });
+
 /** A goal's expansion as a step, with what it made and, for a quantifier step, its term. */
 function stepAction(doc: SessionDoc, goal: number, path: Path, terms?: Terms | null): Action {
   const step = stepOf(doc, goal);
   const made = madeOf(doc, goal, terms?.forest);
-  const opened = terms?.opened?.find((o) => o.inference === goal);
-  if (!opened) return { path, kind: "step", step, made };
-  const witness = WITNESSED.has(step.rule) && opened.term !== null ? { witness: opened.term } : {};
-  return { path, kind: "step", step: { ...step, ...witness }, made, term: opened.term };
+  if (!terms || terms.forest === undefined) return { path, kind: "step", step, made };
+  const key = memberKeys(doc, terms.forest);
+  const sequent = doc.inferences[goal]?.sequent ?? [];
+  const keys = {
+    principal: key(sequent[step.position] ?? -1),
+    ...(step.left ? { left: step.left.map((p) => key(sequent[p] ?? -1)) } : {}),
+  };
+  const opened = terms.opened?.find((o) => o.inference === goal);
+  if (!opened) return { path, kind: "step", step, made, keys };
+  // A witness names eigenvariables by their steps; a ∀R or ∃L step's own letter is checked
+  // only to be one.
+  const term = opened.term === null ? null : byPath(opened.term, makers(doc, terms));
+  const witness = WITNESSED.has(step.rule) && term !== null ? { witness: term } : {};
+  return { path, kind: "step", step: { ...step, ...witness }, made, term, keys };
 }
 
 /** The cuts' formulas as typed, by their inference, as the view gives them. */
@@ -266,11 +399,15 @@ function cutAction(
   const inference = doc.inferences[goal];
   const [first, second] = (inference?.premises ?? []).map((p) => doc.inferences[p]?.sequent ?? []);
   const left = leftOf(inference?.sequent ?? [], undefined, first ?? [], second ?? [], 1) ?? [];
-  const formula = texts.find((c) => c.inference === goal)?.formula ?? "";
+  const typed = texts.find((c) => c.inference === goal)?.formula ?? "";
+  const formula = terms && terms.forest !== undefined ? byPath(typed, makers(doc, terms)) : typed;
   // A cut on an instance names its body's member: the block starts at the formula's root.
   const { occurrence: body, depth } = occurrenceOf(doc, terms?.forest, inference?.cut ?? 0);
   const made = madeOf(doc, goal, terms?.forest);
-  return { path, kind: "cut", formula, occurrence: body - depth, depth, left, made };
+  const cut = { path, kind: "cut", formula, occurrence: body - depth, depth, left, made } as const;
+  if (terms?.forest === undefined) return cut;
+  const key = memberKeys(doc, terms.forest);
+  return { ...cut, leftKeys: left.map((p) => key(inference?.sequent[p] ?? -1)) };
 }
 
 /**
@@ -354,6 +491,29 @@ export interface Replayed extends Played {
   readonly failed: readonly Path[];
 }
 
+/**
+ * A recorded witness or formula in the session as it stands: each eigenvariable written by its
+ * step's path (`{1.0}`) as the letter that step took, undefined where no ∀R or ∃L step stands
+ * at the path.
+ */
+function lettered(text: string, played: Played): string | undefined {
+  const where = paths(played.session);
+  const letter = new Map<string, string>();
+  for (const { inference, term } of played.view.opened ?? []) {
+    const rule = played.session.inferences[inference]?.rule;
+    if (term !== null && rule !== undefined && !WITNESSED.has(rule)) {
+      letter.set((where.get(inference) ?? []).join("."), term);
+    }
+  }
+  let missing = false;
+  const out = text.replace(BY_PATH, (_, path: string) => {
+    const name = letter.get(path);
+    if (name === undefined) missing = true;
+    return name ?? "";
+  });
+  return missing ? undefined : out;
+}
+
 const same = (a: readonly (readonly number[])[], b: readonly (readonly number[])[]) =>
   JSON.stringify(a) === JSON.stringify(b);
 
@@ -386,18 +546,27 @@ export function play(
       premise.map((o) => o + (moves.find((m) => m.from <= o && o < m.to)?.by ?? 0)),
     );
   // Eigenvariables are lettered in the order their ∀R and ∃L steps are taken, so a replay that
-  // leaves one out letters the later ones anew: each recorded letter maps to the one its step
-  // took again, and every witness and cut formula is read through the map.
-  const letters = new Map<string, string>();
-  const lettered = (text: string) =>
-    text.replace(/[A-Za-z_][A-Za-z0-9_']*/g, (name) => letters.get(name) ?? name);
+  // leaves one out letters the later ones anew: a recorded witness or cut formula names each by
+  // its step's path, read as the letter that step took in this replay (`lettered`).
   const quantified = (next: Played) => next.view.forest;
   const step = (action: Action & { kind: "step" }): boolean => {
     const goal = goalAt(played.session, action.path);
     if (goal === undefined || expanded(played.session.inferences[goal])) return false;
-    const witness = action.step.witness;
-    const form =
-      witness === undefined ? action.step : { ...action.step, witness: lettered(witness) };
+    const witness =
+      action.step.witness === undefined ? undefined : lettered(action.step.witness, played);
+    if (action.step.witness !== undefined && witness === undefined) return false;
+    let form: StepForm = witness === undefined ? action.step : { ...action.step, witness };
+    // With quantifiers the formulas are found by what they are: a replay numbers the members
+    // past the forest anew, and so may order a goal's formulas otherwise.
+    if (action.keys && played.view.forest !== undefined) {
+      const key = memberKeys(played.session, played.view.forest);
+      const members = played.session.inferences[goal]?.sequent ?? [];
+      const taken = members.map(() => false);
+      const [principal] = positionsOf(members, key, [action.keys.principal], taken) ?? [];
+      const left = action.keys.left && positionsOf(members, key, action.keys.left, taken);
+      if (principal === undefined || (action.keys.left && !left)) return false;
+      form = { ...form, position: principal, ...(left ? { left } : {}) };
+    }
     try {
       const next = JSON.parse(
         prover.apply(JSON.stringify(played.session), goal, JSON.stringify(form), settings),
@@ -406,16 +575,15 @@ export function play(
       const term = action.term;
       const witnessed = WITNESSED.has(action.step.rule);
       // A quantifier step takes its term again: the same witness, or open where it was, and a
-      // ∀R or ∃L step an eigenvariable, whose letter the later steps' text maps to.
+      // ∀R or ∃L step an eigenvariable.
       const kept =
         term === undefined ||
-        (witnessed ? took === (term === null ? null : lettered(term)) : typeof took === "string");
+        (witnessed
+          ? took === (term === null ? null : lettered(term, played))
+          : typeof took === "string");
       if (!kept || !same(madeOf(next.session, goal, quantified(next)), moved(action.made))) {
         played = JSON.parse(prover.undo(JSON.stringify(next.session), settings)) as Played;
         return false;
-      }
-      if (!witnessed && typeof term === "string" && typeof took === "string") {
-        letters.set(term, took);
       }
       played = next;
       return true;
@@ -426,15 +594,23 @@ export function play(
   const cut = (action: Action & { kind: "cut" }): boolean => {
     const goal = goalAt(played.session, action.path);
     if (goal === undefined || expanded(played.session.inferences[goal])) return false;
+    let left: readonly number[] | undefined = action.left;
+    if (action.leftKeys && played.view.forest !== undefined) {
+      const key = memberKeys(played.session, played.view.forest);
+      const members = played.session.inferences[goal]?.sequent ?? [];
+      left = positionsOf(
+        members,
+        key,
+        action.leftKeys,
+        members.map(() => false),
+      );
+      if (!left) return false;
+    }
+    const formula = lettered(action.formula, played);
+    if (formula === undefined) return false;
     try {
       const next = JSON.parse(
-        prover.cut(
-          JSON.stringify(played.session),
-          goal,
-          lettered(action.formula),
-          JSON.stringify(action.left),
-          settings,
-        ),
+        prover.cut(JSON.stringify(played.session), goal, formula, JSON.stringify(left), settings),
       ) as Played;
       // The recorded dual is the second premise's one occurrence of the block, of the body
       // under the formula's ∀s for a cut on an instance.

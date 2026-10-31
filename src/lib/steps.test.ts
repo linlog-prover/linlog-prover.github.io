@@ -300,6 +300,72 @@ describe("the step tree", () => {
       expect(replay(linlog, taken.session, all, S).failed).toEqual([]);
     });
 
+    it("redoes a step whose witness names an eigenvariable an undo since lettered anew", () => {
+      const text =
+        "forall x. p(x), forall x. q(x) |- (forall y. p(y)) * (forall y. forall z. q(z))";
+      let p = JSON.parse(linlog.start(text, "intuitionistic", S)) as Played & { opened: number[] };
+      const left = at(p, 0, "∀x. p(x)");
+      p = apply(p, 0, {
+        position: at(p, 0, "(∀y. p(y)) ⊗ (∀y. (∀z. q(z)))"),
+        rule: "⊗R",
+        left: [left],
+      });
+      const [first, second] = p.opened as [number, number];
+      p = apply(p, first, { position: at(p, first, "∀y. p(y)"), rule: "∀R" });
+      const a = p.opened[0] ?? -1;
+      p = apply(p, second, { position: at(p, second, "∀y. (∀z. q(z))"), rule: "∀R" });
+      let g = p.opened[0] ?? -1;
+      p = apply(p, g, { position: at(p, g, "∀z. q(z)"), rule: "∀R" });
+      g = p.opened[0] ?? -1;
+      p = apply(p, g, { position: at(p, g, "∀x. q(x)"), rule: "∀L", witness: "b" });
+      expect(shown(p)).toEqual(expect.arrayContaining(["q(b)", "q(c)"]));
+      // Undo the ∀L, then the first branch's ∀R: the second's eigenvariables become a and b.
+      const undo = (played: Played, goal: number) => {
+        const back = retract(played.session, goal, undefined, played.view.cuts, played.view);
+        const after = play(linlog, started(text, "intuitionistic"), back?.kept ?? [], S);
+        expect(after.failed).toEqual([]);
+        return { after, removed: back?.removed ?? [] };
+      };
+      const one = undo(p, p.opened[0] ?? -1);
+      const two = undo(one.after, goalAt(one.after.session, [0, 0]) ?? -1);
+      void a;
+      expect(shown(two.after)).toContain("q(b)");
+      expect(shown(two.after)).not.toContain("q(c)");
+      // Redo both: the witness names the second branch's first eigenvariable, a now.
+      const redone = play(linlog, play(linlog, two.after, two.removed, S), one.removed, S);
+      expect(redone.failed).toEqual([]);
+      expect(shown(redone)).toEqual(expect.arrayContaining(["q(a)", "q(b)"]));
+      expect(shown(redone)).not.toContain("q(c)");
+    });
+
+    it("finds a step's formulas by what they are when a replay orders a goal otherwise", () => {
+      const text = "forall x. p(x), q(c) |- (exists z. (p(z) * q(z))) & (exists z. (p(z) * q(z)))";
+      let p = JSON.parse(linlog.start(text, "intuitionistic", S)) as Played & { opened: number[] };
+      p = apply(p, 0, {
+        position: at(p, 0, "(∃z. (p(z) ⊗ q(z))) & (∃z. (p(z) ⊗ q(z)))"),
+        rule: "&R",
+      });
+      const [x, y] = p.opened as [number, number];
+      // p(c) made first on the first branch, then shared by the second.
+      p = apply(p, x, { position: at(p, x, "∀x. p(x)"), rule: "∀L", witness: "c" });
+      p = apply(p, y, { position: at(p, y, "∃z. (p(z) ⊗ q(z))"), rule: "∃R", witness: "c" });
+      let g = p.opened[0] ?? -1;
+      p = apply(p, g, { position: at(p, g, "∀x. p(x)"), rule: "∀L", witness: "c" });
+      g = p.opened[0] ?? -1;
+      p = apply(p, g, { position: at(p, g, "p(c) ⊗ q(c)"), rule: "⊗R", left: [at(p, g, "p(c)")] });
+      // Undo on the first branch: the second branch makes p(c) itself, after its ∃R's body.
+      const back = retract(
+        p.session,
+        p.opened[0] === undefined ? x : (goalAt(p.session, [0, 0]) ?? x),
+        undefined,
+        p.view.cuts,
+        p.view,
+      );
+      const after = play(linlog, started(text, "intuitionistic"), back?.kept ?? [], S);
+      expect(after.failed).toEqual([]);
+      expect(after.session.inferences[goalAt(after.session, [1, 0, 0]) ?? -1]?.rule).toBe("⊗R");
+    });
+
     it("replays an open witness open, and a cut naming an eigenvariable", () => {
       const text = "forall x. (p(x) -o q(x)), forall x. p(x) |- forall y. q(y)";
       let p = JSON.parse(linlog.start(text, "intuitionistic", S)) as Played & { opened: number[] };
@@ -318,7 +384,9 @@ describe("the step tree", () => {
       const open = apply(cut, proving, { position: at(cut, proving, "∀x. p(x)"), rule: "∀L" });
       expect(shown(open)).toContain("p($1)");
       const all = actions(open.session, open.view.cuts, open.view);
-      expect(all.map((a) => (a.kind === "step" ? a.term : a.kind))).toEqual(["a", "cut", null]);
+      // The eigenvariable a by the path of the step that made it, the root's.
+      expect(all.map((a) => (a.kind === "step" ? a.term : a.kind))).toEqual(["{}", "cut", null]);
+      expect(all[1]).toMatchObject({ kind: "cut", formula: "p({})" });
       const again = replay(linlog, open.session, all, S);
       expect(again.failed).toEqual([]);
       same(again.session, open.session);

@@ -94,6 +94,15 @@ export interface SessionDoc {
   readonly instances?: {
     readonly members: readonly (readonly [number, number])[];
     readonly frames: readonly (readonly [number | null, number])[];
+    /**
+     * The session's terms past the sequent's own (numbered on from them): `{"F": [symbol,
+     * [terms]]}`, an eigenvariable `{"E": k}`, an open witness `{"M": k}`.
+     */
+    readonly terms: readonly (
+      | { readonly F: readonly [number, readonly number[]] }
+      | { readonly E: number }
+      | { readonly M: number }
+    )[];
   };
 }
 
