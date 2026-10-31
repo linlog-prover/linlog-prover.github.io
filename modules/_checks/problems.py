@@ -4,10 +4,10 @@
 # The store of problems against linlog's command at the flake's pinned input:
 # every problem's verdict and fragment are the ones `linlog prove` gives (one
 # batch, deterministic, a time limit each), every provable problem has a
-# session of its very sequent and mode that `linlog interact --state` resumes
-# and `proof` accepts (exit 0), and no unprovable problem has one. A store
-# entry without that evidence, or one whose verdict a later linlog changes,
-# fails the check, which names it.
+# session of its very sequent (its cut formulas aside) and mode that `linlog
+# interact --state` resumes and `proof` accepts (exit 0), and no unprovable
+# problem has one. A store entry without that evidence, or one whose verdict a
+# later linlog changes, fails the check, which names it.
 # Usage: python3 problems.py PROBLEMS_DIR LINLOG
 import json
 import pathlib
@@ -36,6 +36,27 @@ def front_matter(path):
         key, value = line.split(": ", 1)
         meta[key] = json.loads(value) if value[0] in '"0123456789' else value
     return meta
+
+
+def proves(linlog, tmp, held, sequent, mode):
+    # Whether a session's sequent is the problem's. A session with cuts keeps its
+    # cut formulas beside the sequent, which `seq print` leaves out: its
+    # conclusion is compared, as the command prints both.
+    if "cuts" not in held:
+        return held == sequent
+    logic = ["--intuitionistic"] if mode.startswith("intuitionistic") else []
+
+    def printed(doc):
+        path = pathlib.Path(tmp) / "sequent.json"
+        path.write_text(json.dumps(doc))
+        return subprocess.run(
+            [linlog, "seq", "print", *logic, "--file", str(path)],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+
+    return printed(held) == printed(sequent)
 
 
 def main(store, linlog):
@@ -95,7 +116,9 @@ def main(store, linlog):
                 failures.append(f"{pid}: provable, but no session proves it")
                 continue
             doc = json.loads(session.read_text(encoding="utf-8"))
-            if doc.get("mode") != p["mode"] or doc.get("sequent") != outcome["sequent"]:
+            if doc.get("mode") != p["mode"] or not proves(
+                linlog, tmp, doc.get("sequent"), outcome["sequent"], p["mode"]
+            ):
                 failures.append(
                     f"{pid}: its session is not of its sequent in {p['mode']} mode"
                 )

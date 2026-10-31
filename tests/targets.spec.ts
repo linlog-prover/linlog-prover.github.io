@@ -164,6 +164,24 @@ async function walk(page: Page, least: number) {
   await expect(page.getByRole("button", { name: "Try 40 units" })).toBeVisible();
   await measure("lesson's unknown");
   await page.getByRole("button", { name: "All lessons" }).click();
+  // Lesson 9's cut eliminated on the stage, and lesson 10's step that linlog refuses.
+  await page.getByRole("button", { name: "Lesson 9: Cut and its elimination" }).click();
+  await page.getByRole("button", { name: "Show the finished proof" }).click();
+  await page.getByRole("button", { name: "Eliminate the cuts" }).click();
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.getByRole("note", { name: "Why this elimination step" })).toBeVisible();
+  await measure("lesson's elimination");
+  await page.getByRole("button", { name: "All lessons" }).click();
+  await page.getByRole("button", { name: "Lesson 10: The quantifiers" }).click();
+  await page.getByRole("button", { name: "Play the attempt" }).click();
+  for (let step = 0; step < 4; step++)
+    await page.getByRole("button", { name: "Next step of the attempt" }).click();
+  await page.getByRole("button", { name: "Try the last step" }).click();
+  await expect(
+    page.getByRole("region", { name: "A step linlog refuses" }).getByRole("status"),
+  ).toBeVisible();
+  await measure("lesson's refusal");
+  await page.getByRole("button", { name: "All lessons" }).click();
   await page.getByRole("button", { name: "Turn Learn off" }).click();
   await band("Tour");
   await expect(page.getByRole("dialog", { name: "Tour" })).toBeVisible();

@@ -4,8 +4,9 @@
 /**
  * The island's own view state, beside the proofs' (state.tsx): what is
  * selected, which popover or menu is open, the tree or net tab, the camera,
- * the hint ladder, the live region's message, Learn's place, its lesson open
- * and the reason of the step it played, and the tour's stop.
+ * the hint ladder, the live region's message, Learn's place, its lesson open,
+ * the reason of the step it played and its reasons for the cases of cut
+ * elimination, and the tour's stop.
  */
 
 import { createSignal, For } from "solid-js";
@@ -86,6 +87,8 @@ export function createUi() {
     lesson: number | null;
     /** The reason of the step a lesson played last, while Learn is on. */
     reason: Reason | null;
+    /** The open lesson's reasons for the cases of a cut elimination's steps, by linlog's name of the case. */
+    cases: Readonly<Record<string, string>> | null;
   }>({
     selected: null,
     offered: null,
@@ -102,6 +105,7 @@ export function createUi() {
     spot: null,
     lesson: null,
     reason: null,
+    cases: null,
   });
   /** Bumped when the drawing must be laid out again (a new drawing, a resize). */
   const [drawn, setDrawn] = createSignal(0);

@@ -2027,6 +2027,11 @@ fieldset {
 .elim .line {
   font-size: var(--text-small);
 }
+/* A lesson's reason for the last step's case, in Learn's colour as a step's reason is. */
+.elim .case-why {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-left: var(--line-strong) solid var(--color-learn);
+}
 .elim .line .kw {
   font-weight: var(--font-weight-semibold);
 }

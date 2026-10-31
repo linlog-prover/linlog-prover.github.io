@@ -30,8 +30,12 @@
  *             that shows one, a legal split that leads nowhere, an attempt
  *             with a wrong step to find (its unfinished session beside the
  *             lesson as lessons/<n>-<name>.attempt.json), a search run with a
- *             small budget, and problems of the store to ask linlog about or
- *             to draw the net of.
+ *             small budget, problems of the store to ask linlog about or to
+ *             draw the net of, the worked proof's cut eliminated on the
+ *             stage with a reason per case, problems proved with a cut with
+ *             their inferences with it and without, and an attempt whose
+ *             last step linlog refuses (its unfinished session beside the
+ *             lesson as lessons/<n>-<name>.refusal.json).
  *   rules     rules/<nn>-<name>.md, the rules the reference draws as schemas
  *             and the stage's popover shows on hover: linlog's name, the
  *             premises over the conclusion, the lesson that teaches it, what
@@ -68,6 +72,7 @@ export const CATEGORIES = [
   "additives",
   "units",
   "exponentials",
+  "quantifiers",
   "classical",
   "intuitionistic",
   "structural",
@@ -186,6 +191,39 @@ const lessons = defineCollection({
         mode: z.enum(MODES),
         budget: z.number().int().min(1),
         text: words,
+      })
+      .optional(),
+    /**
+     * The worked proof's cuts eliminated on the stage, on the derivation and on the net: what to
+     * do, and a reason for each case of a step, by linlog's name of the case.
+     */
+    eliminate: z.object({ text: words, cases: z.record(z.string(), words) }).optional(),
+    /**
+     * Problems of the lesson proved with a cut: the cut formula, and the inferences of the proof
+     * with that cut (the problem's session) and of the cut-free proof its elimination reaches.
+     */
+    counts: z
+      .array(
+        z.object({
+          problem: z.string(),
+          formula: z.string(),
+          with: z.number().int().min(1),
+          without: z.number().int().min(1),
+        }),
+      )
+      .default([]),
+    /**
+     * An attempt at a store problem of the lesson that has no proof, played from the unfinished
+     * session beside the lesson (lessons/<n>-<name>.refusal.json), a reason per step, and then
+     * the step `refused` at its last open goal, which linlog refuses; `why` says why.
+     */
+    refusal: z
+      .object({
+        problem: z.string(),
+        text: words,
+        steps: z.array(z.object({ rule: z.string(), reason: words })).min(1),
+        refused: z.object({ rule: z.string(), position: z.number().int().min(0), reason: words }),
+        why: words,
       })
       .optional(),
     /** Problems of the lesson to ask linlog about (`ask`) or to draw the net of (`net`), each with a line. */

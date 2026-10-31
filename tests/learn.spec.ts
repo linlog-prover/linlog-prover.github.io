@@ -23,7 +23,7 @@ test("Learn frames the window with the tutorial and the reference, and off leave
   // Practice is a place of its own, outside the frame.
   await expect(frame.getByRole("tab", { name: "Practice" })).toHaveCount(0);
   await expect(frame.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", CC_BY);
-  await expect(frame.locator(".lessons > li")).toHaveCount(9);
+  await expect(frame.locator(".lessons > li")).toHaveCount(11);
   await expect(frame.getByRole("button", { name: "Take the tour of the page" })).toBeVisible();
   await frame.getByRole("tab", { name: "Reference" }).click();
   await expect(frame.getByRole("table")).toContainText("linear implication");

@@ -43,8 +43,9 @@ popover shows its schema on hover, and a formula its connective's reading.
 These are the rules of the one-sided calculus as the LLHandbook project's <a
 href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
 of linear logic</a> states them (draft of 6 March 2026, section 1.3.5, Table 1.4,
-p. 22). There the axiom takes any formula; section 1.3.2 (p. 14) shows that atoms
-suffice, and linlog's axiom takes an atom. The two-sided names are linlog's names for
+p. 22), with its cut and its first-order quantifiers, there `(∀₁)` and `(∃₁)`. There the
+axiom takes any formula; section 1.3.2 (p. 14) shows that atoms suffice, and linlog's
+axiom takes an atom. `A[t/x]` is `A` with the term `t` in place of `x`. The two-sided names are linlog's names for
 the same rule in a two-sided derivation: the principal formula on the right, or its
 dual on the left.
 
@@ -60,9 +61,10 @@ Learn on, a rule in an intuitionistic proof's popover shows its two-sided schema
 
 These are the rules of intuitionistic linear logic as the <a
 href="https://ll-handbook.pages.math.cnrs.fr/book/ll-handbook-public.pdf">Handbook
-of linear logic</a> states them (section 1.7.2.1, Table 1.5, p. 48), without the cut,
-the quantifiers and the exchange, in linlog's names: there `(wL)` and `(cL)`, here `!w`
-and `!c`. As above, linlog's axiom takes an atom.
+of linear logic</a> states them (section 1.7.2.1, Table 1.5, p. 48), with the cut and
+the first-order quantifiers and without the exchange, in linlog's names: there `(wL)`,
+`(cL)`, `(∀₁L)` and the like, here `!w`, `!c`, `∀L`. As above, linlog's axiom takes an
+atom.
 
 ## The engines
 

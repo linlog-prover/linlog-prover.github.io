@@ -1220,6 +1220,19 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                     return last ? `${stepLine(e().taken.length, last)} · ${count}` : count;
                   })()}
                 </p>
+                <Show
+                  when={
+                    ui.learn && e().shown === null
+                      ? ui.cases?.[e().taken.at(-1)?.case ?? ""]
+                      : undefined
+                  }
+                >
+                  {(text) => (
+                    <p class="line case-why" role="note" aria-label="Why this elimination step">
+                      <Words text={text()} />
+                    </p>
+                  )}
+                </Show>
                 <Show when={e().stopped}>
                   {(said) => (
                     <p class="line warn" role="alert">

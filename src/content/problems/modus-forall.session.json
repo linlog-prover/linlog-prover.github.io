@@ -1,0 +1,42 @@
+{
+  "version": 7,
+  "sequent": {
+    "terms": [
+      { "V": 0 },
+      { "D": 1 },
+      { "⊗": [0, 1] },
+      { "∃": 2 },
+      { "D": 2 },
+      { "V": 1 },
+      { "∃": 5 }
+    ],
+    "roots": [3, 4, 6],
+    "atoms": [{ "P": [0, [0]] }, { "P": [1, [0]] }, { "P": [0, [1]] }],
+    "symbols": [["p", 1], ["q", 1], ["a", 0]],
+    "fo": [{ "B": 0 }, { "F": [2, []] }],
+    "binders": ["x", "y"],
+    "antecedents": 2
+  },
+  "mode": "intuitionistic",
+  "inferences": [
+    { "sequent": [0, 4, 5], "rule": "∃R", "principal": 2, "premises": [1] },
+    { "sequent": [0, 4, 7], "rule": "∀L", "principal": 0, "premises": [2] },
+    { "sequent": [4, 7, 8], "rule": "⊸L", "principal": 2, "premises": [3, 4] },
+    { "sequent": [4, 9], "rule": "ax" },
+    { "sequent": [7, 10], "rule": "ax" }
+  ],
+  "history": [0, 1, 2, 3, 4],
+  "instances": {
+    "members": [[6, 0], [1, 0], [2, 0], [3, 0]],
+    "frames": [[null, 1]],
+    "terms": [],
+    "eigens": 0,
+    "marks": [
+      [0, 0, 0, 0, 0, 0],
+      [1, 1, 1, 0, 0, 0],
+      [2, 2, 1, 0, 0, 0],
+      [3, 4, 1, 0, 0, 0],
+      [4, 4, 1, 0, 0, 0]
+    ]
+  }
+}

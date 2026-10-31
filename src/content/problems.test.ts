@@ -4,7 +4,7 @@
 // The store of problems is what it says: linlog decides each sequent in its
 // mode as its `verdict` says and detects its `fragment`, a provable one's
 // session (as `linlog interact` saved it) is a finished proof of that very
-// sequent in that mode, which linlog's module reads and checks, and its
+// sequent in that mode (its cut formulas aside), which linlog's module reads and checks, and its
 // categories are the connectives it uses and its logic. Learn's lessons mix
 // provable and unprovable problems and end with harder ones.
 
@@ -42,6 +42,7 @@ function categoriesOf(sequent: string, mode: string): string[] {
     ...(/&|\+/.test(s) ? ["additives"] : []),
     ...(/\b[10]\b|⊤|⊥/.test(s) ? ["units"] : []),
     ...(/[!?]/.test(s) ? ["exponentials"] : []),
+    ...(/\b(forall|exists)\b/.test(s) ? ["quantifiers"] : []),
     mode.startsWith("intuitionistic") ? "intuitionistic" : "classical",
     ...(mode.includes("affine") || mode.includes("mix") ? ["structural"] : []),
   ];
@@ -121,7 +122,13 @@ describe("the store of problems", () => {
       const read = JSON.parse(linlog.read(readFileSync(file, "utf8"), ""));
       expect(read.kind).toBe("session");
       expect(read.session.mode).toBe(problem.mode);
-      expect(read.sequent).toEqual(sequent);
+      if (read.sequent.cuts) {
+        // A session with cuts keeps its cut formulas in its sequent; the sequent it proves is
+        // the one linlog starts from, which leaves them out.
+        const conclusion = (s: unknown) =>
+          JSON.parse(linlog.start(JSON.stringify(s), problem.mode, "")).session.sequent;
+        expect(conclusion(read.sequent)).toEqual(conclusion(sequent));
+      } else expect(read.sequent).toEqual(sequent);
       const view = JSON.parse(linlog.view(JSON.stringify(read.session), ""));
       expect(view.complete).toBe(true);
       // The proof checks.

@@ -6,7 +6,10 @@
 // reason per step, the dead end, the self-explanation prompt, the faded proof,
 // the hinge question, the attempt whose wrong step the visitor finds, a
 // problem asked of linlog, a search that gives up at a small budget, the nets
-// a lesson draws, and the hover explanations and schemas Learn adds.
+// a lesson draws, a cut played and eliminated on the derivation and on the net,
+// a practice problem's inferences with a cut and without, witnesses and the
+// step the eigenvariable condition refuses, and the hover explanations and
+// schemas Learn adds.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
@@ -133,17 +136,30 @@ test("the reference draws every rule of the lessons as a schema, with its two-si
   const frame = page.getByRole("complementary", { name: "Learn" });
   await frame.getByRole("tab", { name: "Reference" }).click();
   const [one, two] = [frame.locator(".rule-list").nth(0), frame.locator(".rule-list").nth(1)];
-  await expect(one.locator("> li")).toHaveCount(13);
+  await expect(one.locator("> li")).toHaveCount(16);
   const promotion = frame.locator("#rule-promotion");
   await expect(promotion.getByRole("img", { name: "!: from ⊢ ?Γ, A to ⊢ ?Γ, !A" })).toBeVisible();
   await expect(promotion).toContainText("!R, ?L");
   // And the two-sided rules of intuitionistic linear logic, each with its one-sided rule.
-  await expect(two.locator("> li")).toHaveCount(19);
+  await expect(two.locator("> li")).toHaveCount(24);
   const implication = frame.locator("#rule-ill-lollipop-l");
   await expect(
     implication.getByRole("img", { name: "⊸L: from Γ ⊢ A and Δ, B ⊢ C to Γ, Δ, A ⊸ B ⊢ C" }),
   ).toBeVisible();
   await expect(implication).toContainText("One-sided: ⊗.");
+  // The cut and the quantifiers, on both sides.
+  await expect(
+    frame.locator("#rule-cut").getByRole("img", { name: "cut: from ⊢ Γ, A and ⊢ Δ, A⊥ to ⊢ Γ, Δ" }),
+  ).toBeVisible();
+  await expect(
+    frame.locator("#rule-exists").getByRole("img", { name: "∃: from ⊢ Γ, A[t/x] to ⊢ Γ, ∃x. A" }),
+  ).toBeVisible();
+  await expect(frame.locator("#rule-forall")).toContainText("∀R, ∃L");
+  await expect(
+    frame
+      .locator("#rule-ill-forall-l")
+      .getByRole("img", { name: "∀L: from Γ, A[t/x] ⊢ C to Γ, ∀x. A ⊢ C" }),
+  ).toBeVisible();
 });
 
 test("in an intuitionistic proof, a rule of the popover shows its two-sided schema", async ({
@@ -223,4 +239,102 @@ test("a lesson's finished proof shows its net, and its gallery draws nets with b
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
   // A box inside a box.
   await expect(page.locator('.drawing svg path[id^="b"]')).toHaveCount(2);
+});
+
+test("a lesson plays a cut on its lemma, and eliminates it step by step on the derivation and on the net, each case explained", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 9, "Cut and its elimination");
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  await frame.getByRole("button", { name: "Predict cut" }).click();
+  await expect(frame.locator(".said")).toContainText("Right");
+  await expect(page.getByRole("note", { name: "Why this step" })).toContainText(
+    "cut: Cut on the lemma !C",
+  );
+  // Both premises are open: the lemma to prove, and its use.
+  await expect(page.getByRole("button", { name: /^!C, formula 4 of goal 2/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^!C, formula 2 of goal 3/ })).toBeVisible();
+  const part = frame.getByRole("region", { name: "Eliminate the cut" });
+  await part.getByRole("button", { name: "Show the finished proof" }).click();
+  await expect(part.getByRole("status")).toHaveText(
+    "On the derivation: not started. On the net: not started.",
+  );
+  const cluster = page.getByRole("region", { name: "Cut elimination" });
+  await cluster.getByRole("button", { name: "Eliminate the cuts" }).click();
+  await cluster.getByRole("button", { name: "Next step" }).click();
+  const why = cluster.getByRole("note", { name: "Why this elimination step" });
+  await expect(why).toContainText("Contraction: the !c that copied !C");
+  for (let step = 1; step < 5; step++)
+    await cluster.getByRole("button", { name: "Next step" }).click();
+  await expect(why).toContainText("The axiom case");
+  await expect(part.getByRole("status")).toHaveText(
+    "On the derivation: cut-free after 5 steps. On the net: not started.",
+  );
+  await expect(part).toContainText(
+    "The derivation has 20 inferences, against 16 with the cut on !C",
+  );
+  await part.getByRole("button", { name: "Turn the stage to the net" }).click();
+  await cluster.getByRole("button", { name: "Eliminate the cuts" }).click();
+  for (let step = 0; step < 5; step++)
+    await cluster.getByRole("button", { name: "Next step" }).click();
+  await expect(part.getByRole("status")).toHaveText(
+    "On the derivation: cut-free after 5 steps. On the net: cut-free after 5 steps.",
+  );
+  await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+});
+
+test("a practice problem proved with a cut counts its inferences beside those with the cut and without", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 9, "Cut and its elimination");
+  const card = frame.locator(".exercise").filter({ hasText: "A short lemma, three uses" });
+  await expect(card).toContainText("Prove it with a cut on !B.");
+  await card.getByLabel("The answer to A short lemma, three uses").click();
+  await card.getByRole("button", { name: "Watch A short lemma, three uses" }).click();
+  for (let step = 0; step < 17; step++)
+    await page.locator("footer").getByRole("button", { name: "Redo" }).click();
+  await expect(card.getByRole("status")).toHaveText(
+    "Proved Your proof has 17 inferences; with the cut on !B, 17; cut-free, 21.",
+  );
+});
+
+test("a quantifier lesson plays its witnesses, and the eigenvariable condition refuses an attempt's last step", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 10, "The quantifiers");
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  for (const rule of ["∀R", "∃L", "∃R", "∀L", "ax"])
+    await frame.getByRole("button", { name: `Predict ${rule}` }).click();
+  await expect(frame.getByText("Proved", { exact: true })).toBeVisible();
+  // The witnesses replayed as the session took them, not left open.
+  await expect(page.locator(".drawing svg")).toContainText("r(a, b) ⊢ r(a, b)");
+  const part = frame.getByRole("region", { name: "A step linlog refuses" });
+  await part.getByRole("button", { name: "Play the attempt" }).click();
+  for (let step = 0; step < 4; step++)
+    await part.getByRole("button", { name: "Next step of the attempt" }).click();
+  await expect(page.getByRole("note", { name: "Why this step" })).toContainText(
+    "∃L: Name its something",
+  );
+  await part.getByRole("button", { name: "Try the last step" }).click();
+  await expect(page.locator(".dock")).toContainText("ax refused: the eigenvariable condition");
+  await expect(part.getByRole("status")).toContainText("Refused");
+  await part.getByRole("button", { name: /^Ask linlog about/ }).click();
+  await expect(page.locator(".dock .kw.bad")).toContainText("Unprovable");
+});
+
+test("with Learn on, a quantified formula shows its reading and a quantifier rule its schema", async ({
+  page,
+}) => {
+  const frame = await lesson(page, 10, "The quantifiers");
+  await frame.getByRole("button", { name: "Start the worked proof" }).click();
+  const goal = page.getByRole("button", { name: /^∀x\. \(∃y\. r\(x, y\)\), formula/ });
+  await goal.hover();
+  await expect(page.getByRole("tooltip")).toHaveText(
+    "∀, for all: A for every x; the dual of exists",
+  );
+  await goal.click();
+  await page.getByRole("dialog", { name: "Rules" }).getByRole("button", { name: /^∀R/ }).hover();
+  await expect(
+    page.getByRole("tooltip").getByRole("img", { name: "∀R: from Γ ⊢ A to Γ ⊢ ∀x. A" }),
+  ).toBeVisible();
 });

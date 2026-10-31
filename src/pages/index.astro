@@ -60,15 +60,25 @@ const attempts = import.meta.glob<string>("../content/lessons/*.attempt.json", {
   import: "default",
   eager: true,
 });
+const refusals = import.meta.glob<string>("../content/lessons/*.refusal.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 const lessonData: Lesson[] = lessons.map((l) => {
   const attempt = l.data.attempt;
   const session = attempts[`../content/lessons/${l.id}.attempt.json`];
   if (attempt && !session) throw new Error(`lesson ${l.id}: its attempt has no session beside it`);
+  const refusal = l.data.refusal;
+  const refused = refusals[`../content/lessons/${l.id}.refusal.json`];
+  if (refusal && !refused) throw new Error(`lesson ${l.id}: its refusal has no session beside it`);
   return {
     id: l.id,
     ...l.data,
     detour: l.data.detour ?? null,
     attempt: attempt && session ? { ...attempt, session } : null,
+    eliminate: l.data.eliminate ?? null,
+    refusal: refusal && refused ? { ...refusal, session: refused } : null,
     unknown: l.data.unknown ?? null,
     gallery: l.data.gallery ?? null,
   };

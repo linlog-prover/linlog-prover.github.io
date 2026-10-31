@@ -1,5 +1,5 @@
 ---
-lesson: 9
+lesson: 11
 title: "Ordinary logic through the translations"
 worked: "girard-modus"
 choices: ["!L", "!R", "⊸L", "ax"]

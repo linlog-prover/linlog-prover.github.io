@@ -87,6 +87,27 @@ export interface Lesson {
     })[];
     readonly session: string;
   } | null;
+  /** The worked proof's cuts eliminated on the stage: what to do, and a reason per case. */
+  readonly eliminate: {
+    readonly text: string;
+    readonly cases: Readonly<Record<string, string>>;
+  } | null;
+  /** Problems proved with a cut, and the inferences with it and without. */
+  readonly counts: readonly {
+    readonly problem: string;
+    readonly formula: string;
+    readonly with: number;
+    readonly without: number;
+  }[];
+  /** An attempt at a problem with no proof whose last step linlog refuses, with its session as text. */
+  readonly refusal: {
+    readonly problem: string;
+    readonly text: string;
+    readonly steps: readonly Reason[];
+    readonly refused: Reason & { readonly position: number };
+    readonly why: string;
+    readonly session: string;
+  } | null;
   /** A sequent searched with a budget too small to decide it. */
   readonly unknown: {
     readonly sequent: string;

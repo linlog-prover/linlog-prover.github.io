@@ -34,6 +34,7 @@ export const GROUPS: readonly {
       ["additives", "Additives"],
       ["units", "Units"],
       ["exponentials", "Exponentials"],
+      ["quantifiers", "Quantifiers"],
     ],
   },
   {

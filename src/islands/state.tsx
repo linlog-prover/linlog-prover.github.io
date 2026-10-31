@@ -835,7 +835,11 @@ export function createProver(say: (text: string) => void = () => undefined) {
           if (blankId && blankId !== p?.id) actions.remove(blankId);
         }
         if (!p?.session) return null;
-        const all = actionsOf(JSON.parse(example.session) as SessionDoc);
+        // With the session's view, a cut replays from its formula and a quantifier step with its witness.
+        const doc = JSON.parse(example.session) as SessionDoc;
+        const full = await attempt(() => api.view(doc, json()));
+        if (!full.ok) return null;
+        const all = actionsOf(doc, full.value.cuts, full.value);
         const result = await attempt(() =>
           api.replay(p.session as SessionDoc, all.slice(0, played), replaying()),
         );

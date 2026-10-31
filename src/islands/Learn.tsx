@@ -9,14 +9,16 @@
  * beside it, the same proof with its last steps left to the visitor, its
  * practice (problems of the store, provable and not mixed), a
  * self-explanation prompt and a hinge question whose answer offers the next
- * lesson or the faded proof again; a lesson not yet written has its practice
- * alone. The reference: the connectives, the rules drawn as schemas, the
+ * lesson or the faded proof again; some lessons add a dead end, an attempt
+ * that goes wrong, a search that gives up, problems asked of linlog, the
+ * worked proof's cut eliminated, or an attempt whose last step linlog
+ * refuses. A lesson not yet written has its practice alone. The reference: the connectives, the rules drawn as schemas, the
  * engines. The texts are the page's written content, cloned from its
  * templates, with their licence.
  */
 
 import { ArrowLeft, Compass, Play, X } from "lucide-solid";
-import { createEffect, createSignal, For, Match, Show, Switch } from "solid-js";
+import { createEffect, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js";
 import { Portal } from "solid-js/web";
 import { type Example, type Lesson, type Level, type Rule, written } from "../lib/content";
 import type { SessionDoc } from "../lib/linlog";
@@ -73,6 +75,8 @@ export const LESSONS = [
   "Two sides",
   "When there is no proof",
   "Proof nets",
+  "Cut and its elimination",
+  "The quantifiers",
   "Ordinary logic through the translations",
 ] as const;
 
@@ -293,13 +297,26 @@ export function LearnFrame(props: {
 }
 
 /** A lesson's practice: its problems of the store, easiest first. */
-function Practice(props: { lesson: number; examples: readonly Example[]; prover: Prover; ui: Ui }) {
+function Practice(props: {
+  lesson: number;
+  examples: readonly Example[];
+  prover: Prover;
+  ui: Ui;
+  counts?: Lesson["counts"];
+}) {
   return (
     <>
       <p class="sub">Practice: decide first whether each has a proof.</p>
       <ul class="prac">
         <For each={props.examples.filter((e) => e.lesson === props.lesson)}>
-          {(example) => <Exercise example={example} prover={props.prover} ui={props.ui} />}
+          {(example) => (
+            <Exercise
+              example={example}
+              prover={props.prover}
+              ui={props.ui}
+              count={props.counts?.find((c) => c.problem === example.id)}
+            />
+          )}
         </For>
       </ul>
     </>
@@ -336,6 +353,9 @@ function LessonView(props: {
   const [compared, setCompared] = createSignal(false);
   const [chosen, setChosen] = createSignal<number | null>(null);
   let faded!: HTMLElement;
+  // The stage's elimination explains each step's case while this lesson is open.
+  setUi("cases", props.lesson.eliminate?.cases ?? null);
+  onCleanup(() => setUi("cases", null));
 
   const onTab = () => props.prover.current()?.id === tab();
   const finished = () => onTab() && props.prover.current()?.view?.complete === true;
@@ -394,6 +414,15 @@ function LessonView(props: {
     setDeadEnd(await props.prover.splitPasses(goal, step));
     await props.prover.apply(goal, step);
     setDetoured(true);
+  }
+
+  /** The worked proof finished on the lesson's tab, its derivation shown, for its cut to be eliminated. */
+  async function finish() {
+    await start(all.length, true);
+    setPart("worked");
+    setPlayed(steps.length);
+    setSaid(null);
+    setUi("tab", "tree");
   }
 
   async function fade() {
@@ -547,6 +576,30 @@ function LessonView(props: {
         </Show>
       </section>
 
+      <Show when={props.lesson.eliminate}>
+        {(eliminate) => (
+          <Eliminate
+            eliminate={eliminate()}
+            count={props.lesson.counts.find((c) => c.problem === props.lesson.worked)}
+            finished={finished()}
+            prover={props.prover}
+            ui={props.ui}
+            finish={finish}
+          />
+        )}
+      </Show>
+
+      <Show when={props.lesson.refusal}>
+        {(refusal) => (
+          <Refusal
+            refusal={refusal()}
+            examples={props.examples}
+            prover={props.prover}
+            ui={props.ui}
+          />
+        )}
+      </Show>
+
       <section class="part" aria-labelledby="part-faded" ref={faded}>
         <h3 id="part-faded">Your turn</h3>
         <Show
@@ -601,6 +654,7 @@ function LessonView(props: {
           examples={props.examples}
           prover={props.prover}
           ui={props.ui}
+          counts={props.lesson.counts}
         />
       </section>
 
@@ -955,6 +1009,221 @@ function GivesUp(props: { unknown: NonNullable<Lesson["unknown"]>; prover: Prove
   );
 }
 
+/**
+ * The worked proof's cut eliminated on the stage: the lesson shows the finished proof, the
+ * stage's own elimination takes the steps (each case's reason beside it there), and the lesson
+ * says how far each view has come and, once the derivation is cut-free, what it costs.
+ */
+function Eliminate(props: {
+  eliminate: NonNullable<Lesson["eliminate"]>;
+  count: Lesson["counts"][number] | undefined;
+  finished: boolean;
+  prover: Prover;
+  ui: Ui;
+  finish: () => Promise<void>;
+}) {
+  const elim = (on: "tree" | "net") => (props.finished ? props.prover.current()?.elim[on] : null);
+  const status = (on: "tree" | "net") => {
+    const e = elim(on);
+    if (!e) return "not started";
+    const steps = e.taken.length === 1 ? "1 step" : `${e.taken.length} steps`;
+    const left = e.reached.cuts.length;
+    if (left === 0) return `cut-free after ${steps}`;
+    return `${steps}, ${left === 1 ? "1 cut" : `${left} cuts`} left`;
+  };
+  const cutFree = () => elim("tree")?.reached.cuts.length === 0;
+  return (
+    <section class="part" aria-labelledby="part-eliminate">
+      <h3 id="part-eliminate">Eliminate the cut</h3>
+      <p>
+        <Words text={props.eliminate.text} />
+      </p>
+      <Show
+        when={props.finished}
+        fallback={
+          <button type="button" class="btn outline" onClick={() => void props.finish()}>
+            Show the finished proof
+          </button>
+        }
+      >
+        <p class="sub" role="status">
+          On the derivation: {status("tree")}. On the net: {status("net")}.
+        </p>
+        <Show when={cutFree() && props.count}>
+          {(c) => (
+            <p>
+              <span class="kw ok">Cut-free</span>{" "}
+              <Words
+                text={`The derivation has ${c().without} inferences, against ${c().with} with the cut on \`${c().formula}\`: the lemma's proof is in it once for each use.`}
+              />
+            </p>
+          )}
+        </Show>
+        <p class="row">
+          <Show
+            when={props.ui.ui.tab === "net"}
+            fallback={
+              <button
+                type="button"
+                class="btn btn-s outline"
+                onClick={() => props.ui.setUi("tab", "net")}
+              >
+                Turn the stage to the net
+              </button>
+            }
+          >
+            <button
+              type="button"
+              class="btn btn-s outline"
+              onClick={() => props.ui.setUi("tab", "tree")}
+            >
+              Back to the derivation
+            </button>
+          </Show>
+        </p>
+      </Show>
+    </section>
+  );
+}
+
+/**
+ * An attempt at a sequent with no proof, played on the stage one step at a time from its
+ * unfinished session, each step's reason beside it; then its last step, which linlog refuses at
+ * the goal, why it does, and linlog's verdict on the sequent.
+ */
+function Refusal(props: {
+  refusal: NonNullable<Lesson["refusal"]>;
+  examples: readonly Example[];
+  prover: Prover;
+  ui: Ui;
+}) {
+  const problem = props.examples.find((e) => e.id === props.refusal.problem);
+  const example = {
+    sequent: problem?.sequent ?? "",
+    mode: problem?.mode ?? "classical",
+    session: props.refusal.session,
+  };
+  const all = actionsOf(JSON.parse(props.refusal.session) as SessionDoc);
+  const steps = props.refusal.steps;
+  const [tab, setTab] = createSignal<string | null>(null);
+  /** The steps played so far, or null before the attempt starts. */
+  const [played, setPlayed] = createSignal<number | null>(null);
+  const [tried, setTried] = createSignal(false);
+  const onTab = () => props.prover.current()?.id === tab();
+
+  /** Shows the attempt after its first `n` steps, the rest on the redo stack. */
+  async function at(n: number): Promise<boolean> {
+    const id = await props.prover.worked(example, n, true, tab());
+    if (!id) return false;
+    setTab(id);
+    props.ui.setUi({ reason: null, split: null, selected: null });
+    return true;
+  }
+
+  async function begin() {
+    if (!(await at(0))) return;
+    setPlayed(0);
+    setTried(false);
+  }
+
+  async function next() {
+    const n = played();
+    const step = n === null ? undefined : steps[n];
+    if (n === null || !step || props.prover.busy()) return;
+    // The visitor may have worked on the tab meanwhile: take it back to where the attempt is.
+    if (!onTab() || props.prover.current()?.redo.length !== all.length - n) {
+      if (!(await at(n))) return;
+    }
+    const path = all[n]?.path ?? [];
+    await props.prover.redo();
+    const id = tab();
+    if (id) props.ui.setUi("reason", { tab: id, path, text: `${step.rule}: ${step.reason}` });
+    props.ui.setUi("live", `${step.rule}. ${step.reason.replaceAll("`", "")}`);
+    setPlayed(n + 1);
+  }
+
+  /** The refused step, on the goal the attempt left open: linlog's refusal is the goal's note. */
+  async function tryIt() {
+    if (props.prover.busy()) return;
+    if (!onTab() || (props.prover.current()?.redo.length ?? 0) > 0) {
+      if (!(await at(all.length))) return;
+    }
+    const goal = props.prover.current()?.view?.goals[0]?.goal;
+    if (goal === undefined) return;
+    const { rule, position } = props.refusal.refused;
+    props.ui.setUi({ reason: null, selected: null });
+    await props.prover.apply(goal, { position, rule });
+    setTried(true);
+  }
+
+  async function ask() {
+    if (!problem || props.prover.busy()) return;
+    await props.prover.example(problem, false);
+    await props.prover.close(0);
+  }
+
+  return (
+    <section class="part" aria-labelledby="part-refusal">
+      <h3 id="part-refusal">A step linlog refuses</h3>
+      <p class="m ex-seq">{displayed(example.sequent)}</p>
+      <p>
+        <Words text={props.refusal.text} />
+      </p>
+      <Show
+        when={played() !== null && onTab()}
+        fallback={
+          <button type="button" class="btn btn-primary" onClick={() => void begin()}>
+            Play the attempt
+          </button>
+        }
+      >
+        <Show
+          when={(played() ?? 0) < steps.length}
+          fallback={
+            <>
+              <p>
+                Its last step, <span class="m">{props.refusal.refused.rule}</span>:{" "}
+                <Words text={props.refusal.refused.reason} />
+              </p>
+              <Show
+                when={tried()}
+                fallback={
+                  <button type="button" class="btn btn-s outline" onClick={() => void tryIt()}>
+                    Try the last step
+                  </button>
+                }
+              >
+                <div class="hinge-said" role="status">
+                  <p>
+                    <span class="kw bad">Refused</span> <Words text={props.refusal.why} />
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-s outline"
+                    disabled={props.prover.busy()}
+                    onClick={() => void ask()}
+                  >
+                    Ask linlog about {problem?.title ?? "the sequent"}
+                  </button>
+                </div>
+              </Show>
+            </>
+          }
+        >
+          <p class="row">
+            <span class="sub">
+              Step {(played() ?? 0) + 1} of {steps.length} of the attempt
+            </span>
+            <button type="button" class="btn btn-s outline" onClick={() => void next()}>
+              Next step of the attempt
+            </button>
+          </p>
+        </Show>
+      </Show>
+    </section>
+  );
+}
+
 /** A sentence's first letter in lower case, to follow "the idea that". */
 const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
@@ -989,8 +1258,21 @@ function Explain(props: {
   );
 }
 
-function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
+function Exercise(props: {
+  example: Example;
+  prover: Prover;
+  ui: Ui;
+  /** For a problem to prove with a cut: its cut formula and the inferences with it and without. */
+  count?: Lesson["counts"][number] | undefined;
+}) {
   const busy = () => props.prover.busy();
+  /** The inferences of the visitor's finished proof of this problem, on the tab shown. */
+  const proved = () => {
+    const p = props.prover.current();
+    const mine =
+      p?.view?.complete && p.input === props.example.sequent && p.mode === props.example.mode;
+    return mine ? (p.session?.inferences.filter((i) => i.rule !== undefined).length ?? null) : null;
+  };
   return (
     <li class="exercise">
       <div class="ex-head">
@@ -1001,6 +1283,25 @@ function Exercise(props: { example: Example; prover: Prover; ui: Ui }) {
         </span>
       </div>
       <p class="m ex-seq">{displayed(props.example.sequent)}</p>
+      <Show when={props.count}>
+        {(c) => (
+          <>
+            <p class="sub">
+              <Words text={`Prove it with a cut on \`${c().formula}\`.`} />
+            </p>
+            <Show when={proved()}>
+              {(n) => (
+                <p class="sub" role="status">
+                  <span class="kw ok">Proved</span>{" "}
+                  <Words
+                    text={`Your proof has ${n()} inferences; with the cut on \`${c().formula}\`, ${c().with}; cut-free, ${c().without}.`}
+                  />
+                </p>
+              )}
+            </Show>
+          </>
+        )}
+      </Show>
       <p class="row">
         <button
           type="button"

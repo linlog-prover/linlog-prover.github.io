@@ -8,7 +8,7 @@ categories: [multiplicatives, exponentials, intuitionistic, literature]
 fragment: "IMELL"
 source: "Derived here from Wikipedia, “Linear logic”, read 2026-10-23, Extending classical/intuitionistic logic, whose encoding of intuitionistic implication as !A ⊸ B is applied to modus ponens, A ⇒ B, A ⊢ B"
 url: "https://en.wikipedia.org/wiki/Linear_logic"
-lesson: 9
+lesson: 11
 order: 191
 ---
 `!L` uses the translated implication once, and `⊸L` applies it: its argument is `!A`, which `!R` proves from the hypothesis `!A` alone, and `B` is the goal.

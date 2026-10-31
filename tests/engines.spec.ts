@@ -132,8 +132,8 @@ test("practice is grouped by lesson, writes negation as the drawings do, and kee
   await goto(page);
   await page.locator("footer").getByRole("button", { name: "Learn" }).click();
   const frame = page.getByRole("complementary", { name: "Learn" });
-  // All nine lessons are written, each holding its practice.
-  await expect(frame.locator(".lesson-open")).toHaveCount(9);
+  // All eleven lessons are written, each holding its practice.
+  await expect(frame.locator(".lesson-open")).toHaveCount(11);
   await expect(frame.locator("summary.prac-h")).toHaveCount(0);
   await frame.getByRole("button", { name: "Lesson 1: Reading a sequent" }).click();
   const card = frame.locator(".exercise").filter({ hasText: "Two strangers" });

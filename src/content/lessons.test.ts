@@ -11,8 +11,12 @@
 // worked proof's sequent whose one wrong step is the first that leaves a goal
 // with no proof; a search shown giving up answers unknown at its budget and
 // proves its sequent with a larger one; a problem asked of linlog has no proof,
-// one whose net is drawn has a net. Every lesson problem is decided well inside
-// the page's budget. Every rule a worked proof uses has its schema in the
+// one whose net is drawn has a net. A worked proof's cut eliminated on the stage
+// reaches a cut-free proof on the derivation and on the net, each step's case
+// with its reason; a problem proved with a cut has its inferences with the cut
+// and without as linlog counts them; an attempt whose last step linlog refuses
+// is an unfinished session of a problem with no proof. Every lesson problem is
+// decided well inside the page's budget. Every rule a worked proof uses has its schema in the
 // reference, two-sided where the proof is intuitionistic, and the readings a
 // formula's hover gives are the reference's.
 
@@ -54,7 +58,7 @@ const verdictOn = (doc: SessionDoc, goal: number): string =>
   JSON.parse(linlog.close(JSON.stringify(doc), goal, within(TAB_BUDGET))).outcome.verdict;
 
 describe("Learn's lessons", () => {
-  it("are the nine lessons of the progression, in its order", () => {
+  it("are the eleven lessons of the progression, in its order", () => {
     expect(lessons.map((l) => [l.data.lesson, l.data.title])).toEqual([
       [1, "Reading a sequent"],
       [2, "The multiplicatives"],
@@ -64,7 +68,9 @@ describe("Learn's lessons", () => {
       [6, "Two sides"],
       [7, "When there is no proof"],
       [8, "Proof nets"],
-      [9, "Ordinary logic through the translations"],
+      [9, "Cut and its elimination"],
+      [10, "The quantifiers"],
+      [11, "Ordinary logic through the translations"],
     ]);
   });
 
@@ -178,6 +184,67 @@ describe("Learn's lessons", () => {
     },
   );
 
+  it.each(lessons.filter((l) => l.data.eliminate))(
+    "$id's worked proof eliminates to a cut-free proof on the derivation and on the net, a reason for each step's case",
+    (l) => {
+      const doc = JSON.stringify(session(l.data.worked));
+      for (const call of [linlog.eliminate, linlog.net_eliminate]) {
+        const ran = JSON.parse(call(doc, "", ""));
+        expect(ran.end, call.name).toBe("cut_free");
+        expect(ran.steps.length, call.name).toBeGreaterThan(0);
+        for (const step of ran.steps)
+          expect(l.data.eliminate.cases, step.case).toHaveProperty(step.case);
+      }
+    },
+  );
+
+  it.each(lessons.filter((l) => l.data.counts))(
+    "$id's problems proved with a cut have the inferences it says, with the cut and cut-free",
+    (l) => {
+      expect(l.data.counts.map((c: { problem: string }) => c.problem)).toContain(l.data.worked);
+      for (const c of l.data.counts) {
+        expect(problems.get(c.problem)?.lesson, c.problem).toBe(l.data.lesson);
+        const doc = session(c.problem);
+        const view = JSON.parse(linlog.view(JSON.stringify(doc), ""));
+        expect(
+          view.cuts.map((x: { formula: string }) => x.formula),
+          c.problem,
+        ).toEqual([c.formula]);
+        expect(doc.inferences.filter((i) => i.rule !== undefined).length, c.problem).toBe(c.with);
+        // The cut-free proof's inferences, as its drawing numbers them.
+        const ran = JSON.parse(linlog.eliminate(JSON.stringify(doc), "", ""));
+        expect(ran.end).toBe("cut_free");
+        expect(ran.drawing.match(/id="i\d+"/g)?.length, c.problem).toBe(c.without);
+        expect(c.without, c.problem).toBeGreaterThan(c.with);
+      }
+    },
+  );
+
+  it.each(lessons.filter((l) => l.data.refusal))(
+    "$id's attempt is an unfinished session of a problem with no proof, whose last step linlog refuses",
+    (l) => {
+      const { problem: id, steps, refused } = l.data.refusal;
+      const problem = problems.get(id);
+      expect(problem?.lesson).toBe(l.data.lesson);
+      expect(problem?.verdict).toBe("unprovable");
+      const doc: SessionDoc = JSON.parse(
+        readFileSync(new URL(`./lessons/${l.id}.refusal.json`, import.meta.url), "utf8"),
+      );
+      expect(doc.mode).toBe(problem?.mode);
+      const start = JSON.parse(linlog.start(problem?.sequent, doc.mode, "")).session;
+      expect(doc.sequent).toEqual(start.sequent);
+      expect(steps.map((s: { rule: string }) => s.rule)).toEqual(
+        doc.history.map((h) => doc.inferences[h]?.rule),
+      );
+      const [goal, ...more] = open(doc);
+      expect(more).toEqual([]);
+      const step = JSON.stringify({ position: refused.position, rule: refused.rule });
+      expect(() => linlog.apply(JSON.stringify(doc), goal ?? -1, step, "")).toThrow(
+        /eigenvariable/,
+      );
+    },
+  );
+
   it.each(lessons.filter((l) => l.data.net))("$id's worked proof has a net to see", (l) => {
     const view = JSON.parse(linlog.view(JSON.stringify(session(l.data.worked)), ""));
     expect(view.net).toBeNull();
@@ -229,12 +296,10 @@ describe("the reference", () => {
   });
 
   it("gives each connective the reading a formula's hover gives", () => {
-    for (const sign of ["⊗", "⅋", "⊸", "&", "⊕", "!", "?"]) {
-      const row = reference
-        .split("\n")
-        .find((line) =>
-          line.startsWith(`| \`${sign === "!" || sign === "?" ? `${sign}A` : `A ${sign} B`}\``),
-        );
+    const shape = (sign: string) =>
+      "!?".includes(sign) ? `${sign}A` : "∀∃".includes(sign) ? `${sign}x. A` : `A ${sign} B`;
+    for (const sign of ["⊗", "⅋", "⊸", "&", "⊕", "!", "?", "∀", "∃"]) {
+      const row = reference.split("\n").find((line) => line.startsWith(`| \`${shape(sign)}\``));
       const cells = row
         ?.replace(/\s*\|$/, "")
         .split(" | ")

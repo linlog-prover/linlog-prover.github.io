@@ -83,8 +83,8 @@ the page reads.
   (each cut's inference and formula in the mode's syntax) and give a cut `{formula, left,
   made}`, `left` found by `leftOf` with one formula of each premise's own (the cut formula
   and its dual). linlog's `start` on the session's sequent leaves its cut formulas out, so
-  the replayed cut makes the same occurrences. A caller without the view (Learn's worked
-  examples, which have no cut) passes none.
+  the replayed cut makes the same occurrences. Learn's worked proofs pass their stored
+  session's view too (below).
 
 - **At first order** a replay compares what a step made by occurrence (`madeOf` with the
   view's `forest`, each premise sorted): a replay that leaves a step out numbers the members
@@ -104,9 +104,11 @@ the page reads.
   filled it since), a ∀R/∃L step an eigenvariable; a mismatch is undone and its goal
   reported, as a propositional one is. A cut on an instance names its body's member: its
   block starts `depth` binders before it (`occurrenceOf`).
-- **A worked example's actions are read without its view** (`actionsOf(example.session)` in
-  `state.tsx`): a first-order example (a lesson's, later) needs its view's `opened` and
-  `forest` passed, or its witnesses replay open.
+- **A worked proof's actions are read with its session's view** (`prover.worked` in
+  `state.tsx` asks `view` of the stored session, as Watch reads the opened one's): without
+  the view's `cuts` a cut has no formula to replay, and without its `opened` and `forest` a
+  witness replays open. A lesson's own `actionsOf(session)` without the view serves only for
+  paths and the count of steps.
 - **The worker loads the module once more past the HTTP cache** when the first load fails:
   Chromium sometimes fails to write the 6.9 MB module to its cache
   (`net::ERR_CACHE_WRITE_FAILURE`), which aborts the streaming compile; about one load in
@@ -212,7 +214,7 @@ the page reads.
   problem to the strict reading and its print.
 - **A tab shows its sequent as typed, in signs** (`displayed` in `src/lib/words.ts`, in
   Euler Math): `A⊥` for `~A` and `A^`, which linlog's parser does not read, so the link
-  keeps `pretty`'s text, which it does.
+  keeps `pretty`'s text, which it does; `forall x.` and `exists x.` as `∀x.` and `∃x.`.
 
 - **Light dismiss** (`App.tsx`, one capture `pointerdown` on the document): a press outside
   what is open closes it as Escape does: the menu or pane (`ui.menu`, inside: `.menu`, the
@@ -341,7 +343,11 @@ the page reads.
   whole store in one deterministic batch and `interact --state … proof` on each session: a
   problem without that evidence, or whose verdict a later linlog changes, fails it. A
   session is written by `linlog interact` from the steps linlog's own hints give (`apply`
-  per step, then `save` and `proof`, exit 0), so that Watch plays it step by step.
+  per step, then `save` and `proof`, exit 0), so that Watch plays it step by step; a lesson's
+  problem proved with a cut keeps the cut in its session (`cut`, then the hints' steps). A
+  session with cuts holds its cut formulas in its sequent (`cuts`), so both checks compare
+  its conclusion, the sequent `start` (Vitest) or `seq print` (the flake) gives with the cut
+  formulas left out; every other session's sequent must equal the problem's exactly.
 - **A problem's level is measured on its checked proof** (the hints' proof), never the
   search's effort: score = steps + 2 × the bits of choice a count of atoms does not settle +
   ½ × the bits it does, summed over the goals where no invertible rule applies (bits:
@@ -353,7 +359,7 @@ the page reads.
   proofs side by side under Mix) takes its source's score plus one step. A new problem is
   measured the same way before it is filed.
 - **Categories** are the connectives' families the sequent uses (`multiplicatives`,
-  `additives`, `units`, `exponentials`), its logic (`classical`, `intuitionistic`, and
+  `additives`, `units`, `exponentials`, `quantifiers`), its logic (`classical`, `intuitionistic`, and
   `structural` for weakening or Mix) and `literature` for a classic with its source read in
   the work. Practice filters by groups (`GROUPS`): any chosen within a group, every group at
   once, and the levels.
@@ -375,7 +381,18 @@ the page reads.
   lesson asked of linlog, `ask`, the search on the root as Close runs it, or replayed with their
   net drawn, `net`), `unknown` (a sequent outside the store searched with a budget too small,
   so the visitor watches Unknown and the retry's doublings decide it; the test holds the text's
-  budget to the module's answers) and `net` (the finished worked proof offers its net). Every
+  budget to the module's answers), `net` (the finished worked proof offers its net),
+  `eliminate` (the finished worked proof's cut eliminated by the stage's own cluster, on the
+  derivation and on the net, Learn's panel saying how far each has come; its `cases`, a reason
+  per case by linlog's snake-case name, go to `ui.cases` while the lesson is open and stand in
+  the cluster under the step's line, `.case-why`, with Learn on; the test holds every case
+  linlog takes on both views to a reason), `counts` (problems proved with a cut, their cut
+  formula and inferences with it, the session's, and without, the `i<n>` ids of the drawing
+  `eliminate` reaches; their practice card asks for the cut and, once the visitor's tab
+  proves the problem, counts that proof's inferences beside both) and `refusal` (an
+  unfinished session `lessons/<id>.refusal.json` of an unprovable store problem of the
+  lesson, played by Redo with a reason per step, then the step `refused` on its one open goal,
+  whose refusal is the goal's note; the test holds that linlog refuses it). Every
   lesson problem is decided within a hundredth of the page's budget (`lessons.test.ts`): the
   store keeps no verdict a budget could change, and a lesson problem near the budget is
   replaced, not marked. Formulas in a lesson's or a rule's text
@@ -390,7 +407,8 @@ the page reads.
   the drawing where the stage has no room there, above the stage's controls on a phone. Never
   in Learn's panel (D22); the panel says only whether the prediction was right.
 - **Learn's hover explanations** (D47) are on only with Learn on: a formula's button gets
-  `data-tip`, its last connective's name and reading (`readingOf`; `READINGS` in
+  `data-tip`, its last connective's name and reading (`readingOf`, a leading `∀` or `∃` taken
+  as the formula's, since a quantifier reaches as far right as it can; `READINGS` in
   `words.ts`, which `lessons.test.ts` holds to the reference table's reading column), and a
   rule of the popover `data-rule`, whose tip in `App.tsx` draws the rule's schema
   (`Schema`) from the `rules` collection (`ruleNamed`): in an intuitionistic proof its
@@ -400,10 +418,13 @@ the page reads.
   conclusion as the Handbook's Table 1.4 writes them, linlog's two-sided names from its
   `ClassicalRule` table, the lesson), drawn by `Rules` into the reference's `<div
   data-rules>` through a portal, after the text is cloned (`Written`'s `ready`).
-  The two-sided rules of intuitionistic linear logic (`rules/14-ill-*.md` on, the Handbook's
-  Table 1.5 in linlog's names) carry `oneSided`, the one-sided rule they are, in place of
-  `twoSided`, and are drawn into `<div data-rules-two>`; `lessons.test.ts` holds each to a
-  one-sided rule that lists its name. A step's reason is placed beside the rule label, which
+  The two-sided rules of intuitionistic linear logic (`rules/14-ill-*.md` to `32`, and
+  `36-ill-cut.md` to `40`, the Handbook's Table 1.5 in linlog's names) carry `oneSided`, the
+  one-sided rule they are, in place of `twoSided`, and are drawn into `<div
+  data-rules-two>`; `lessons.test.ts` holds each to a one-sided rule that lists its name. The
+  cut and the quantifiers (`33-cut.md` to `35-exists.md`) are Table 1.4's `(cut)`, `(∀₁)` and
+  `(∃₁)`; both cuts are named `cut`, and `ruleNamed` takes the two-sided one in an
+  intuitionistic proof, as for every rule. A step's reason is placed beside the rule label, which
   linlog draws as a text, or as a group where the name has a subscript (`⊕₁`).
 - **Learn's practice is a lesson's**: the problems with a `lesson`, under the tutorial's
   lesson, easiest first, provable and unprovable mixed, never three alike in a row
