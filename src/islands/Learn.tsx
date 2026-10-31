@@ -1185,6 +1185,9 @@ function Refusal(props: {
                 Its last step, <span class="m">{props.refusal.refused.rule}</span>:{" "}
                 <Words text={props.refusal.refused.reason} />
               </p>
+              <p class="sub">
+                Will linlog accept it? Decide, and say why to yourself, before you try it.
+              </p>
               <Show
                 when={tried()}
                 fallback={
