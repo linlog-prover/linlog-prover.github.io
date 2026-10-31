@@ -166,6 +166,12 @@ export interface Settings {
   twoSided: boolean;
   /** The most steps an elimination to the end takes, `cut.steps`. */
   cutSteps: number;
+  /** How deep a witness the search builds at first order, `search.witness_depth`. */
+  witnessDepth: number;
+  /** The most instances of quantified formulas a first-order search holds, `search.instances`. */
+  instances: number;
+  /** The most terms a first-order session or sequent holds, `limits.terms`. */
+  terms: number;
 }
 
 /** The view of the settings as linlog reads it: a classical derivation two-sided when asked. */
@@ -220,6 +226,16 @@ const storedLook = (stored: unknown): NetLook => {
 export const DEFAULT_BUDGET = 2 ** 26;
 /** The most steps of an elimination to the end by default: linlog's, `cut::Options::DEFAULT_STEPS`. */
 export const DEFAULT_CUT_STEPS = 10_000;
+/** The witness depth by default: linlog's, `Options::DEFAULT_WITNESS_DEPTH`. */
+export const DEFAULT_WITNESS_DEPTH = 64;
+/** The instances by default: linlog's, `Options::DEFAULT_INSTANCES`. */
+export const DEFAULT_INSTANCES = 2 ** 16;
+/** The terms by default: linlog's tab, `tab::TERMS`, as many as its occurrences. */
+export const DEFAULT_TERMS = 1_000_000;
+
+/** A stored count, the default where it is none. */
+const count = (stored: unknown, fallback: number) =>
+  typeof stored === "number" && Number.isInteger(stored) && stored > 0 ? stored : fallback;
 const SETTINGS_KEY = "linlog-settings";
 
 const storage = (): Store | undefined => {
@@ -248,6 +264,9 @@ function loadSettings(): Settings {
         typeof stored.cutSteps === "number" && stored.cutSteps > 0
           ? stored.cutSteps
           : DEFAULT_CUT_STEPS,
+      witnessDepth: count(stored.witnessDepth, DEFAULT_WITNESS_DEPTH),
+      instances: count(stored.instances, DEFAULT_INSTANCES),
+      terms: count(stored.terms, DEFAULT_TERMS),
     };
   } catch {
     return {
@@ -261,6 +280,9 @@ function loadSettings(): Settings {
       invertible: false,
       twoSided: false,
       cutSteps: DEFAULT_CUT_STEPS,
+      witnessDepth: DEFAULT_WITNESS_DEPTH,
+      instances: DEFAULT_INSTANCES,
+      terms: DEFAULT_TERMS,
     };
   }
 }
@@ -386,15 +408,21 @@ export function createProver(say: (text: string) => void = () => undefined) {
 
   /**
    * The settings as linlog reads them: the tab's defaults with the budget, the engine forced,
-   * the invertible rules applied by themselves when they are on, and the derivation's sides.
+   * the invertible rules applied by themselves when they are on, the derivation's sides, and
+   * the first-order bounds where they are not the tab's.
    */
   const json = (budget = settings().budget, invertible = settings().invertible) => {
-    const engine = settings().engine;
+    const s = settings();
+    const search = {
+      ...(s.engine ? { engine: s.engine } : {}),
+      ...(s.witnessDepth !== DEFAULT_WITNESS_DEPTH ? { witness_depth: s.witnessDepth } : {}),
+      ...(s.instances !== DEFAULT_INSTANCES ? { instances: s.instances } : {}),
+    };
     return JSON.stringify({
-      limits: { work: budget },
-      ...(engine ? { search: { engine } } : {}),
+      limits: { work: budget, ...(s.terms !== DEFAULT_TERMS ? { terms: s.terms } : {}) },
+      ...(Object.keys(search).length ? { search } : {}),
       ...(invertible ? { interactive: { invertible } } : {}),
-      ...viewJson(settings()),
+      ...viewJson(s),
     });
   };
   /**
@@ -767,7 +795,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         const p = current();
         if (blankId && blankId !== p?.id) actions.remove(blankId);
         if (!watch || !p?.session) return;
-        const all = actionsOf(p.session, p.view?.cuts);
+        const all = actionsOf(p.session, p.view?.cuts, p.view);
         const result = await attempt(() => api.replay(p.session as SessionDoc, [], replaying()));
         if (!result.ok) return;
         update(p.id, (q) => {
@@ -884,6 +912,24 @@ export function createProver(say: (text: string) => void = () => undefined) {
       show(p.id, result.value, result.value.opened[0] ?? result.value.view.goals[0]?.goal);
       save();
       return true;
+    }),
+
+    /**
+     * Applies a quantifier step with its witness typed (or left open): what to say at the
+     * witness's form when it was not taken (the term, the eigenvariable condition), else null.
+     */
+    witnessed: guard(async (goal: number, step: StepForm): Promise<Said | null> => {
+      const p = current();
+      if (!p?.session) return null;
+      const result = await attempt(() => api.apply(p.session as SessionDoc, goal, step, json()));
+      if (!result.ok) {
+        const formulas = p.view?.goals.find((g) => g.goal === goal)?.formulas ?? [];
+        return result.failed ? refusal(result.failed, formulas, step.rule) : null;
+      }
+      update(p.id, (q) => (q.redo = []));
+      show(p.id, result.value, result.value.opened[0] ?? result.value.view.goals[0]?.goal);
+      save();
+      return null;
     }),
 
     /**
@@ -1040,6 +1086,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         p.view?.complete ? undefined : activeGoal(p),
         invertible,
         p.view?.cuts,
+        p.view,
       );
       const back = retracted && {
         ...retracted,
@@ -1050,7 +1097,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
         // Steps there are, but each one the page applied by itself.
         const automatic =
           invertible !== undefined &&
-          retract(p.session, activeGoal(p), undefined, p.view?.cuts) !== undefined;
+          retract(p.session, activeGoal(p), undefined, p.view?.cuts, p.view) !== undefined;
         update(p.id, (q) => {
           q.note = {
             path: [],
@@ -1080,7 +1127,7 @@ export function createProver(say: (text: string) => void = () => undefined) {
     backTo: guard(async (count: number) => {
       const p = current();
       if (!p?.session) return;
-      const all = actionsFor(p, actionsOf(p.session, p.view?.cuts));
+      const all = actionsFor(p, actionsOf(p.session, p.view?.cuts, p.view));
       if (count >= all.length) return;
       const result = await attempt(() =>
         api.replay(p.session as SessionDoc, all.slice(0, count), replaying()),

@@ -121,6 +121,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   /** The cut chooser's formula as typed, and what linlog said of it. */
   const [cutText, setCutText] = createSignal("");
   const [cutSaid, setCutSaid] = createSignal<Said | null>(null);
+  /** The witness chooser's term as typed, and what linlog said of it. */
+  const [witnessText, setWitnessText] = createSignal("");
+  const [witnessSaid, setWitnessSaid] = createSignal<Said | null>(null);
   const [camera, setCamera] = createSignal<Camera>({ x: 0, y: 0, k: 1 });
 
   /** Whether the visitor zoomed since the drawing was last fitted: then their zoom stands. */
@@ -656,7 +659,8 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
     void ui.offered;
     void ui.cutting?.left;
     void cutSaid();
-    const under = ui.split ?? ui.cutting;
+    void witnessSaid();
+    const under = ui.split ?? ui.cutting ?? ui.witnessing;
     const selected = ui.selected;
     const goal = under?.goal ?? selected?.goal;
     if (!popover || goal === undefined) return;
@@ -854,6 +858,17 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
   async function choose(rule: Offered) {
     const spot = ui.selected;
     if (!spot) return;
+    if (rule.witness) {
+      setWitnessText("");
+      setWitnessSaid(null);
+      setUi({
+        witnessing: { goal: spot.goal, position: spot.position, rule: rule.rule },
+        selected: null,
+        offered: null,
+      });
+      queueMicrotask(() => popover?.querySelector<HTMLInputElement>("input")?.focus());
+      return;
+    }
     if (rule.split) {
       setUi({ split: { ...spot, rule: rule.rule, left: [], passes: null }, offered: null });
       checkSplit();
@@ -877,6 +892,30 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       left: split.left,
     });
     announce(applied === true, split.rule);
+  }
+
+  /**
+   * Takes the quantifier step the witness chooser holds, with the term typed or, `open`, its
+   * witness left for an axiom or the search to fill; what linlog refused stays said in it.
+   */
+  async function applyWitness(open: boolean) {
+    const w = ui.witnessing;
+    const text = witnessText().trim();
+    if (!w || (!open && text === "")) return;
+    const said = await props.prover.witnessed(w.goal, {
+      position: w.position,
+      rule: w.rule,
+      ...(open ? {} : { witness: text }),
+    });
+    if (said === undefined) return;
+    if (said) {
+      setWitnessSaid(said);
+      setUi("live", `${said.keyword}. ${said.sentence}`);
+      return;
+    }
+    setUi("witnessing", null);
+    setWitnessText("");
+    announce(true, w.rule);
   }
 
   /** Opens the cut chooser at a goal. */
@@ -940,6 +979,13 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
       if (event.key === "Escape" && ui.cutting) {
         setUi("cutting", null);
         event.preventDefault();
+      } else if (event.key === "Escape" && ui.witnessing) {
+        const w = ui.witnessing;
+        setUi("witnessing", null);
+        stage
+          .querySelector<HTMLElement>(`.fb[data-goal="${w.goal}"][data-position="${w.position}"]`)
+          ?.focus();
+        event.preventDefault();
       } else if (event.key === "Escape" && (ui.selected || ui.split)) {
         const spot = ui.split ?? ui.selected;
         setUi({ selected: null, offered: null, split: null });
@@ -950,7 +996,7 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             )
             ?.focus();
         event.preventDefault();
-      } else if (ui.selected && !ui.split && /^[1-9]$/.test(event.key)) {
+      } else if (ui.selected && !ui.split && !ui.witnessing && /^[1-9]$/.test(event.key)) {
         event.preventDefault();
         if (!ui.offered) {
           typedEarly = Number(event.key);
@@ -1479,7 +1525,9 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
                           onClick={() => void choose(rule)}
                         >
                           <span class="rn">{rule.rule}</span>
-                          <span class="rd">{rule.split ? "split" : ""}</span>
+                          <span class="rd">
+                            {rule.split ? "split" : rule.witness ? "witness" : ""}
+                          </span>
                           <kbd>{i() + 1}</kbd>
                         </button>
                       </li>
@@ -1490,6 +1538,80 @@ export function Stage(props: { prover: Prover; ui: Ui }) {
             )}
           </Show>
         </div>
+      </Show>
+
+      <Show when={ui.witnessing}>
+        {(w) => (
+          <div class="cluster pop split cut" ref={popover} role="dialog" aria-label="Witness">
+            <p class="pop-h">
+              <span class="kw-label">
+                Witness for <span class="m">{w().rule}</span>
+              </span>
+              <span class="m">
+                {(() => {
+                  const formula = formulasOf(w().goal)[w().position];
+                  return formula ? shown(formula) : "";
+                })()}
+              </span>
+            </p>
+            <label class="cut-field">
+              <span class="sub">
+                Witness: a term of the sequent's constants and function symbols, and of the
+                eigenvariables made below this goal, such as <span class="m">f(a)</span>
+              </span>
+              <input
+                class="field m"
+                type="text"
+                spellcheck={false}
+                autocomplete="off"
+                aria-invalid={witnessSaid() ? "true" : undefined}
+                value={witnessText()}
+                onInput={(event) => {
+                  setWitnessText(event.currentTarget.value);
+                  setWitnessSaid(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void applyWitness(false);
+                  }
+                }}
+              />
+            </label>
+            <Show when={witnessSaid()}>
+              {(said) => (
+                <p class="sub warn" role="alert">
+                  <span class="kw">{said().keyword}</span> {said().sentence}
+                </p>
+              )}
+            </Show>
+            <p class="sub">
+              Or leave it open: the goal holds <span class="m">$1</span> until an axiom or the
+              search fills it.
+            </p>
+            <p class="row">
+              <button
+                type="button"
+                class="btn btn-primary"
+                disabled={witnessText().trim() === "" || props.prover.busy()}
+                onClick={() => void applyWitness(false)}
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                class="btn"
+                disabled={props.prover.busy()}
+                onClick={() => void applyWitness(true)}
+              >
+                Leave open
+              </button>
+              <button type="button" class="btn" onClick={() => setUi("witnessing", null)}>
+                Cancel
+              </button>
+            </p>
+          </div>
+        )}
       </Show>
 
       <Show when={ui.cutting}>

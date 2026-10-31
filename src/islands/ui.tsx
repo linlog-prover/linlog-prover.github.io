@@ -68,6 +68,8 @@ export function createUi() {
     split: Split | null;
     /** The cut chooser open at a goal: the goal's positions going to the premise proving the cut formula. */
     cutting: { goal: number; left: number[] } | null;
+    /** The witness chooser open at a formula, for ∃R or ∀L: a term typed, or the witness left open. */
+    witnessing: { goal: number; position: number; rule: string } | null;
     menu: Menu;
     tab: "tree" | "net";
     ladder: Ladder | null;
@@ -89,6 +91,7 @@ export function createUi() {
     offered: null,
     split: null,
     cutting: null,
+    witnessing: null,
     menu: null,
     tab: "tree",
     ladder: null,

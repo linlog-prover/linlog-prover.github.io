@@ -48,6 +48,9 @@ import type { Theme } from "../lib/theme";
 import {
   DEFAULT_BUDGET,
   DEFAULT_CUT_STEPS,
+  DEFAULT_INSTANCES,
+  DEFAULT_TERMS,
+  DEFAULT_WITNESS_DEPTH,
   exportFont,
   LINLOG_LOOK,
   lookJson,
@@ -745,6 +748,54 @@ function SettingsPanel(props: {
           />
         </label>
         <p class="sub">The most steps of cut elimination "To the end" takes.</p>
+        <p class="kw-label">First-order search</p>
+        <label class="lbl col">
+          <span>Witness depth</span>
+          <input
+            class="num-in"
+            type="number"
+            min="1"
+            step="1"
+            value={props.prover.settings().witnessDepth}
+            onChange={(event) => {
+              const value = Math.floor(Number(event.currentTarget.value));
+              props.prover.setSettings({
+                witnessDepth: value > 0 ? value : DEFAULT_WITNESS_DEPTH,
+              });
+            }}
+          />
+        </label>
+        <p class="sub">How deeply a search nests the terms it tries for ∃R and ∀L.</p>
+        <label class="lbl col">
+          <span>Instances</span>
+          <input
+            class="num-in"
+            type="number"
+            min="1"
+            step="1"
+            value={props.prover.settings().instances}
+            onChange={(event) => {
+              const value = Math.floor(Number(event.currentTarget.value));
+              props.prover.setSettings({ instances: value > 0 ? value : DEFAULT_INSTANCES });
+            }}
+          />
+        </label>
+        <p class="sub">The most instances of quantified formulas a search holds at once.</p>
+        <label class="lbl col">
+          <span>Terms</span>
+          <input
+            class="num-in"
+            type="number"
+            min="1"
+            step="1"
+            value={props.prover.settings().terms}
+            onChange={(event) => {
+              const value = Math.floor(Number(event.currentTarget.value));
+              props.prover.setSettings({ terms: value > 0 ? value : DEFAULT_TERMS });
+            }}
+          />
+        </label>
+        <p class="sub">The most terms a proof's witnesses and eigenvariables may hold.</p>
         <label class="sw" data-tip={INVERTIBLE_TIP}>
           <input
             type="checkbox"
@@ -1002,7 +1053,7 @@ function StepsPanel(props: { prover: Prover }) {
   const proof = () => props.prover.current();
   const list = () => {
     const session = proof()?.session;
-    return session ? actions(session, proof()?.view?.cuts) : [];
+    return session ? actions(session, proof()?.view?.cuts, proof()?.view) : [];
   };
   const goalNumber = (path: readonly number[]) => {
     const session = proof()?.session;

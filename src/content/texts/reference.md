@@ -17,8 +17,19 @@ formula is on the right of `⊢` and `A⊥` is the dual of `A`; two-sided
 | `A⊥` | `~A`, `A^` | negation | the dual |
 | `1`, `⊥` | `1`, `bot` | the units of `⊗` and `⅋` | |
 | `⊤`, `0` | `top`, `0` | the units of `&` and `⊕` | |
+| `∀x. A` | `forall x. A` | for all | `A` for every `x`; the dual of exists |
+| `∃x. A` | `exists x. A` | exists | `A` for some `x`, a witness chosen |
 
-`⊢` is typed `|-`.
+`⊢` is typed `|-`. With quantifiers, atoms take arguments: `p(x, f(a))` is the
+predicate `p` of the variable `x` and the term `f(a)`. A name a quantifier binds is
+its variable; any other name in an argument is a constant or, with arguments, a function
+symbol; a name has one arity throughout. A quantifier reaches as far right as it can, so
+`forall x. p(x) * q(x)` is `∀x. (p(x) ⊗ q(x))`, and `forall x y. A` binds both.
+Proving, `∀R` and `∃L` make an eigenvariable, a fresh constant written `a`, `b`, …;
+`∃R` and `∀L` take a witness, a term of the sequent's constants and function symbols
+and of the eigenvariables made below the goal, or leave it open as `$1` for an axiom or
+the search to fill. An open witness never takes an eigenvariable made after it: the
+eigenvariable condition.
 
 ## The rules
 

@@ -30,6 +30,14 @@ sent to a server.
   the sequent.
 - The cut rule: the cut formula typed in the tab's syntax, the goal's formulas chosen for the
   premise that proves it, both premises opened as goals.
+- First-order linear logic: quantifiers and predicates over terms in the sequent
+  (`forall x. p(x) |- exists y. p(f(y))`); ∀R and ∃L make an eigenvariable, ∃R and ∀L ask
+  for a witness, typed as a term or left open as `$1` for an axiom or the search to fill;
+  the eigenvariable condition, a witness that does not read and a cut formula outside the
+  sequent's symbols refused in words; the derivation drawn with every instance; a cut on a
+  formula of the sequent's symbols and of the eigenvariables below the goal; an undo on one
+  branch replaying the others with their eigenvariables lettered anew and each witness
+  checked; and the first-order bounds (witness depth, instances, terms) in Settings.
 - Cut elimination on a finished proof with cuts, on its derivation and on its net: the next
   step of the strategy or a cut picked on the drawing, each step named by its case with its
   cut marked on the drawing it was taken on, every step undoable, and "To the end" within

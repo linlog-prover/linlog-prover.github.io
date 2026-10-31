@@ -86,6 +86,17 @@ the page reads.
   the replayed cut makes the same occurrences. A caller without the view (Learn's worked
   examples, which have no cut) passes none.
 
+- **At first order** a replay compares what a step made by occurrence (`madeOf` with the
+  view's `forest`, each premise sorted): a replay that leaves a step out numbers the members
+  past the forest anew. Each quantifier step's term (the view's `opened`, kept on the action
+  as `term`) is compared beside it: a ∃R/∀L step must take the same witness, or be open
+  where it was (`null`, whatever an axiom filled it with since), a ∀R/∃L step an
+  eigenvariable; a mismatch is undone and its goal reported, as a propositional one is.
+  Eigenvariables are lettered in the order their steps are taken, so a replay maps each
+  recorded letter to the one its step took again (`letters` in `play`) and reads every
+  witness and cut formula through the map. A cut on an instance names its body's member:
+  its block starts `depth` binders before it (`occurrenceOf`).
+
 ## The drawing and the stage (`src/islands/Stage.tsx`)
 
 - linlog's SVG goes in by `innerHTML`; it stays a picture (`role="img"`, its `<desc>`),
@@ -134,7 +145,10 @@ the page reads.
   it, and the stage refits when it changes (a look can add rows).
 - The split chooser sits under the goal's row, never beside a formula of it (the
   formulas are what it is clicked on); on a stage under 640 px both popovers are a sheet
-  at its bottom.
+  at its bottom. The witness chooser (`ui.witnessing`, a rule offered with `witness`) is
+  the cut chooser's twin: the term typed in the formulas' font, Apply, Leave open (`$1`),
+  and linlog's refusal said in it (`witnessed` in the state returns it); it takes the
+  selection's place, so digits typed in it pick no rule.
 - **Zoom is the stage's on the stage and the browser's everywhere else.** The stage keeps
   `touch-action: none`, so the browser makes no gesture there and the stage's pointers do:
   one on the field pans, a second finger (wherever it lands, a formula's button too) makes
@@ -195,6 +209,10 @@ the page reads.
   button closes and acts. A toggle must carry `aria-expanded`, or its own press would close
   its menu before its click opens it again. On a phone some sheets (About) cover the whole
   stage, so outside is the bands; `tests/dismiss.spec.ts` presses there then.
+- **The first-order bounds** are Settings' "Witness depth", "Instances" and "Terms"
+  (`search.witness_depth`, `search.instances`, `limits.terms`), linlog's tab defaults (64,
+  2¹⁶, a million) and sent only where changed, so every other call's settings read as
+  before; a search they stop says so (`verdict`'s `witness_depth`, `instances`).
 - **The invertible rules' switch** is Settings' "Apply invertible rules by themselves",
   after Budget (the proving behaviours), off by default, stored with the other settings;
   `json()` adds `interactive.invertible` while it is on, so `start` and `apply` apply them.

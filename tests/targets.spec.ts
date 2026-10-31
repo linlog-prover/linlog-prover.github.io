@@ -208,6 +208,18 @@ test.describe("at a phone's width", () => {
     expect(await walk(page, 44)).toEqual([]);
   });
 
+  test("the witness chooser and its refusal are 44 by 44 pixels at least", async ({ page }) => {
+    await start(page, "|- exists x. p(x), ~p(c)");
+    await page.getByRole("button", { name: /^∃x\. p\(x\), formula/ }).click();
+    await page.getByRole("dialog", { name: "Rules" }).getByRole("button", { name: /^∃/ }).click();
+    const chooser = page.getByRole("dialog", { name: "Witness" });
+    await chooser.getByRole("textbox").fill("g(c)");
+    expect(await tooSmall(page, 44)).toEqual([]);
+    await chooser.getByRole("button", { name: "Apply" }).click();
+    await expect(chooser.getByRole("alert")).toBeVisible();
+    expect(await tooSmall(page, 44)).toEqual([]);
+  });
+
   test("the cut chooser and the elimination's controls are 44 by 44 pixels at least", async ({
     page,
   }) => {

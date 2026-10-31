@@ -86,6 +86,15 @@ export interface SessionDoc {
   readonly inferences: readonly Inference[];
   /** The goals expanded, in the order they were: by a step or by a search's graft. */
   readonly history: readonly number[];
+  /**
+   * A sequent with quantifiers: the members past the forest, each `[occurrence, frame]`
+   * (a goal's formula numbered past the forest's length is the entry at its offset), and
+   * the frames, each `[parent, term]`.
+   */
+  readonly instances?: {
+    readonly members: readonly (readonly [number, number])[];
+    readonly frames: readonly (readonly [number | null, number])[];
+  };
 }
 
 /** A formula of an open goal, as the page shows it. */
@@ -122,19 +131,33 @@ export interface View {
   readonly net: Failure | null;
   /** The session's cuts: each one's inference and its formula as typed, which a replay cuts with. */
   readonly cuts: readonly { readonly inference: number; readonly formula: string }[];
+  /**
+   * A session with quantifiers: each closed quantifier step's inference and the term it took
+   * (a ∀R or ∃L step's eigenvariable by its letter, a ∃R or ∀L step's witness as given, null
+   * for a witness left open, whatever filled it since), which a replay takes the step with.
+   */
+  readonly opened?: readonly { readonly inference: number; readonly term: string | null }[];
+  /** A session with quantifiers: the forest's length, below which a member is an occurrence. */
+  readonly forest?: number;
 }
 
-/** A rule a formula takes, and whether it splits the goal's context. */
+/** A rule a formula takes, whether it splits the goal's context, and whether it takes a witness. */
 export interface Offered {
   readonly rule: string;
   readonly split: boolean;
+  /** ∃R and ∀L (∃ one-sided): a witness, given as a term or left open. */
+  readonly witness?: boolean;
 }
 
-/** A step as `apply` takes it: the formula's position, the rule, and for a split the positions going left. */
+/**
+ * A step as `apply` takes it: the formula's position, the rule, for a split the positions going
+ * left, and for ∃R or ∀L the witness as text (left out: open, written `$1`, `$2`, …).
+ */
 export interface StepForm {
   readonly position: number;
   readonly rule: string;
   readonly left?: readonly number[];
+  readonly witness?: string;
 }
 
 /** A refutation's facts, as the library writes them. */

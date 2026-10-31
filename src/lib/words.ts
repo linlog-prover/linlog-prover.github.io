@@ -80,6 +80,28 @@ export function refusal(failed: Failure, formulas: readonly GoalFormula[], rule:
         keyword: `${rule} refused: another connective`,
         sentence: `${rule} does not act on ${at}.`,
       };
+    case "eigenvariable": {
+      const name = String(details["name"] ?? "");
+      return {
+        keyword: `${rule} refused: the eigenvariable condition`,
+        sentence: `The eigenvariable ${name} cannot stand here: either no ∀R or ∃L step below this goal made it, or it was made after the open witness it would fill, inside that witness's own step.`,
+      };
+    }
+    case "witness":
+      return {
+        keyword: `${rule} refused: no such term`,
+        sentence: `The witness must be a term of the sequent's constants and function symbols and of the eigenvariables made below this goal: ${String(details["reason"] ?? "")}.`,
+      };
+    case "no_witness":
+      return {
+        keyword: `${rule} refused: no witness here`,
+        sentence: `${rule} takes no witness; only ∃R and ∀L do.`,
+      };
+    case "cut_symbol":
+      return {
+        keyword: `${rule} refused: ${String(details["name"] ?? "")} is not in the sequent`,
+        sentence: `With quantifiers, a cut formula is written with the sequent's own predicates and function symbols, at their arities, and the eigenvariables made below this goal.`,
+      };
     default:
       return { keyword: `${rule} refused`, sentence: failed.message };
   }
@@ -242,13 +264,15 @@ export function verdict(outcome: Outcome, checked: boolean | null): Said & { ton
     return { ...(reasons[r.kind] ?? (reasons["exhausted"] as Said)), tone: "bad" };
   }
   const reason = outcome["reason"] as
-    | { kind?: string; limit?: number; copies?: number; depth?: number }
+    | { kind?: string; limit?: number; copies?: number; depth?: number; instances?: number }
     | undefined;
   const why: Record<string, string> = {
     work_limit: `it used its whole budget of ${String(reason?.limit)} units of work`,
     copy_bound: `every level up to ${String(reason?.copies)} copies of the ! formulas hit the bound`,
     recursion_limit: `it reached the depth of ${String(reason?.depth)} a tab allows`,
     memory_limit: "it reached the memory a tab allows",
+    witness_depth: `a witness would have nested deeper than ${String(reason?.depth)}, Settings' witness depth`,
+    instances: `it would have held more than ${String(reason?.instances)} instances of quantified formulas, Settings' bound`,
     stopped: "it was stopped",
   };
   return {
@@ -267,6 +291,7 @@ export function ruleKind(rule: string, invertible: boolean): string {
   if (["1", "1R"].includes(rule)) return "the unit 1";
   if (invertible) return "an invertible rule";
   if (["⊗", "mix", "⊗R", "⊸L"].includes(rule)) return "a split of the context";
+  if (["∃", "∃R", "∀L"].includes(rule)) return "a choice of witness";
   if (rule.startsWith("⊕") || rule.startsWith("&L")) return "a choice of one side";
   if (rule.startsWith("?") || rule.startsWith("!")) return "an exponential rule";
   return `the rule ${rule}`;
