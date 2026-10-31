@@ -7,8 +7,9 @@ step, or let linlog's search close a goal. linlog's library is compiled to
 WebAssembly and runs in the page; nothing you type is sent anywhere, and your
 proofs stay in this browser's storage.
 
-The library's documentation is at [/linlog/](/linlog/), its source and the
-command line prover on [GitHub](https://github.com/linlog-prover/linlog). For AI
+linlog's [manual](/linlog/manual/) describes the command line prover and its
+benchmarks, the library's documentation is at [/linlog/](/linlog/), and their
+source is on [GitHub](https://github.com/linlog-prover/linlog). For AI
 models, [llms.txt](/llms.txt) says what this page is and where linlog's guide for
 them is.
 Questions, mistakes and wishes are welcome as

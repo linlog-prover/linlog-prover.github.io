@@ -507,8 +507,8 @@ the page reads.
   the plugin alone never sees Astro's pages. The build fills `FILES` (every file of the
   site, the page as `/`) and `VERSION` (a hash of their contents) into `/sw.js`.
 - **Its scope is the origin, its reach is the site's own files**: a worker at `/sw.js`
-  cannot be scoped narrower than `/`, where the page is, and `/linlog/` (linlog's rustdoc,
-  another Pages site on the origin) lies under it. So the fetch handler answers only the
+  cannot be scoped narrower than `/`, where the page is, and `/linlog/` (linlog's rustdoc and,
+  under `/linlog/manual/`, its manual, another Pages site on the origin) lies under it. So the fetch handler answers only the
   paths in `FILES` and navigations to `/`, and returns without `respondWith` for anything
   else; under `/linlog` it returns first, and the Static Routing API (`addRoutes`, where
   the browser has it) sends those requests to the network before the worker wakes.

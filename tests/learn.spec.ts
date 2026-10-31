@@ -94,6 +94,11 @@ test("About says what the page is, and every licence it lists is served", async 
     "GitHub, which serves this site, logs every visitor's IP address",
   );
   await expect(about.getByRole("img", { name: "linlog" })).toBeVisible();
+  // linlog's manual, which linlog's own Pages site serves beside its API.
+  await expect(about.getByRole("link", { name: "manual" })).toHaveAttribute(
+    "href",
+    "/linlog/manual/",
+  );
   await expect(about).toContainText(
     "The name linlog and its mark identify this project, and may not be used to suggest its endorsement of anything else.",
   );
