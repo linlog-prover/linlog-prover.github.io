@@ -359,6 +359,11 @@ function LessonView(props: {
 
   const onTab = () => props.prover.current()?.id === tab();
   const finished = () => onTab() && props.prover.current()?.view?.complete === true;
+  /** The worked proof's cut, when the lesson counts it: the faded proof asks for it. */
+  const cut = () => props.lesson.counts.find((c) => c.problem === props.lesson.worked);
+  /** The inferences of the proof on the lesson's tab. */
+  const inferences = () =>
+    props.prover.current()?.session?.inferences.filter((i) => i.rule !== undefined).length ?? 0;
 
   async function start(at: number, watch: boolean) {
     if (!worked) return;
@@ -607,9 +612,20 @@ function LessonView(props: {
           fallback={
             <>
               <p class="sub">
-                {props.lesson.faded === 0
-                  ? "The same proof, from its sequent: every step is yours."
-                  : `The same proof with its first ${props.lesson.faded === 1 ? "step" : `${props.lesson.faded} steps`} played: the rest is yours.`}
+                <Show
+                  when={cut()}
+                  fallback={
+                    props.lesson.faded === 0
+                      ? "The same proof, from its sequent: every step is yours."
+                      : `The same proof with its first ${props.lesson.faded === 1 ? "step" : `${props.lesson.faded} steps`} played: the rest is yours.`
+                  }
+                >
+                  {(c) => (
+                    <Words
+                      text={`The same proof, from its sequent, with its cut on \`${c().formula}\` (the stage's Cut): every step is yours.`}
+                    />
+                  )}
+                </Show>
               </p>
               <button type="button" class="btn outline" onClick={() => void fade()}>
                 Finish the proof yourself
@@ -626,7 +642,14 @@ function LessonView(props: {
             }
           >
             <p class="row" role="status">
-              <span class="kw ok">Proved</span> Now the practice below.
+              <span class="kw ok">Proved</span>
+              <Show when={cut()} fallback=" Now the practice below.">
+                {(c) => (
+                  <Words
+                    text={` Your proof has ${inferences()} inferences; with the cut on \`${c().formula}\`, ${c().with}; cut-free, ${c().without}. Now the practice below.`}
+                  />
+                )}
+              </Show>
             </p>
           </Show>
         </Show>

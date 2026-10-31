@@ -281,6 +281,10 @@ test("a lesson plays a cut on its lemma, and eliminates it step by step on the d
     "On the derivation: cut-free after 5 steps. On the net: cut-free after 5 steps.",
   );
   await expect(page.locator(".drawing svg desc")).toContainText("proof net");
+  // The faded proof asks for the same cut.
+  await expect(frame.getByRole("region", { name: "Your turn" })).toContainText(
+    "The same proof, from its sequent, with its cut on !C",
+  );
 });
 
 test("a practice problem proved with a cut counts its inferences beside those with the cut and without", async ({
