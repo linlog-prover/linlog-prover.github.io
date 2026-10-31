@@ -29,6 +29,9 @@ describe("the tab's sequent", () => {
     expect(displayed("|- ~A | A, bot, top")).toBe("⊢ A⊥ ⅋ A, ⊥, ⊤");
     expect(displayed("~(A * ~B) |- ~~C, ~!D")).toBe("(A ⊗ B⊥)⊥ ⊢ C⊥⊥, (!D)⊥");
     expect(displayed("A, A -o B |- B")).toBe("A, A ⊸ B ⊢ B");
+    expect(displayed("exists y. forall x. r(x, y) |- forall x. exists y. r(x, y)")).toBe(
+      "∃y. ∀x. r(x, y) ⊢ ∀x. ∃y. r(x, y)",
+    );
   });
 });
 
@@ -118,5 +121,11 @@ describe("a formula's reading, for its hover with Learn on", () => {
     expect(readingOf("⊤")).toBe("⊤, top: the unit of &");
     expect(readingOf("B⊥")).toBe("The dual of the atom B");
     expect(readingOf("A")).toBe("The atom A");
+    expect(readingOf("∀x. (p(x) ⊸ q(x))")).toBe("∀, for all: A for every x; the dual of exists");
+    expect(readingOf("(∀x. p(x)) ⊸ ∀x. q(x)")).toBe(
+      "⊸, linear implication: consumes A, gives B; A⊥ ⅋ B",
+    );
+    expect(readingOf("∃y. (∀x. r(x, y))")).toBe("∃, exists: A for some x, a witness chosen");
+    expect(readingOf("r(a, b)")).toBe("The atom r(a, b)");
   });
 });

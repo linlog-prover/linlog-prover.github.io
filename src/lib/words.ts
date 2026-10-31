@@ -341,7 +341,8 @@ export function pretty(input: string): string {
 
 /**
  * A typed sequent as the tab shows it, in the formulas' font: `pretty`'s signs, the
- * units and `par` as theirs, and a negation, `~A` or `A^`, as `A⊥`, the dual
+ * units, `par` and the quantifiers as theirs (`forall x.` as `∀x.`), and a negation,
+ * `~A` or `A^`, as `A⊥`, the dual
  * of a group or of an exponential formula parenthesised (`(A ⊗ B)⊥`,
  * `(!A)⊥`). For the eye only: linlog's parser does not read `A⊥`.
  */
@@ -350,6 +351,8 @@ export function displayed(input: string): string {
     .replace(/\bpar\b/g, "⅋")
     .replace(/\bbot\b/g, "⊥")
     .replace(/\btop\b/g, "⊤")
+    .replace(/\bforall\s+/g, "∀")
+    .replace(/\bexists\s+/g, "∃")
     .replace(/\^/g, "⊥");
   // Each `~`, the last first, so that its operand is already shown.
   for (let at = text.lastIndexOf("~"); at >= 0; at = text.lastIndexOf("~", at - 1)) {
@@ -399,10 +402,15 @@ export const READINGS: Readonly<
   "⊥": { name: "bottom", reading: "the unit of ⅋" },
   "⊤": { name: "top", reading: "the unit of &" },
   "0": { name: "zero", reading: "the unit of ⊕" },
+  "∀": { name: "for all", reading: "A for every x; the dual of exists" },
+  "∃": { name: "exists", reading: "A for some x, a witness chosen" },
 };
 
 /** The connective a formula as the page shows it is built by last: a sign of `READINGS`, or null for a literal. */
 export function connective(text: string): string | null {
+  // A quantifier reaches as far right as it can: a formula it starts is the quantifier's.
+  const lead = text.trim()[0] ?? "";
+  if ("∀∃".includes(lead)) return lead;
   let depth = 0;
   for (const c of text) {
     if (c === "(") depth++;
