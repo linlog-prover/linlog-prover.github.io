@@ -1,0 +1,44 @@
+<!-- linlog © Fabian Lukas Grubmüller 2026
+     Licensed under the EUPL -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>linlog has moved to sequentium.github.io</title>
+    <!-- GitHub Pages serves this page for every path that holds no file, at
+         the path itself, so the script reads the old address and sends it to
+         its new place, query and fragment kept:
+           /linlog/…       linlog's rustdoc and manual, now the Pages site of
+                           the repository sequentium/sequentium
+           /rocq-linlog/…  the Rocq library's documentation, which moved with
+                           its repository's name
+           anything else   the web page's own paths, now the organisation
+                           site sequentium.github.io -->
+    <script>
+      const SITE = "https://sequentium.github.io";
+      const MOVED = [
+        ["/linlog", "/sequentium"],
+        ["/rocq-linlog", "/rocq-linlog"],
+      ];
+      function moved(path) {
+        for (const [old, now] of MOVED) {
+          if (path === old || path.startsWith(old + "/")) return SITE + now + path.slice(old.length);
+        }
+        return SITE + path;
+      }
+      location.replace(moved(location.pathname) + location.search + location.hash);
+    </script>
+  </head>
+  <body>
+    <h1>linlog has moved</h1>
+    <p>Everything that was here is now under sequentium.github.io:</p>
+    <ul>
+      <li><a href="https://sequentium.github.io/">the web page</a>, which proves step by step in the browser;</li>
+      <li><a href="https://sequentium.github.io/sequentium/manual/">the manual</a> of the command;</li>
+      <li><a href="https://sequentium.github.io/sequentium/linlog/">the library's API</a>;</li>
+      <li><a href="https://sequentium.github.io/rocq-linlog/">the Rocq library's documentation</a>;</li>
+      <li><a href="https://github.com/sequentium/sequentium">the source</a>, on GitHub.</li>
+    </ul>
+  </body>
+</html>
