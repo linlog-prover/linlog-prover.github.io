@@ -11,15 +11,16 @@
          its new place, query and fragment kept:
            /linlog/…       linlog's rustdoc and manual, now the Pages site of
                            the repository deduxit/deduxit
-           /rocq-linlog/…  the Rocq library's documentation, which moved with
-                           its repository's name
+           /rocq-linlog/…  the Rocq library's documentation, now the Pages
+                           site of deduxit/rocq-deduxit, the library renamed
+                           rocq-deduxit
            anything else   the web page's own paths, now the organisation
                            site deduxit.github.io -->
     <script>
       const SITE = "https://deduxit.github.io";
       const MOVED = [
         ["/linlog", "/deduxit"],
-        ["/rocq-linlog", "/rocq-linlog"],
+        ["/rocq-linlog", "/rocq-deduxit"],
       ];
       function moved(path) {
         for (const [old, now] of MOVED) {
@@ -37,7 +38,7 @@
       <li><a href="https://deduxit.github.io/">the web page</a>, which proves step by step in the browser;</li>
       <li><a href="https://deduxit.github.io/deduxit/manual/">the manual</a> of the command;</li>
       <li><a href="https://deduxit.github.io/deduxit/linlog/">the library's API</a>;</li>
-      <li><a href="https://deduxit.github.io/rocq-linlog/">the Rocq library's documentation</a>;</li>
+      <li><a href="https://deduxit.github.io/rocq-deduxit/">the Rocq library's documentation</a>;</li>
       <li><a href="https://github.com/deduxit/deduxit">the source</a>, on GitHub.</li>
     </ul>
   </body>
