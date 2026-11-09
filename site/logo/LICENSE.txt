@@ -11,7 +11,7 @@ Commons Attribution 4.0 International licence (CC BY 4.0):
 https://creativecommons.org/licenses/by/4.0/
 
 The name "linlog" and its mark identify the linlog project
-(https://github.com/sequentium/sequentium). They may not be used in a way
+(https://github.com/deduxit/deduxit). They may not be used in a way
 that suggests that the project or its author endorses anything else.
 
 The word is set in Figtree Bold and outlined, so no font file goes with

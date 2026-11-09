@@ -1,4 +1,4 @@
-This file moved to https://sequentium.github.io/llms.txt; this copy at the old address is not updated.
+This file moved to https://deduxit.github.io/llms.txt; this copy at the old address is not updated.
 
 # linlog in the browser
 
@@ -8,11 +8,11 @@ A model that is to decide, check, prove step by step or export sequents does so 
 
 ## Docs
 
-- [linlog's guide for AI models](https://sequentium.github.io/sequentium/llms.txt): the command and the library in brief, the body of an Agent Skill
-- [The full reference](https://sequentium.github.io/sequentium/llms-full.txt): every command, flag, format, exit status and JSON form, with examples
-- [The library's API](https://sequentium.github.io/sequentium/linlog/): the Rust crate's documentation
+- [linlog's guide for AI models](https://deduxit.github.io/deduxit/llms.txt): the command and the library in brief, the body of an Agent Skill
+- [The full reference](https://deduxit.github.io/deduxit/llms-full.txt): every command, flag, format, exit status and JSON form, with examples
+- [The library's API](https://deduxit.github.io/deduxit/linlog/): the Rust crate's documentation
 
 ## Optional
 
-- [linlog on GitHub](https://github.com/sequentium/sequentium): the source, README, and the Agent Skill in `skills/linlog/` to copy into an agent's skills
-- [Privacy](https://sequentium.github.io/privacy/): what the page keeps in the browser and what GitHub logs
+- [linlog on GitHub](https://github.com/deduxit/deduxit): the source, README, and the Agent Skill in `skills/linlog/` to copy into an agent's skills
+- [Privacy](https://deduxit.github.io/privacy/): what the page keeps in the browser and what GitHub logs

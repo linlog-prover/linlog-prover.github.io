@@ -1,4 +1,4 @@
-This file moved to https://sequentium.github.io/sequentium/llms-full.txt; this copy at the old address is not updated.
+This file moved to https://deduxit.github.io/deduxit/llms-full.txt; this copy at the old address is not updated.
 
 # linlog: the reference
 
@@ -8,7 +8,7 @@ bindings and the Rocq library. Every example below is a real call with
 its real output (a time a search took varies). `linlog COMMAND --help`
 documents every flag; a flag that sets a key of the settings file names
 it in parentheses there. The manual for people,
-<https://sequentium.github.io/sequentium/manual/>, says the same at more
+<https://deduxit.github.io/deduxit/manual/>, says the same at more
 length, with the benchmarks.
 
 Contents:
@@ -36,7 +36,7 @@ Contents:
 ## 1. Running it
 
 `cargo install --locked linlog-cli` installs the command `linlog`, and
-`nix run github:sequentium/sequentium -- ARGS` runs
+`nix run github:deduxit/deduxit -- ARGS` runs
 it without installing; each GitHub release also has it prebuilt for
 Linux (an archive and `.deb`, `.rpm` and Arch Linux packages), macOS and
 Windows, as the manual's Installation chapter says. The commands are `prove`, `check`, `interact`
@@ -823,7 +823,7 @@ provable (MLL, classical, focus engine)
 The crate `linlog` on crates.io holds all of it; its default
 features are `parse`, `serialize`, `interactive`, `latex`, `typst`, `svg`
 and `rocq`, and `parallel`, `png` and `pdf` are off. Its documentation
-is at <https://sequentium.github.io/sequentium/linlog/> for `main` and on
+is at <https://deduxit.github.io/deduxit/linlog/> for `main` and on
 docs.rs for the releases: the text syntax on `Sequent`, every JSON form
 on its type (`Sequent`, `Proof`, `Outcome`, `ProofStructure`,
 `Interactive`), each engine on `Engine`.
@@ -875,10 +875,10 @@ every step and the net it was taken on); `svg::net_step` and
 
 ## 17. The web bindings
 
-The page at <https://sequentium.github.io/> is the prover in a
+The page at <https://deduxit.github.io/> is the prover in a
 browser, for people: a sequent proved step by step with the mouse. Its
 engine is the unpublished crate `linlog-web` (`web/` of the repository,
-`nix build github:sequentium/sequentium#linlog-web` builds the module and
+`nix build github:deduxit/deduxit#linlog-web` builds the module and
 its JavaScript): the library compiled to WebAssembly behind calls of
 JSON text in and JSON, SVG or bytes out, which keep nothing between
 calls. The calls are `about`, `defaults`, `read`, `read_as`, `start`,
@@ -906,7 +906,7 @@ linear logic: NanoYalla, the kernel of Click & coLLecT at the version
 refuses Mix and affine weakening. The kernel `linlog` is the default for
 Mix, affine and intuitionistic logic and for a sequent with a
 quantifier: the Rocq library `rocq-linlog`, in its own repository
-(`github.com/sequentium/rocq-linlog`), a proof term
+(`github.com/deduxit/rocq-linlog`), a proof term
 its checker accepts. A first-order proof is stated in the library's
 first-order development (`ll (symbol := string) Calculus.classical`,
 `ill (symbol := string) Intuitionistic.intuitionistic`, …): predicates

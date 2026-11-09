@@ -1,4 +1,4 @@
-This file moved to https://sequentium.github.io/sequentium/llms.txt; this copy at the old address is not updated.
+This file moved to https://deduxit.github.io/deduxit/llms.txt; this copy at the old address is not updated.
 
 # linlog
 
@@ -85,10 +85,10 @@ valid proof (classical)
 ## Docs
 
 - [Reference](reference.md): every command, flag, format and JSON form, with examples
-- [Manual](https://sequentium.github.io/sequentium/manual/): every command, format and engine with its output, and the benchmarks
-- [Library API](https://sequentium.github.io/sequentium/linlog/): the Rust crate's documentation, with the text syntax and every JSON form
+- [Manual](https://deduxit.github.io/deduxit/manual/): every command, format and engine with its output, and the benchmarks
+- [Library API](https://deduxit.github.io/deduxit/linlog/): the Rust crate's documentation, with the text syntax and every JSON form
 
 ## Optional
 
-- [Web page](https://sequentium.github.io/): the prover in a browser, step by step, for people
-- [Rocq library](https://github.com/sequentium/rocq-linlog): the calculi and checkers the `--kernel linlog` certificates are proved with
+- [Web page](https://deduxit.github.io/): the prover in a browser, step by step, for people
+- [Rocq library](https://github.com/deduxit/rocq-linlog): the calculi and checkers the `--kernel linlog` certificates are proved with

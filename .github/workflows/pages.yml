@@ -3,7 +3,7 @@
 
 # Publishes site/ as the organisation's GitHub Pages site,
 # https://linlog-prover.github.io/, whose every address now redirects to
-# sequentium.github.io (README). The files are static and nothing is built.
+# deduxit.github.io (README). The files are static and nothing is built.
 # Actions are pinned to full commit SHAs, with the version in a trailing
 # comment, as the organisation requires.
 name: Pages
