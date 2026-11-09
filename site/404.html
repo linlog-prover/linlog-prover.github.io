@@ -18,17 +18,23 @@
                            site deduxit.github.io -->
     <script>
       const SITE = "https://deduxit.github.io";
+      // 0.2.0's API pages, /linlog/linlog/…, go to the crate's front page:
+      // the items moved under deduxit::linear, so the same path would miss.
+      const API = ["/linlog/linlog", "/deduxit/deduxit/"];
       const MOVED = [
         ["/linlog", "/deduxit"],
         ["/rocq-linlog", "/rocq-deduxit"],
       ];
+      const under = (path, old) => path === old || path.startsWith(old + "/");
       function moved(path) {
+        if (under(path, API[0])) return SITE + API[1];
         for (const [old, now] of MOVED) {
-          if (path === old || path.startsWith(old + "/")) return SITE + now + path.slice(old.length);
+          if (under(path, old)) return SITE + now + path.slice(old.length);
         }
         return SITE + path;
       }
-      location.replace(moved(location.pathname) + location.search + location.hash);
+      const target = moved(location.pathname);
+      location.replace(target.endsWith(API[1]) ? target : target + location.search + location.hash);
     </script>
   </head>
   <body>
@@ -37,7 +43,7 @@
     <ul>
       <li><a href="https://deduxit.github.io/">the web page</a>, which proves step by step in the browser;</li>
       <li><a href="https://deduxit.github.io/deduxit/manual/">the manual</a> of the command;</li>
-      <li><a href="https://deduxit.github.io/deduxit/linlog/">the library's API</a>;</li>
+      <li><a href="https://deduxit.github.io/deduxit/deduxit/">the library's API</a>;</li>
       <li><a href="https://deduxit.github.io/rocq-deduxit/">the Rocq library's documentation</a>;</li>
       <li><a href="https://github.com/deduxit/deduxit">the source</a>, on GitHub.</li>
     </ul>

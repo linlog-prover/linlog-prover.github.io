@@ -3,9 +3,10 @@
 linlog, its web page, its manual and its Rocq library moved on 2026-11-08
 from the GitHub organisation `linlog-prover` to
 [`deduxit`](https://github.com/deduxit) (named `sequentium` for its
-first day), whose repository `deduxit` is a collection of logic suites;
-linlog is its linear suite and keeps its name, its crates and its
-command. The Rocq library was renamed `rocq-deduxit` on 2026-11-09,
+first day), whose repository `deduxit` is a collection of logic suites.
+linlog was renamed deduxit at 0.3.0: the crates `deduxit` and
+`deduxit-cli`, the command `deduxit`, the linear suite the module
+`deduxit::linear`. The Rocq library was renamed `rocq-deduxit` on 2026-11-09,
 with its repository and its documentation.
 
 | was | is now |
