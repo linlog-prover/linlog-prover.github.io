@@ -823,7 +823,7 @@ provable (MLL, classical, focus engine)
 The crate `linlog` on crates.io holds all of it; its default
 features are `parse`, `serialize`, `interactive`, `latex`, `typst`, `svg`
 and `rocq`, and `parallel`, `png` and `pdf` are off. Its documentation
-is at <https://deduxit.github.io/deduxit/linlog/> for `main` and on
+is at <https://deduxit.github.io/deduxit/deduxit/> for `main` and on
 docs.rs for the releases: the text syntax on `Sequent`, every JSON form
 on its type (`Sequent`, `Proof`, `Outcome`, `ProofStructure`,
 `Interactive`), each engine on `Engine`.
@@ -906,7 +906,7 @@ linear logic: NanoYalla, the kernel of Click & coLLecT at the version
 refuses Mix and affine weakening. The kernel `linlog` is the default for
 Mix, affine and intuitionistic logic and for a sequent with a
 quantifier: the Rocq library `rocq-linlog`, in its own repository
-(`github.com/deduxit/rocq-linlog`), a proof term
+(`github.com/deduxit/rocq-deduxit`), a proof term
 its checker accepts. A first-order proof is stated in the library's
 first-order development (`ll (symbol := string) Calculus.classical`,
 `ill (symbol := string) Intuitionistic.intuitionistic`, …): predicates

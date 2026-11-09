@@ -10,7 +10,7 @@ A model that is to decide, check, prove step by step or export sequents does so 
 
 - [linlog's guide for AI models](https://deduxit.github.io/deduxit/llms.txt): the command and the library in brief, the body of an Agent Skill
 - [The full reference](https://deduxit.github.io/deduxit/llms-full.txt): every command, flag, format, exit status and JSON form, with examples
-- [The library's API](https://deduxit.github.io/deduxit/linlog/): the Rust crate's documentation
+- [The library's API](https://deduxit.github.io/deduxit/deduxit/): the Rust crate's documentation
 
 ## Optional
 

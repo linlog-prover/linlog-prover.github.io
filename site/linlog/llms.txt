@@ -86,9 +86,9 @@ valid proof (classical)
 
 - [Reference](reference.md): every command, flag, format and JSON form, with examples
 - [Manual](https://deduxit.github.io/deduxit/manual/): every command, format and engine with its output, and the benchmarks
-- [Library API](https://deduxit.github.io/deduxit/linlog/): the Rust crate's documentation, with the text syntax and every JSON form
+- [Library API](https://deduxit.github.io/deduxit/deduxit/): the Rust crate's documentation, with the text syntax and every JSON form
 
 ## Optional
 
 - [Web page](https://deduxit.github.io/): the prover in a browser, step by step, for people
-- [Rocq library](https://github.com/deduxit/rocq-linlog): the calculi and checkers the `--kernel linlog` certificates are proved with
+- [Rocq library](https://github.com/deduxit/rocq-deduxit): the calculi and checkers the `--kernel linlog` certificates are proved with
